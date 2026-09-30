@@ -9,7 +9,7 @@ import org.kde.kirigami as Kirigami
 //   - 宽度与高度都由 Plasma 决定（默认弹窗尺寸）
 //   - 左半（50% 宽）= 日历；右半（50% 宽）= 无媒体时是时钟，有媒体时是媒体控制器
 //   - 中间一条**居中、长度 = 面板高度 95%** 的分割线
-//   - 媒体控制器：圆角方形封面（等比裁剪，边长 = 0.5 × min(面板宽, 面板高)，距上边缘 20% 面板高度）；
+//   - 媒体控制器：圆角方形封面（等比裁剪，边长 = 0.5 × min(面板宽, 面板高)，距上边缘 10% 面板高度）；
 //     按钮行 [上一曲, 暂停/继续, 下一曲] 等宽等距，总宽 = 控制器宽度 60%，居中，
 //     距下边缘 5% 面板高度
 //
@@ -106,13 +106,13 @@ Item {
             anchors.fill: parent
             visible: root.hasMedia
 
-            // 圆角方形封面：边长 = 0.5 × min(面板宽, 面板高)，距面板上边缘 20% 面板高度
+            // 圆角方形封面：边长 = 0.5 × min(面板宽, 面板高)，距面板上边缘 10% 面板高度
             Item {
                 id: coverBox
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
-                anchors.topMargin: Math.round(root.height * 0.2)
+                anchors.topMargin: Math.round(root.height * 0.1)
                 height: root.coverSize
                 width: root.coverSize
 
