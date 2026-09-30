@@ -6,10 +6,10 @@ import org.kde.kirigami as Kirigami
 // 展开面板（PlasmoidItem.fullRepresentation）。
 //
 // 布局（尺寸比例都按面板自身尺寸计算）：
-//   - 宽度 = Plasma 弹窗的默认宽度，高度 = 宽度 × 62.5%
+//   - 宽度与高度都由 Plasma 决定（默认弹窗尺寸）
 //   - 左半（50% 宽）= 日历；右半（50% 宽）= 无媒体时是时钟，有媒体时是媒体控制器
 //   - 中间一条**居中、长度 = 面板高度 95%** 的分割线
-//   - 媒体控制器：圆角方形封面（等比裁剪，边长 = 50% 面板高度，距上边缘 20% 面板高度）；
+//   - 媒体控制器：圆角方形封面（等比裁剪，边长 = 0.5 × min(面板宽, 面板高)，距上边缘 20% 面板高度）；
 //     按钮行 [上一曲, 暂停/继续, 下一曲] 等宽等距，总宽 = 控制器宽度 60%，居中，
 //     距下边缘 5% 面板高度
 //
@@ -33,13 +33,15 @@ Item {
     // 宽度用 Plasma 弹窗的**默认宽度**：shell 的 CompactApplet.qml 在 fullRepresentation
     // 没有声明 Layout.preferredWidth / implicitWidth 时，用的就是这个值：
     //     return Kirigami.Units.iconSizes.sizeForLabels * 35;
-    // 这里显式写成同一个表达式（而不是把宽度留空交给 shell 兜底），
-    // 是为了让高度能由宽度按 62.5% 算出来；不依赖 Screen，多屏下行为一致。
+    // 高度不声明 → 一并交给 Plasma 用它自己的默认高度（同一文件里是 sizeForLabels * 25）。
+    // 不依赖 Screen，多屏下行为一致。
     readonly property real plasmaDefaultWidth: Kirigami.Units.iconSizes.sizeForLabels * 35
-    readonly property real heightRatio: 0.625
 
     implicitWidth: Math.round(root.plasmaDefaultWidth)
-    implicitHeight: Math.round(root.plasmaDefaultWidth * root.heightRatio)
+
+    // 专辑封面边长：分别按面板宽度、高度算出 50%，取较小者
+    // （等价于 0.5 × min(宽, 高)），面板变窄时封面会跟着收，不会溢出。
+    readonly property real coverSize: Math.round(0.5 * Math.min(root.width, root.height))
 
     // 展开面板里的时钟字体：族沿用用户/主题的字体，字号按面板高度缩放
     readonly property font clockFont: Qt.font({
@@ -104,15 +106,15 @@ Item {
             anchors.fill: parent
             visible: root.hasMedia
 
-            // 圆角方形封面：边长 = 50% 面板高度，距面板上边缘 20% 面板高度
+            // 圆角方形封面：边长 = 0.5 × min(面板宽, 面板高)，距面板上边缘 20% 面板高度
             Item {
                 id: coverBox
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: Math.round(root.height * 0.2)
-                height: Math.round(root.height * 0.5)
-                width: height
+                height: root.coverSize
+                width: root.coverSize
 
                 readonly property int cornerRadius: Math.round(root.height * 0.06)
 
