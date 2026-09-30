@@ -9,7 +9,8 @@ import org.kde.kirigami as Kirigami
 //   - 宽度与高度都由 Plasma 决定（默认弹窗尺寸）
 //   - 左半（50% 宽）= 日历；右半（50% 宽）= 无媒体时是时钟，有媒体时是媒体控制器
 //   - 中间一条**居中、长度 = 面板高度 95%** 的分割线
-//   - 媒体控制器：圆角方形封面（等比裁剪，边长 = 0.5 × min(面板宽, 面板高)，距上边缘 10% 面板高度）；
+//   - 媒体控制器：圆角方形封面（等比裁剪，边长 = 0.5 × min(面板宽, 面板高)，距上边缘 10% 面板高度），
+//     封面下方是曲名（居中、最多两行）；
 //     按钮行 [上一曲, 暂停/继续, 下一曲] 等宽等距，总宽 = 控制器宽度 60%，居中，
 //     距下边缘 5% 面板高度
 //
@@ -106,6 +107,9 @@ Item {
             anchors.fill: parent
             visible: root.hasMedia
 
+            // 面板内各块之间的统一间隙
+            readonly property real gap: Math.round(root.height * 0.02)
+
             // 圆角方形封面：边长 = 0.5 × min(面板宽, 面板高)，距面板上边缘 10% 面板高度
             Item {
                 id: coverBox
@@ -142,7 +146,7 @@ Item {
                     }
                 }
 
-                // 没有封面图时用占位块，并把曲名写在里面（面板几何很紧，没有额外一行放曲名）
+                // 没有封面图时用占位块（曲名由下方的曲名行统一显示，这里不再重复）
                 Rectangle {
                     anchors.fill: parent
                     color: root.theme.disabledTextColor
@@ -150,20 +154,28 @@ Item {
                     radius: coverBox.cornerRadius
                     visible: !coverImage.visible
                 }
+            }
 
-                Text {
-                    anchors.fill: parent
-                    anchors.margins: Math.round(coverBox.height * 0.08)
-                    color: root.theme.textColor
-                    elide: Text.ElideRight
-                    font: root.textFont
-                    horizontalAlignment: Text.AlignHCenter
-                    maximumLineCount: 3
-                    text: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
-                    verticalAlignment: Text.AlignVCenter
-                    visible: !coverImage.visible
-                    wrapMode: Text.WordWrap
-                }
+            // 曲名：放在封面与按钮行之间的空档里，居中、最多两行
+            Text {
+                id: trackLabel
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: coverBox.bottom
+                anchors.topMargin: mediaController.gap
+                // 高度 = 封面底边到按钮行顶边之间的空档减去上下两个间隙；
+                // 面板变矮时退化成 0，而不是用上下 anchors 拉出负高度
+                height: Math.max(0, Math.round(controlsRow.y - (coverBox.y + coverBox.height) - mediaController.gap * 2))
+                width: Math.round(mediaController.width * 0.88)
+
+                color: root.theme.textColor
+                elide: Text.ElideRight
+                font: root.textFont
+                horizontalAlignment: Text.AlignHCenter
+                maximumLineCount: 2
+                text: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WordWrap
             }
 
             // 按钮行：[上一曲, 暂停/继续, 下一曲]，等宽等距，总宽 = 控制器宽度 60%，
