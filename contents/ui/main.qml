@@ -83,13 +83,12 @@ PlasmoidItem {
 	})
 
 	// ———————————————— 可选依赖 1：媒体信息（MPRIS）————————————————
-	// 探测顺序（任一成功即采用；全部失败则面板只显示时钟）：
-	//   1) org.kde.plasma.private.mpris —— 当前 Plasma 使用的私有模块
-	//   2) org.kde.plasma.plasma5support 的 mpris2 dataengine —— 兼容用的公开接口
-	// 这里刻意不「判断 Plasma 版本」：QML 拿不到可靠的版本号，
-	// 而按能力探测（哪个模块真的创建得出来就用哪个）不会因版本升级而误判。
-	// 已核实本机存在 org.kde.plasma.private.mpris → 第 1 条即生效路径；
-	// 第 2 条只在其他 Plasma 变体上才会走到。
+	// 实现方式见下面的 mediaCandidateSources()：按顺序尝试候选实现，第一个创建成功的生效，
+	// 全部失败则面板只显示时钟（不报错、也不影响其它功能）。
+	// 已核实本机存在 org.kde.plasma.private.mpris → 候选 1 就是生效路径。
+	//
+	// 刻意不「判断 Plasma 版本」：QML 拿不到可靠的版本号，按能力探测不会因版本升级误判。
+	// mediaState: 0 = 尚未探测，1..N = 第 N 个候选生效，-1 = 全部不可用
 	property int mediaState: 0
 	property var mediaProvider: null
 
@@ -165,57 +164,92 @@ PlasmoidItem {
 		return object ? object : null;
 	}
 
-	// ———————————————— 媒体后端 ————————————————
+	// ———————————————— 媒体实现：候选注册表 ————————————————
+	// 每一项是一段独立的 QML 适配器，自带降级与诊断；创建失败就交给下一项。
+	// 要支持别的 MPRIS2 实现，只需要往这个列表里追加一项，其它代码不用动。
+	function mediaCandidateSources() {
+		return [
+			// 1) Plasma 私有 mpris 模块（本机已确认存在）
+			[
+				"import QtQml",
+				"import QtQuick",
+				"import org.kde.plasma.private.mpris as Mpris",
+				"QtObject {",
+				"    readonly property var player: mprisModel.currentPlayer",
+				"    readonly property string trackTitle: player !== null ? player.track : \"\"",
+				"    readonly property bool playing: player !== null && player.playbackStatus === Mpris.PlaybackStatus.Playing",
+				"    Mpris.Mpris2Model { id: mprisModel }",
+				"}"
+			].join("\n"),
+
+			// 2) 兜底：plasma5support 的 mpris2 dataengine
+			root.mprisDataEngineSource()
+		];
+	}
+
+	// mpris2 dataengine 适配器。
+	// 这个引擎没有正式文档，所以这里**不写死 source / key 名称**：
+	// 运行时枚举引擎给出的 source 及其键，按名字片段挑选，并把实际结果打进日志，
+	// 便于按真实环境调整（也因此不需要在编译期猜任何键名）。
+	function mprisDataEngineSource() {
+		return [
+			"import QtQml",
+			"import QtQuick",
+			"import org.kde.plasma.plasma5support as P5Support",
+			"QtObject {",
+			"    // 不假定 source 叫什么，取第一个有内容的",
+			"    readonly property var entry: {",
+			"        const all = dataSource.data || ({});",
+			"        const names = Object.keys(all);",
+			"        for (let i = 0; i < names.length; ++i) {",
+			"            if (all[names[i]] && Object.keys(all[names[i]]).length > 0) return all[names[i]];",
+			"        }",
+			"        return null;",
+			"    }",
+			"    readonly property var keys: entry ? Object.keys(entry) : []",
+			"    // 按名字片段找键：兼容 track / Title / Metadata / PlaybackStatus 等各种命名",
+			"    function pick(fragments, accept) {",
+			"        for (let f = 0; f < fragments.length; ++f) {",
+			"            for (let k = 0; k < keys.length; ++k) {",
+			"                if (keys[k].toLowerCase().indexOf(fragments[f]) < 0) continue;",
+			"                const value = entry[keys[k]];",
+			"                if (accept(value)) return value;",
+			"            }",
+			"        }",
+			"        return undefined;",
+			"    }",
+			"    readonly property string trackTitle: {",
+			"        const value = pick([\"track\", \"title\"], function(v) { return typeof v === \"string\" && v.length > 0; });",
+			"        return typeof value === \"string\" ? value : \"\";",
+			"    }",
+			"    readonly property bool playing: {",
+			"        const value = pick([\"status\", \"state\"], function(v) { return typeof v === \"string\" || typeof v === \"boolean\"; });",
+			"        return typeof value === \"boolean\" ? value : (typeof value === \"string\" ? value.toLowerCase() === \"playing\" : false);",
+			"    }",
+			"    // 诊断：把引擎真正提供的 source 与键打出来（这条路径无文档，只能靠现场数据）",
+			"    Component.onCompleted: console.info(\"Sparkle Land: mpris2 sources =\", Object.keys(dataSource.data || ({})), \", keys =\", keys)",
+			"    P5Support.DataSource { id: dataSource; connectedSources: [\"players\"]; engine: \"mpris2\" }",
+			"}"
+		].join("\n");
+	}
+
 	function resolveMediaProvider() {
 		if (root.mediaState !== 0) {
 			return;
 		}
 
-		// 1) Plasma 私有 mpris 模块
-		let provider = root.createOptionalObject([
-			"import QtQml",
-			"import QtQuick",
-			"import org.kde.plasma.private.mpris as Mpris",
-			"QtObject {",
-			"    readonly property var player: mprisModel.currentPlayer",
-			"    readonly property string trackTitle: player !== null ? player.track : \"\"",
-			"    readonly property bool playing: player !== null && player.playbackStatus === Mpris.PlaybackStatus.Playing",
-			"    Mpris.Mpris2Model { id: mprisModel }",
-			"}"
-		].join("\n"), "privateMprisProvider");
-
-		if (provider !== null) {
-			root.mediaProvider = provider;
-			root.mediaState = 1;
-			return;
+		const sources = root.mediaCandidateSources();
+		for (let i = 0; i < sources.length; ++i) {
+			const provider = root.createOptionalObject(sources[i], "mediaProvider" + i);
+			if (provider !== null) {
+				root.mediaProvider = provider;
+				root.mediaState = i + 1;
+				return;
+			}
 		}
 
-		// 2) 兼容接口：plasma5support 的 mpris2 dataengine。
-		//    注意：下面的键名未经核实（该 dataengine 没有正式文档）。若你的系统走到这条
-		//    路径却读不到曲目，只需要修改这一处。
-		provider = root.createOptionalObject([
-			"import QtQml",
-			"import QtQuick",
-			"import org.kde.plasma.plasma5support as P5Support",
-			"QtObject {",
-			"    readonly property var entry: dataSource.data[\"players\"]",
-			"    readonly property string trackTitle: {",
-			"        const value = entry && (entry[\"Metadata\"] || entry[\"Title\"]);",
-			"        return typeof value === \"string\" ? value : \"\";",
-			"    }",
-			"    readonly property bool playing: !!entry && (entry[\"PlaybackStatus\"] === \"Playing\" || entry[\"playing\"] === true)",
-			"    P5Support.DataSource { id: dataSource; connectedSources: [\"players\"]; engine: \"mpris2\" }",
-			"}"
-		].join("\n"), "mprisDataEngineProvider");
-
-		if (provider !== null) {
-			root.mediaProvider = provider;
-			root.mediaState = 2;
-			return;
-		}
-
-		root.mediaState = 3;
-		console.info("Sparkle Land: 没有可用的媒体接口，面板只显示时钟。");
+		root.mediaState = -1;
+		console.info("Sparkle Land: 没有可用的 MPRIS2 实现，面板只显示时钟。");
 	}
 
 	// 展开完整视图（日历所在位置），并定位到指定日期（缺省为今天）
