@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 // 展开面板（PlasmoidItem.fullRepresentation）。
 //
 // 布局（尺寸比例都按面板自身尺寸计算）：
-//   - 面板默认占屏幕宽度 1/3（想改成 40% 就把 widthRatio 改成 0.4），高度 = 宽度 × 62.5%
+//   - 宽度 = Plasma 弹窗的默认宽度，高度 = 宽度 × 62.5%
 //   - 左半（50% 宽）= 日历；右半（50% 宽）= 无媒体时是时钟，有媒体时是媒体控制器
 //   - 中间一条**居中、长度 = 面板高度 95%** 的分割线
 //   - 媒体控制器：圆角方形封面（等比裁剪，边长 = 50% 面板高度，距上边缘 20% 面板高度）；
@@ -14,8 +14,7 @@ import org.kde.kirigami as Kirigami
 //     距下边缘 5% 面板高度
 //
 // 主题、字体、格式、媒体接口全部由 main.qml 注入，本文件不直接依赖 Plasma 主题模块。
-// 注：面板里的时钟只显示时间（timeFormat），不显示日期 —— 这里是按面板布局描述写的，
-// 若也要跟随「显示日期」设置，需要把 showDate/dateFormat 一并注入并调小日期字号。
+// 注：面板里的时钟只显示时间（timeFormat），不显示日期（按需求确定）。
 Item {
     id: root
 
@@ -31,11 +30,16 @@ Item {
     signal dateSelected(date date)
 
     // ———————————————— 尺寸 ————————————————
-    readonly property real widthRatio: 1 / 3
+    // 宽度用 Plasma 弹窗的**默认宽度**：shell 的 CompactApplet.qml 在 fullRepresentation
+    // 没有声明 Layout.preferredWidth / implicitWidth 时，用的就是这个值：
+    //     return Kirigami.Units.iconSizes.sizeForLabels * 35;
+    // 这里显式写成同一个表达式（而不是把宽度留空交给 shell 兜底），
+    // 是为了让高度能由宽度按 62.5% 算出来；不依赖 Screen，多屏下行为一致。
+    readonly property real plasmaDefaultWidth: Kirigami.Units.iconSizes.sizeForLabels * 35
     readonly property real heightRatio: 0.625
 
-    implicitWidth: Math.round(Screen.width * root.widthRatio)
-    implicitHeight: Math.round(root.implicitWidth * root.heightRatio)
+    implicitWidth: Math.round(root.plasmaDefaultWidth)
+    implicitHeight: Math.round(root.plasmaDefaultWidth * root.heightRatio)
 
     // 展开面板里的时钟字体：族沿用用户/主题的字体，字号按面板高度缩放
     readonly property font clockFont: Qt.font({
