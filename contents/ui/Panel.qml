@@ -25,6 +25,7 @@ Item {
     property string timeFormat
     property var mediaProvider
     property bool hasMedia: false
+    property bool mediaControlsEnabled: true
     property date requestedDate
 
     // 选中日期回传（由 main.qml 的 onDateSelected 接住）
@@ -188,7 +189,9 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Math.round(root.height * 0.05)
                 anchors.horizontalCenter: parent.horizontalCenter
+                enabled: root.mediaControlsEnabled
                 height: Math.round((width - spacing * 2) / 3)
+                opacity: root.mediaControlsEnabled ? 1 : 0.4
                 spacing: Math.round(width * gapRatio)
                 width: Math.round(mediaController.width * 0.6)
 

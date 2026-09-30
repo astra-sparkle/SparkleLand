@@ -1,7 +1,7 @@
 import QtQml
 import QtQuick
 import QtQuick.Layouts
-import org.kde.plasma.core as PlasmaCore
+import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
 // 工程入口：与系统的交互、可选依赖的探测与降级、以及所有对外调用都在这里。
@@ -99,9 +99,7 @@ PlasmoidItem {
 	}
 
 	// 亮/暗主题判断：用主题**文字色**的明度（亮色主题文字是深色 → 明度低）。
-	// 不用 backgroundColor —— Plasma 6 的 PlasmaCore.Theme 只有 ColorGroup 枚举、没有颜色属性
-	// （已核实：plasmashell / libPlasma / core 插件里都搜不到任何颜色属性名），
-	// 而 textColor 是两套主题对象都保证有的。
+	// 用 textColor 的明度判断主题明暗，不依赖 backgroundColor。
 	readonly property bool lightTheme: root.theme.textColor.hsvValue < 0.5
 
 	// 时间格式：优先「用户保存的自定义格式」，其次 12/24 小时制，最后跟随系统。
@@ -128,23 +126,20 @@ PlasmoidItem {
 		return custom.length > 0 ? custom : Qt.locale().dateFormat(Locale.ShortFormat);
 	}
 
-	// ———————————————— 主题：优先 Kirigami.Theme，失败回退 PlasmaCore.Theme ————————————————
-	// 回退实现是声明式的，保证 theme 永远有效；Kirigami 版本在启动时尝试创建，失败就继续用回退。
+	// ———————————————— 主题：Plasma 6 的 Kirigami.Theme ————————————————
 	QtObject {
-		id: plasmaTheme
+		id: themeAdapter
 
-		readonly property color textColor: PlasmaCore.Theme.textColor
-		readonly property color disabledTextColor: PlasmaCore.Theme.disabledTextColor
-		readonly property color highlightColor: PlasmaCore.Theme.highlightColor
-		readonly property color highlightedTextColor: PlasmaCore.Theme.highlightedTextColor
-		// PlasmaCore.Theme 没有 hoverColor，对应的是 viewHoverColor
-		readonly property color hoverColor: PlasmaCore.Theme.viewHoverColor
-		readonly property font defaultFont: Qt.application.font
-		readonly property int gridUnit: Math.max(16, Math.round(Qt.application.font.pointSize * 1.6))
+		readonly property color textColor: Kirigami.Theme.textColor
+		readonly property color disabledTextColor: Kirigami.Theme.disabledTextColor
+		readonly property color highlightColor: Kirigami.Theme.highlightColor
+		readonly property color highlightedTextColor: Kirigami.Theme.highlightedTextColor
+		readonly property color hoverColor: Kirigami.Theme.hoverColor
+		readonly property font defaultFont: Kirigami.Theme.defaultFont
+		readonly property int gridUnit: Kirigami.Units.gridUnit
 	}
 
-	property var kirigamiTheme: null
-	readonly property var theme: root.kirigamiTheme !== null ? root.kirigamiTheme : plasmaTheme
+	readonly property var theme: themeAdapter
 
 	// 面板字体：未自定义时跟随主题默认字体
 	readonly property font panelFont: {
@@ -158,21 +153,10 @@ PlasmoidItem {
 		});
 	}
 
-	// ———————————————— 可选依赖 1：媒体信息（MPRIS）————————————————
-	// 媒体是可选依赖：按顺序尝试下面的候选实现，第一个成功加载的生效；
-	// 全部失败则面板只显示时钟（不报错、也不影响其它功能）。
-	//
-	// 每个候选都是一个**独立的 QML 文件**，因此可以用静态 import —— 这是本机已验证可行的
-	// 方式（第三方插件 plasmusic-toolbar 就是静态 import 同一个模块）。某个模块缺失时该文件
-	// 加载失败，由这里的候选机制捕获、打印真实原因，并继续尝试下一个。
-	// 已核实本机存在 org.kde.plasma.private.mpris → 候选 1 就是生效路径。
-	//
-	// 刻意不「判断 Plasma 版本」：QML 拿不到可靠的版本号，按能力探测不会因版本升级误判。
-	// mediaState: 0 = 尚未探测，1..N = 第 N 个候选生效，-1 = 全部不可用
-	readonly property var mediaProviderSources: [
-		"MprisProvider.qml",
-		"MprisDataEngineProvider.qml"
-	]
+	// ———————————————— 可选依赖：媒体信息（MPRIS）————————————————
+	// 媒体不可用时面板只显示时钟。独立组件静态 import 私有 MPRIS 模块；
+	// 模块缺失时由这里捕获加载错误，不影响其它功能。
+	// mediaState: 0 = 尚未探测，1 = MPRIS 可用，-1 = 不可用
 	property int mediaState: 0
 	property var mediaProvider: null
 
@@ -214,78 +198,29 @@ PlasmoidItem {
 	// 内容与这里原本要设置的值一致，因此没有任何视觉损失。
 
 	Component.onCompleted: {
-		root.resolveTheme();
 		root.resolveMediaProvider();
 	}
 
-	// ———————————————— 主题解析 ————————————————
-	// 用字符串 + try/catch 做可选依赖：import 只在运行时求值，
-	// 因此 org.kde.kirigami 缺失或出错都不会影响本文件加载。
-	function resolveTheme() {
-		if (root.kirigamiTheme !== null) {
-			return;
-		}
-
-		const source = [
-			"import QtQml",
-			"import QtQuick",
-			"import org.kde.kirigami as Kirigami",
-			"QtObject {",
-			"    readonly property color textColor: Kirigami.Theme.textColor",
-			"    readonly property color disabledTextColor: Kirigami.Theme.disabledTextColor",
-			"    readonly property color highlightColor: Kirigami.Theme.highlightColor",
-			"    readonly property color highlightedTextColor: Kirigami.Theme.highlightedTextColor",
-			"    readonly property color hoverColor: Kirigami.Theme.hoverColor",
-			"    readonly property font defaultFont: Kirigami.Theme.defaultFont",
-			"    readonly property int gridUnit: Kirigami.Units.gridUnit",
-			"}"
-		].join("\n");
-
-		let resolved = null;
-		try {
-			resolved = Qt.createQmlObject(source, root, "kirigamiTheme");
-		} catch (error) {
-			resolved = null;
-			console.info("Sparkle Land: Kirigami 主题不可用，回退到 PlasmaCore.Theme。", error);
-		}
-
-		if (resolved) {
-			root.kirigamiTheme = resolved;
-		}
-	}
-
-	// ———————————————— 媒体实现：候选加载 ————————————————
-	// 候选文件用静态 import（见文件内的说明），加载失败时 Loader 机制会拿到确切原因。
+	// ———————————————— 媒体实现：运行时加载 ————————————————
 	function resolveMediaProvider() {
-		if (root.mediaState === 0) {
-			root.tryMediaProviderSource(0);
-		}
-	}
-
-	// 逐个尝试候选；失败时打印**真实原因**，不做静默降级
-	function tryMediaProviderSource(index) {
-		if (index >= root.mediaProviderSources.length) {
-			root.mediaState = -1;
-			console.info("Sparkle Land: 没有可用的 MPRIS2 实现，面板只显示时钟。");
+		if (root.mediaState !== 0) {
 			return;
 		}
 
-		const component = Qt.createComponent(root.mediaProviderSources[index]);
+		const component = Qt.createComponent("MprisProvider.qml");
 		if (component.status === Component.Loading) {
 			component.statusChanged.connect(function() {
-				root.useMediaComponent(component, index);
+				root.useMediaComponent(component);
 			});
 			return;
 		}
-		root.useMediaComponent(component, index);
+		root.useMediaComponent(component);
 	}
 
-	function useMediaComponent(component, index) {
-		const source = root.mediaProviderSources[index];
-
+	function useMediaComponent(component) {
 		if (component.status === Component.Error) {
-			console.warn("Sparkle Land: 媒体候选", source, "加载失败：", component.errorString());
-			root.tryMediaProviderSource(index + 1);
+			root.mediaState = -1;
+			console.info("Sparkle Land: MPRIS 不可用，面板只显示时钟：", component.errorString());
 			return;
 		}
 		if (component.status !== Component.Ready) {
@@ -294,14 +229,14 @@ PlasmoidItem {
 
 		const provider = component.createObject(root);
 		if (!provider) {
-			console.warn("Sparkle Land: 媒体候选", source, "实例化失败：", component.errorString());
-			root.tryMediaProviderSource(index + 1);
+			root.mediaState = -1;
+			console.warn("Sparkle Land: MPRIS 组件实例化失败：", component.errorString());
 			return;
 		}
 
 		root.mediaProvider = provider;
-		root.mediaState = index + 1;
-		console.info("Sparkle Land: 媒体候选", source, "已生效");
+		root.mediaState = 1;
+		console.info("Sparkle Land: 私有 MPRIS 实现已生效");
 	}
 
 	// 展开完整视图（日历所在位置），并定位到指定日期（缺省为今天）
@@ -432,6 +367,7 @@ PlasmoidItem {
 	// （QML 要求组件类型名首字母大写，所以文件名必须是 Panel.qml 而不是 panel.qml）
 	fullRepresentation: Panel {
 		hasMedia: root.hasMedia
+		mediaControlsEnabled: root.mediaState === 1
 		mediaProvider: root.mediaProvider
 		requestedDate: root.requestedDate
 		textFont: root.panelFont

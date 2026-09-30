@@ -20,6 +20,20 @@ Item {
     // 格式里含 "s" 说明要显示秒 → 需要按秒刷新
     readonly property bool hasSeconds: root.timeFormat.indexOf("s") >= 0
 
+    function nextTickInterval() {
+        const now = new Date();
+        return root.hasSeconds
+            ? 1000 - now.getMilliseconds()
+            : 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+    }
+
+    onHasSecondsChanged: {
+        tickTimer.interval = root.nextTickInterval();
+        if (tickTimer.running) {
+            tickTimer.restart();
+        }
+    }
+
     readonly property string timeText: {
         root.tick;
         return Qt.formatTime(new Date(), root.timeFormat);
@@ -86,12 +100,7 @@ Item {
 
         onTriggered: {
             root.tick++;
-            const now = new Date();
-            if (root.hasSeconds) {
-                tickTimer.interval = 1000 - now.getMilliseconds();
-            } else {
-                tickTimer.interval = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
-            }
+            tickTimer.interval = root.nextTickInterval();
         }
     }
 }
