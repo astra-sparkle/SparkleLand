@@ -2,7 +2,7 @@ import QtQml
 import QtQuick
 import QtQuick.Layouts
 
-// 内置月历实现：Plasma 私有日历不可用时的回退方案（后端选择在 main.qml 完成）。
+// 内置月历实现：本机不存在可复用的 Plasma 日历接口，因此这是唯一的日历实现。
 //
 // 性能设计（相对旧实现的三处关键改动）：
 //  1. days 模型只依赖「显示月份」和本地周首日 —— 只有切月才重建 42 个 delegate；
@@ -22,7 +22,6 @@ Item {
     property date today: new Date()
 
     signal dateSelected(date date)
-    signal monthChanged(int year, int month)
 
     // 只在根部归一化一次
     readonly property real todayStart: dayStart(root.today).getTime()
@@ -74,8 +73,6 @@ Item {
     })
 
     Component.onCompleted: applyRequestedDate()
-
-    onDisplayedMonthChanged: root.monthChanged(root.displayedMonth.getFullYear(), root.displayedMonth.getMonth())
 
     onRequestedDateChanged: applyRequestedDate()
 

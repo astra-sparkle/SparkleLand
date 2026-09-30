@@ -96,24 +96,11 @@ PlasmoidItem {
 	readonly property string trackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 	readonly property bool isPlaying: root.mediaProvider !== null && root.mediaProvider.playing
 
-	// ———————————————— 可选依赖 2：日历后端 ————————————————
-	// 候选顺序：数字时钟所用的私有接口 → KDE 私有日历接口。
-	// 逐项探测「模块 + 类型」是否真的能创建，全部失败才使用内置 Calender.qml。
+	// ———————————————— 日历 ————————————————
+	// 已核实（2026-09，查看 $QML_IMPORT_PATH/org/kde/plasma/private/）：本机有 digitalclock
+	// 与 mpris，**没有 calendar**，且 digitalclock 也没有导出任何日历类型。
+	// 也就是说不存在任何可复用的 Plasma 日历接口 → 直接用内置 Calender.qml 作为唯一实现。
 	//
-	// 已核实（2026-09，查看 $QML_IMPORT_PATH/org/kde/plasma/private/）：
-	//   该目录下**存在** digitalclock 与 mpris，**不存在 calendar**。
-	//   所以本机上私有日历探测必定失败，实际生效的实现是内置的 Calender.qml。
-	//   列表保留两项是为了兼容其他发行版/版本（Plasma 5、或带私有日历模块的打包）。
-	readonly property var calendarCandidates: [
-		{"module": "org.kde.plasma.private.digitalclock", "type": "Calendar"},
-		{"module": "org.kde.plasma.private.calendar", "type": "Calendar"}
-	]
-
-	property int calendarState: 0
-	readonly property bool calendarBackendReady: root.calendarState !== 0
-	// 只有私有日历确实不可用时，才允许创建内置日历（惰性化）
-	readonly property bool needsBuiltinCalendar: root.calendarBackendReady && root.calendarState === 2
-
 	// 日历入口
 	property date selectedDate: new Date()
 	property date requestedDate
@@ -231,30 +218,6 @@ PlasmoidItem {
 		console.info("Sparkle Land: 没有可用的媒体接口，面板只显示时钟。");
 	}
 
-	// ———————————————— 日历后端 ————————————————
-	// 首次启用日历时（完整视图首次创建）探测；内置日历只有探测失败才会被创建。
-	function setupCalendar(host) {
-		if (!host || root.calendarState !== 0) {
-			return;
-		}
-
-		for (let i = 0; i < root.calendarCandidates.length; ++i) {
-			const candidate = root.calendarCandidates[i];
-			const calendar = root.createOptionalObject(
-				"import QtQml\nimport QtQuick\nimport " + candidate.module + "\n"
-					+ candidate.type + " { anchors.fill: parent }",
-				"plasmaCalendar");
-
-			if (calendar !== null) {
-				root.calendarState = 1;
-				return;
-			}
-		}
-
-		root.calendarState = 2;
-		console.info("Sparkle Land: 没有可用的 Plasma 日历模块，使用内置日历。");
-	}
-
 	// 展开完整视图（日历所在位置），并定位到指定日期（缺省为今天）
 	function openCalendar(date) {
 		const target = (date instanceof Date && !isNaN(date.getTime())) ? date : new Date();
@@ -344,27 +307,14 @@ PlasmoidItem {
 				wrapMode: Text.WordWrap
 			}
 
-			// 日历宿主：首次创建（= 首次启用日历）时决定使用哪个后端
-			Item {
-				id: calendarHost
-
+			// 内置日历：完整视图本身就是按需创建的，所以这里不需要再套惰性化
+			Calender {
 				Layout.fillHeight: true
 				Layout.fillWidth: true
 
-				Component.onCompleted: root.setupCalendar(calendarHost)
-
-				// 内置日历：只有私有后端不可用时才真正创建（惰性化）
-				Loader {
-					active: root.needsBuiltinCalendar
-					anchors.fill: parent
-					sourceComponent: Component {
-						Calender {
-							onDateSelected: root.selectedDate = date
-							requestedDate: root.requestedDate
-							theme: root.theme
-						}
-					}
-				}
+				onDateSelected: root.selectedDate = date
+				requestedDate: root.requestedDate
+				theme: root.theme
 			}
 
 			Text {
