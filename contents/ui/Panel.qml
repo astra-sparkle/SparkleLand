@@ -93,8 +93,8 @@ Item {
         Clock {
             anchors.centerIn: parent
             height: Math.round(parent.height * 0.4)
-            panelFont: root.clockFont
             theme: root.theme
+            timeFont: root.clockFont
             timeFormat: root.timeFormat
             visible: !root.hasMedia
             width: Math.round(parent.width * 0.9)

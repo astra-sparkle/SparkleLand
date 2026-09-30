@@ -45,9 +45,58 @@ PlasmoidItem {
 	// 默认 true：配置读不到时按默认值处理
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
 	readonly property bool showDate: plasmoid.configuration.showDate === true
-	// 时间字号是否自动：用户没设过字号（fontPointSize ≤ 0）时视为自动。
-	// 自动时 Clock 按 digitalclock 的算法定字号（3×主题默认字号，再按可用高度适配）。
-	readonly property bool autoTimeFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
+	// 面板条目字号是否自动：用户没设过字号（fontPointSize ≤ 0）时视为自动。
+	readonly property bool autoCompactFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
+
+	// ———————————————— 面板条目字号（官方 digitalclock 算法）————————————————
+	// 紧凑条目里**所有**文字（时间、日期、曲名）都用这一套，保证字号一致。
+	// 来源：plasma-workspace/applets/digital-clock/DigitalClock.qml
+	//   fontHelper.font.pixelSize = 3 * Kirigami.Theme.defaultFont.pixelSize        （字号上限）
+	//   sizehelper.height = min(两行时 height*0.56 / 单行时 height*0.71, 上面的上限)
+	//   timeLabel.font.pixelSize = sizehelper.height
+	//   dateLabel.height = 0.8 * timeLabel.height（次要文字 = 0.8 × 主文字）
+
+	// 主题默认字号的像素值。Kirigami 的 defaultFont 带 pixelSize；
+	// 回退主题用的 Qt.application.font 往往只有 pointSize（pixelSize 为 -1）
+	// → 按 digitalclock 的 pointToPixel() 换算：pointSize / 72 * (pixelDensity * 25.4)
+	readonly property int themeDefaultPixelSize: {
+		const defaultFont = root.theme.defaultFont;
+		if (defaultFont.pixelSize > 0) {
+			return defaultFont.pixelSize;
+		}
+		const density = Screen.pixelDensity > 0 ? Screen.pixelDensity : 3.937;
+		return Math.max(8, Math.round(defaultFont.pointSize / 72 * (density * 25.4)));
+	}
+
+	// 按面板条目高度算字号：twoLines = true 表示该文字与另一行共享高度（时间+日期）
+	function panelPixelSize(height, twoLines) {
+		const available = height > 0 ? height : 32;
+		const fitted = Math.round(available * (twoLines ? 0.56 : 0.71));
+		return Math.max(8, Math.min(fitted, 3 * root.themeDefaultPixelSize));
+	}
+
+	// 用面板字体的族/粗细/斜体，只换字号（Qt.font 里 pixelSize 与 pointSize 不能同时给）
+	function fontWithPixelSize(sourceFont, pixelSize) {
+		return Qt.font({
+			"bold": sourceFont.bold,
+			"family": sourceFont.family,
+			"italic": sourceFont.italic,
+			"pixelSize": Math.max(1, Math.round(pixelSize))
+		});
+	}
+
+	// 按比例缩放字体，单位跟源字体保持一致（源字体可能是 pointSize 也可能是 pixelSize）
+	function fontScaled(sourceFont, factor) {
+		if (sourceFont.pixelSize > 0) {
+			return root.fontWithPixelSize(sourceFont, sourceFont.pixelSize * factor);
+		}
+		return Qt.font({
+			"bold": sourceFont.bold,
+			"family": sourceFont.family,
+			"italic": sourceFont.italic,
+			"pointSize": Math.max(1, sourceFont.pointSize * factor)
+		});
+	}
 
 	// 亮/暗主题判断：用主题**文字色**的明度（亮色主题文字是深色 → 明度低）。
 	// 不用 backgroundColor —— Plasma 6 的 PlasmaCore.Theme 只有 ColorGroup 枚举、没有颜色属性
@@ -278,6 +327,20 @@ PlasmoidItem {
 		// 两块内容的自然宽度取最大，避免切换时抖动（safeMax 保证不会算出 NaN）
 		readonly property int contentWidth: root.safeMax(clockItem.implicitWidth, mediaItem.implicitWidth)
 
+		// 面板条目里的字体：用户没设过字号时按官方算法随面板厚度缩放，否则沿用用户/主题字体。
+		// 高度取条目自身的 height（= 面板厚度），所以字号会跟着面板变。
+		readonly property font primaryFont: root.autoCompactFontSize
+			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate))
+			: root.panelFont
+		// 次要文字（日期）：0.8 × 主文字
+		readonly property font secondaryFont: root.autoCompactFontSize
+			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate) * 0.8)
+			: root.fontScaled(root.panelFont, 0.8)
+		// 曲名自己独占一行 → 用单行比例（0.71）
+		readonly property font mediaTitleFont: root.autoCompactFontSize
+			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, false))
+			: root.panelFont
+
 		// 媒体：内容不超过平均值时申请平均值，超过平均值就直接申请最大值；
 		// 时钟：内容夹在 [最小, 最大] 之间。两种情况都不小于最小宽度。
 		// 判断依据是 hasMedia 而不是 panelShowsMedia：展开时条目内容换成时间，
@@ -309,6 +372,8 @@ PlasmoidItem {
 		                                    "亮色主题 =", root.lightTheme,
 		                                    "显示媒体背景 =", root.mediaBackgroundVisible,
 		                                    "背景色 =", root.mediaBackgroundColor,
+		                                    "时间字号(px/pt) =", compactItem.primaryFont.pixelSize, compactItem.primaryFont.pointSize,
+		                                    "曲名字号(px/pt) =", compactItem.mediaTitleFont.pixelSize, compactItem.mediaTitleFont.pointSize,
 		                                    "媒体模式 =", root.panelShowsMedia)
 
 		// 诊断 2：布局完成后的**实际**尺寸与面板朝向（判断 containment 是否采纳了上面的声明）
@@ -333,10 +398,10 @@ PlasmoidItem {
 
 			anchors.fill: parent
 			enabled: visible
-			panelFont: root.panelFont
 			playing: root.isPlaying
 			theme: root.theme
 			title: root.trackTitle
+			titleFont: compactItem.mediaTitleFont
 			useThemeBackground: root.mediaUseThemeBackground
 			visible: root.panelShowsMedia
 		}
@@ -345,12 +410,12 @@ PlasmoidItem {
 			id: clockItem
 
 			anchors.fill: parent
-			autoTimeSize: root.autoTimeFontSize
+			dateFont: compactItem.secondaryFont
 			dateFormat: root.dateFormat
 			enabled: visible
-			panelFont: root.panelFont
 			showDate: root.showDate
 			theme: root.theme
+			timeFont: compactItem.primaryFont
 			timeFormat: root.timeFormat
 			visible: !root.panelShowsMedia
 		}

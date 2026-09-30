@@ -10,7 +10,8 @@ Item {
     id: root
 
     property var theme
-    property font panelFont
+    // 曲名字体由 main.qml 按官方（digitalclock）字号算法算好后传入
+    property font titleFont
     property bool playing: false
     property bool useThemeBackground: true
     property string title: ""
@@ -30,7 +31,7 @@ Item {
         anchors.rightMargin: 12
         color: root.highlighted ? root.theme.highlightedTextColor : root.theme.textColor
         elide: Text.ElideRight
-        font: root.panelFont
+        font: root.titleFont
         horizontalAlignment: Text.AlignHCenter
         maximumLineCount: 1
         text: root.title
