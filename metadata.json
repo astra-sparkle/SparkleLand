@@ -11,11 +11,10 @@
         "Description": "Provide a Gnome-like view for clock, calendar and media player in panel.",
         "Icon": "preferences-desktop",
         "Id": "com.astrasparkle.sparkleland",
-        "License": "GPLv2",
         "Name": "Sparkle Land",
         "Version": "0.8.3",
         "Website": ""
     },
-    "keywords": "media clock calendar system",
+    "Keywords": "Media;Clock;Calendar;System;",
     "X-Plasma-API-Minimum-Version": "6.0"
 }
