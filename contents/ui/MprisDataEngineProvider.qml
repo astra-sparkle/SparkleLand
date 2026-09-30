@@ -64,6 +64,25 @@ QtObject {
         return typeof value === "string" ? value.toLowerCase() === "playing" : false;
     }
 
+    // 专辑封面（同样按名字片段找键）
+    readonly property string artUrl: {
+        const value = root.pick(["art"], function(v) {
+            return typeof v === "string" && v.length > 0;
+        });
+        return typeof value === "string" ? value : "";
+    }
+
+    // 这个 dataengine 没有可靠的控制接口：保持与 MprisProvider 一致的接口，但不做事
+    // （按钮点下去不会有反应；要支持控制需要改用私有 mpris 模块或补 DBus 调用）
+    function next() {
+    }
+
+    function previous() {
+    }
+
+    function togglePlaying() {
+    }
+
     // 诊断：这条路径无文档，把现场数据打出来便于修正 source / key 约定
     Component.onCompleted: console.info("Sparkle Land: mpris2 dataengine valid =", root.dataSource.valid,
                                         "sources =", root.dataSource.sources,

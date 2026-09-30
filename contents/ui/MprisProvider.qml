@@ -33,4 +33,33 @@ QtObject {
         const player = root.mpris2Model.currentPlayer;
         return !!player && player.playbackStatus === Mpris.PlaybackStatus.Playing;
     }
+
+    // 专辑封面（展开面板的媒体控制器要用）
+    readonly property string artUrl: {
+        const player = root.mpris2Model.currentPlayer;
+        const url = player ? player.artUrl : undefined;
+        return (url === undefined || url === null) ? "" : String(url);
+    }
+
+    // ———— 媒体控制（PlayerContainer 的 Q_INVOKABLE 方法，名字首字母大写）————
+    function next() {
+        const player = root.mpris2Model.currentPlayer;
+        if (player) {
+            player.Next();
+        }
+    }
+
+    function previous() {
+        const player = root.mpris2Model.currentPlayer;
+        if (player) {
+            player.Previous();
+        }
+    }
+
+    function togglePlaying() {
+        const player = root.mpris2Model.currentPlayer;
+        if (player) {
+            player.PlayPause();
+        }
+    }
 }

@@ -6,7 +6,8 @@ import org.kde.plasma.plasmoid
 
 // 工程入口：与系统的交互、可选依赖的探测与降级、以及所有对外调用都在这里。
 // 功能实现：Clock.qml（时钟）、Media.qml（媒体，仅显示）、Calender.qml（内置日历回退）。
-// 设置界面：contents/config/config.qml + contents/config/option.qml，键定义在 main.xml。
+// 设置界面：页面本体 contents/ui/option.qml（ConfigCategory.source 相对 contents/ui/），
+// 入口 contents/config/config.qml，键定义在 contents/config/main.xml。
 //
 // 本地化：面向用户的字符串一律走 i18n。KDE 的翻译上下文在会话建立时固定，
 // 因此这些字符串「每次登入 DE 时」生效一次，运行期不做语言热切换。
@@ -17,7 +18,6 @@ PlasmoidItem {
 	readonly property string appTitle: i18n("Sparkle Land")
 	readonly property string appIconName: "preferences-desktop"
 	readonly property string appDescription: i18n("View everything in one panel.")
-	readonly property string appFooter: i18n("Plasma 6 widget")
 
 	// ———————————————— 用户设置（KConfig，见 contents/config/main.xml）————————————————
 	// 全部以 plasmoid.configuration 为数据源：启动时读一次，保存设置时自动重新求值。
@@ -100,12 +100,6 @@ PlasmoidItem {
 		});
 	}
 
-	readonly property font titleFont: Qt.font({
-		"bold": true,
-		"family": root.theme.defaultFont.family,
-		"pointSize": Math.round(root.theme.defaultFont.pointSize * 1.5)
-	})
-
 	// ———————————————— 可选依赖 1：媒体信息（MPRIS）————————————————
 	// 媒体是可选依赖：按顺序尝试下面的候选实现，第一个成功加载的生效；
 	// 全部失败则面板只显示时钟（不报错、也不影响其它功能）。
@@ -136,8 +130,10 @@ PlasmoidItem {
 	property date selectedDate: new Date()
 	property date requestedDate
 
-	// 面板显示内容判断：有曲目信息就显示媒体名，否则显示时钟
-	readonly property bool panelShowsMedia: root.trackTitle.length > 0
+	// 是否有媒体（决定展开面板右半显示时钟还是媒体控制器）
+	readonly property bool hasMedia: root.trackTitle.length > 0
+	// 面板条目（紧凑表示）显示什么：面板展开后显示时间，否则有曲目就显示曲目名
+	readonly property bool panelShowsMedia: root.hasMedia && !root.expanded
 
 	Plasmoid.title: root.appTitle
 	Plasmoid.icon: root.isPlaying ? "media-playback-start" : root.appIconName
@@ -330,51 +326,17 @@ PlasmoidItem {
 		}
 	}
 
-	// ———————————————— 完整视图：标题 + 日历 + 页脚 ————————————————
-	fullRepresentation: Item {
-		// 高度由内容决定，避免写死高度导致日历被裁掉
-		implicitHeight: contentColumn.implicitHeight + 32
-		implicitWidth: Math.max(360, contentColumn.implicitWidth + 32)
+	// ———————————————— 展开面板 ————————————————
+	// 布局实现见 Panel.qml：左半日历 / 右半时钟或媒体控制器 + 居中分割线
+	// （QML 要求组件类型名首字母大写，所以文件名必须是 Panel.qml 而不是 panel.qml）
+	fullRepresentation: Panel {
+		hasMedia: root.hasMedia
+		mediaProvider: root.mediaProvider
+		requestedDate: root.requestedDate
+		textFont: root.panelFont
+		theme: root.theme
+		timeFormat: root.timeFormat
 
-		ColumnLayout {
-			id: contentColumn
-
-			anchors.fill: parent
-			anchors.margins: 16
-			spacing: 8
-
-			Text {
-				Layout.fillWidth: true
-				color: root.theme.textColor
-				font: root.titleFont
-				text: root.appTitle
-			}
-
-			Text {
-				Layout.fillWidth: true
-				color: root.theme.disabledTextColor
-				font: root.theme.defaultFont
-				text: root.appDescription
-				wrapMode: Text.WordWrap
-			}
-
-			// 内置日历：完整视图本身就是按需创建的，所以这里不需要再套惰性化
-			Calender {
-				Layout.fillHeight: true
-				Layout.fillWidth: true
-
-				onDateSelected: root.selectedDate = date
-				requestedDate: root.requestedDate
-				theme: root.theme
-			}
-
-			Text {
-				Layout.fillWidth: true
-				color: root.theme.disabledTextColor
-				font: root.theme.defaultFont
-				horizontalAlignment: Text.AlignRight
-				text: root.appFooter
-			}
-		}
+		onDateSelected: root.selectedDate = date
 	}
 }
