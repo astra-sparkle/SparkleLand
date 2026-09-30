@@ -88,6 +88,8 @@ PlasmoidItem {
 	//   2) org.kde.plasma.plasma5support 的 mpris2 dataengine —— 兼容用的公开接口
 	// 这里刻意不「判断 Plasma 版本」：QML 拿不到可靠的版本号，
 	// 而按能力探测（哪个模块真的创建得出来就用哪个）不会因版本升级而误判。
+	// 已核实本机存在 org.kde.plasma.private.mpris → 第 1 条即生效路径；
+	// 第 2 条只在其他 Plasma 变体上才会走到。
 	property int mediaState: 0
 	property var mediaProvider: null
 
@@ -97,6 +99,11 @@ PlasmoidItem {
 	// ———————————————— 可选依赖 2：日历后端 ————————————————
 	// 候选顺序：数字时钟所用的私有接口 → KDE 私有日历接口。
 	// 逐项探测「模块 + 类型」是否真的能创建，全部失败才使用内置 Calender.qml。
+	//
+	// 已核实（2026-09，查看 $QML_IMPORT_PATH/org/kde/plasma/private/）：
+	//   该目录下**存在** digitalclock 与 mpris，**不存在 calendar**。
+	//   所以本机上私有日历探测必定失败，实际生效的实现是内置的 Calender.qml。
+	//   列表保留两项是为了兼容其他发行版/版本（Plasma 5、或带私有日历模块的打包）。
 	readonly property var calendarCandidates: [
 		{"module": "org.kde.plasma.private.digitalclock", "type": "Calendar"},
 		{"module": "org.kde.plasma.private.calendar", "type": "Calendar"}
