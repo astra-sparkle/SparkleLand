@@ -32,10 +32,13 @@ Item {
 
     readonly property real cellHeight: Math.round(root.theme.gridUnit * 2)
 
-    // 月份标题：沿用上游 KDE 日历的做法，让译者可以调整「月 年」的顺序
-    readonly property string monthTitle: i18nc("Format: month year", "%1 %2")
-        .arg(Qt.locale().standaloneMonthName(root.displayedMonth.getMonth(), Locale.LongFormat))
-        .arg(root.displayedMonth.getFullYear())
+    // 月份标题：沿用上游 KDE 日历的字符串（让译者可以调整「月 年」的顺序）。
+    // ⚠ 替换参数必须**内联传给 i18nc**：QML 的 i18n 返回的是已经处理过的字符串，
+    // 再用 .arg() 链式替换太晚 —— 会渲染出 (I18N_ARGUMENT_MISSING)
+    // （官方 Plasma QML 里没有任何 .arg() 用法，用的都是内联参数）。
+    readonly property string monthTitle: i18nc("Format: month year", "%1 %2",
+        Qt.locale().standaloneMonthName(root.displayedMonth.getMonth(), Locale.LongFormat),
+        root.displayedMonth.getFullYear())
 
     // 表头文字只随 firstDayOfWeek 变化
     readonly property var weekDayNames: {
