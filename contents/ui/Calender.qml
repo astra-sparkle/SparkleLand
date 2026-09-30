@@ -2,18 +2,11 @@ import QtQml
 import QtQuick
 import QtQuick.Layouts
 
-// 内置月历实现：本机不存在可复用的 Plasma 日历接口，因此这是唯一的日历实现。
-//
-// 性能设计（相对旧实现的三处关键改动）：
-//  1. days 模型只依赖「显示月份」和本地周首日 —— 只有切月才重建 42 个 delegate；
-//     选中日期、跨零点更新「今天」只让 delegate 的绑定重新求值，不再重建 delegate。
-//  2. 去掉「每格一个 hoverEnabled MouseArea」：整个日期网格共用 1 个 MouseArea，
-//     由坐标算出悬停格，鼠标移动时仅相邻两格的颜色绑定发生变化。
-//  3. 「今天/选中」的时间戳只在根部归一化一次，避免每个 delegate 各自构造 Date。
+// 内置月历，支持切换月份、选择日期和返回今天。
 Item {
     id: root
 
-    // 主题（颜色/字体/间距）由 main.qml 注入，本文件不依赖具体主题模块
+    // 主题由 main.qml 注入。
     property var theme
 
     property date displayedMonth: new Date()
@@ -21,9 +14,6 @@ Item {
     property date requestedDate
     property date today: new Date()
 
-    signal dateSelected(date date)
-
-    // 只在根部归一化一次
     readonly property real todayStart: dayStart(root.today).getTime()
     readonly property real selectedStart: dayStart(root.selectedDate).getTime()
 
@@ -32,15 +22,11 @@ Item {
 
     readonly property real cellHeight: Math.round(root.theme.gridUnit * 2)
 
-    // 月份标题：沿用上游 KDE 日历的字符串（让译者可以调整「月 年」的顺序）。
-    // ⚠ 替换参数必须**内联传给 i18nc**：QML 的 i18n 返回的是已经处理过的字符串，
-    // 再用 .arg() 链式替换太晚 —— 会渲染出 (I18N_ARGUMENT_MISSING)
-    // （官方 Plasma QML 里没有任何 .arg() 用法，用的都是内联参数）。
+    // 月份标题使用可翻译的格式字符串。
     readonly property string monthTitle: i18nc("Format: month year", "%1 %2",
         Qt.locale().standaloneMonthName(root.displayedMonth.getMonth(), Locale.LongFormat),
         root.displayedMonth.getFullYear())
 
-    // 表头文字只随 firstDayOfWeek 变化
     readonly property var weekDayNames: {
         const names = [];
         for (let i = 0; i < 7; ++i) {
@@ -49,8 +35,7 @@ Item {
         return names;
     }
 
-    // 6 周 x 7 天 = 42 格，固定行数保证高度稳定。
-    // 刻意不含 isToday / isSelected，避免选中日期时重建全部 delegate。
+    // 固定显示 6 周，确保日历高度稳定。
     readonly property var days: {
         const year = root.displayedMonth.getFullYear();
         const month = root.displayedMonth.getMonth();
@@ -68,7 +53,6 @@ Item {
         return cells;
     }
 
-    // 用 Qt.font 整体构造，避免写 font.bold 这类子属性（会把整字体的绑定冲掉）
     readonly property font headerFont: Qt.font({
         "bold": true,
         "family": root.theme.defaultFont.family,
@@ -95,7 +79,6 @@ Item {
         return dayStart(date).getTime() === root.selectedStart;
     }
 
-    // 入口：跳转并选中指定日期
     function showDate(date) {
         if (!isValidDate(date)) {
             return;
@@ -106,7 +89,6 @@ Item {
         root.displayedMonth = new Date(start.getFullYear(), start.getMonth(), 1);
     }
 
-    // 入口：回到今天
     function goToToday() {
         showDate(new Date());
     }
@@ -131,10 +113,8 @@ Item {
         }
 
         root.selectedDate = date;
-        root.dateSelected(date);
     }
 
-    // 由网格 MouseArea 调用：命中第 index 格
     function activateIndex(index) {
         if (index < 0 || index >= root.days.length) {
             return;
@@ -142,7 +122,6 @@ Item {
 
         const cell = root.days[index];
         if (!cell.inCurrentMonth) {
-            root.displayedMonth = new Date(cell.date.getFullYear(), cell.date.getMonth(), 1);
         }
         root.selectDate(cell.date);
     }
@@ -268,7 +247,6 @@ Item {
             MouseArea {
                 id: gridMouse
 
-                // 命中计算：鼠标移动时只有相邻两格的颜色绑定会变化
                 readonly property int hoverIndex: {
                     if (!containsMouse) {
                         return -1;
@@ -314,7 +292,7 @@ Item {
         }
     }
 
-    // 跨零点时刷新「今天」；只在可见时运行，且每天只唤醒一次
+    // 跨零点刷新今天的标记。
     Timer {
         id: midnightTimer
 

@@ -4,17 +4,11 @@ import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-// 配置页（Plasma 标准写法，对照官方 org.kde.desktopcontainment/contents/ui/Config*.qml）：
-//   - 根必须是 KCM.SimpleKCM，表单放在其中的 Kirigami.FormLayout 里；
-//   - 每个键都暴露为 cfg_<contents/config/main.xml 里的 entry 名>，
-//     由配置对话框负责把值写回 KConfig，「应用」按钮的可用状态也由这些属性的变化驱动；
-//   - ✗ 绝对不要直接写 plasmoid.configuration.*：那样对话框认为"没有任何改动"，
-//     「应用」按钮会一直是灰的（这就是之前点不动的原因）；
-//   - 初值用 Plasmoid.configuration.<entry> 读取，用户改动后由对话框写回。
+// 配置页通过 cfg_<entry> 属性与 KConfig 绑定。
 KCM.SimpleKCM {
     id: page
 
-    // ———————————————— 键（与 main.xml 一一对应）————————————————
+    // 与 main.xml 对应的配置项。
     property alias cfg_maximumPanelWidth: maximumWidthSpin.value
     property alias cfg_minimumPanelWidth: minimumWidthSpin.value
 
@@ -31,7 +25,6 @@ KCM.SimpleKCM {
     property alias cfg_timeFormatMode: timeFormatModeCombo.currentIndex
 
     Kirigami.FormLayout {
-        // ———————————————— 面板宽度 ————————————————
         QQC2.Label {
             Kirigami.FormData.isSection: true
             text: i18n("Panel")
@@ -55,7 +48,6 @@ KCM.SimpleKCM {
             value: Plasmoid.configuration.maximumPanelWidth
         }
 
-        // ———————————————— 字体 ————————————————
         QQC2.Label {
             Kirigami.FormData.isSection: true
             text: i18n("Font")
@@ -65,7 +57,6 @@ KCM.SimpleKCM {
             id: fontFamilyCombo
 
             Kirigami.FormData.label: i18n("Family:")
-            // 第一项表示「跟随系统」（对应空字符串）
             currentIndex: Math.max(0, model.indexOf(page.cfg_fontFamily))
             model: [i18n("Follow system")].concat(Qt.fontFamilies())
             onActivated: page.cfg_fontFamily = currentIndex === 0 ? "" : currentText
@@ -97,7 +88,6 @@ KCM.SimpleKCM {
             text: i18n("Italic")
         }
 
-        // ———————————————— 媒体面板 ————————————————
         QQC2.Label {
             Kirigami.FormData.isSection: true
             text: i18n("Media")
@@ -111,7 +101,6 @@ KCM.SimpleKCM {
             text: i18n("Use the theme highlight color as background while playing")
         }
 
-        // ———————————————— 时间与日期 ————————————————
         QQC2.Label {
             Kirigami.FormData.isSection: true
             text: i18n("Time and date")

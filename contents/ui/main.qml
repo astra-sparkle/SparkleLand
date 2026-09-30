@@ -4,27 +4,15 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-// 工程入口：与系统的交互、可选依赖的探测与降级、以及所有对外调用都在这里。
-// 功能实现：Clock.qml（时钟）、Media.qml（媒体，仅显示）、Calender.qml（内置日历回退）。
-// 设置界面：页面本体 contents/ui/option.qml（ConfigCategory.source 相对 contents/ui/），
-// 入口 contents/config/config.qml，键定义在 contents/config/main.xml。
-//
-// 本地化：面向用户的字符串一律走 i18n。KDE 的翻译上下文在会话建立时固定，
-// 因此这些字符串「每次登入 DE 时」生效一次，运行期不做语言热切换。
+// Applet 入口：协调时钟、媒体信息、日历及配置。
 PlasmoidItem {
 	id: root
 
-	// ———————————————— 元数据（原 WidgetMetadata.qml 并入）————————————————
+	// Applet 元数据
 	readonly property string appTitle: i18n("Sparkle Land")
 	readonly property string appIconName: "preferences-desktop"
-	readonly property string appDescription: i18n("View everything in one panel.")
 
-	// ———————————————— 用户设置（KConfig，见 contents/config/main.xml）————————————————
-	// 全部以 plasmoid.configuration 为数据源：启动时读一次，保存设置时自动重新求值。
-	//
-	// 防御性读取：配置读不到时值是 undefined，直接参与算术会得出 NaN，
-	// 而 NaN 传给 implicitWidth / Layout.preferredWidth 会把整个面板条目压塌成一个小方块，
-	// 所以所有可能为空的配置值都先经过下面两个函数归一化。
+	// 将配置值归一化，避免缺省值参与尺寸计算时产生 NaN。
 	function configNumber(value, fallback) {
 		const number = Number(value);
 		return isNaN(number) ? fallback : number;
@@ -34,7 +22,6 @@ PlasmoidItem {
 		return typeof value === "string" ? value : "";
 	}
 
-	// 安全取最大值：任一侧是 NaN 都按 0 处理
 	function safeMax(first, second) {
 		return Math.max(root.configNumber(first, 0), root.configNumber(second, 0));
 	}
@@ -42,23 +29,13 @@ PlasmoidItem {
 	readonly property int panelMinimumWidth: Math.max(16, root.configNumber(plasmoid.configuration.minimumPanelWidth, 64))
 	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, root.configNumber(plasmoid.configuration.maximumPanelWidth, 240))
 	readonly property int panelAverageWidth: Math.round((root.panelMinimumWidth + root.panelMaximumWidth) / 2)
-	// 默认 true：配置读不到时按默认值处理
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
 	readonly property bool showDate: plasmoid.configuration.showDate === true
-	// 面板条目字号是否自动：用户没设过字号（fontPointSize ≤ 0）时视为自动。
+	// 未设置字号时，紧凑条目字号随面板高度缩放。
 	readonly property bool autoCompactFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
 
-	// ———————————————— 面板条目字号（官方 digitalclock 算法）————————————————
-	// 紧凑条目里**所有**文字（时间、日期、曲名）都用这一套，保证字号一致。
-	// 来源：plasma-workspace/applets/digital-clock/DigitalClock.qml
-	//   fontHelper.font.pixelSize = 3 * Kirigami.Theme.defaultFont.pixelSize        （字号上限）
-	//   sizehelper.height = min(两行时 height*0.56 / 单行时 height*0.71, 上面的上限)
-	//   timeLabel.font.pixelSize = sizehelper.height
-	//   dateLabel.height = 0.8 * timeLabel.height（次要文字 = 0.8 × 主文字）
-
-	// 主题默认字号的像素值。Kirigami 的 defaultFont 带 pixelSize；
-	// 回退主题用的 Qt.application.font 往往只有 pointSize（pixelSize 为 -1）
-	// → 按 digitalclock 的 pointToPixel() 换算：pointSize / 72 * (pixelDensity * 25.4)
+	// 紧凑条目字号在时间、日期和曲目间保持一致。
+	// 主题默认字号的像素值；主题只提供 pointSize 时按屏幕密度换算。
 	readonly property int themeDefaultPixelSize: {
 		const defaultFont = root.theme.defaultFont;
 		if (defaultFont.pixelSize > 0) {
@@ -68,14 +45,13 @@ PlasmoidItem {
 		return Math.max(8, Math.round(defaultFont.pointSize / 72 * (density * 25.4)));
 	}
 
-	// 按面板条目高度算字号：twoLines = true 表示该文字与另一行共享高度（时间+日期）
+	// 根据面板条目高度计算单行或双行文字的字号。
 	function panelPixelSize(height, twoLines) {
 		const available = height > 0 ? height : 32;
 		const fitted = Math.round(available * (twoLines ? 0.56 : 0.71));
 		return Math.max(8, Math.min(fitted, 3 * root.themeDefaultPixelSize));
 	}
 
-	// 用面板字体的族/粗细/斜体，只换字号（Qt.font 里 pixelSize 与 pointSize 不能同时给）
 	function fontWithPixelSize(sourceFont, pixelSize) {
 		return Qt.font({
 			"bold": sourceFont.bold,
@@ -85,7 +61,7 @@ PlasmoidItem {
 		});
 	}
 
-	// 按比例缩放字体，单位跟源字体保持一致（源字体可能是 pointSize 也可能是 pixelSize）
+	// 按比例缩放字体，同时保留源字体使用的字号单位。
 	function fontScaled(sourceFont, factor) {
 		if (sourceFont.pixelSize > 0) {
 			return root.fontWithPixelSize(sourceFont, sourceFont.pixelSize * factor);
@@ -98,11 +74,10 @@ PlasmoidItem {
 		});
 	}
 
-	// 亮/暗主题判断：用主题**文字色**的明度（亮色主题文字是深色 → 明度低）。
-	// 用 textColor 的明度判断主题明暗，不依赖 backgroundColor。
+	// 用文字颜色明度区分亮色与暗色主题。
 	readonly property bool lightTheme: root.theme.textColor.hsvValue < 0.5
 
-	// 时间格式：优先「用户保存的自定义格式」，其次 12/24 小时制，最后跟随系统。
+	// 时间格式优先使用自定义值，其次使用 12/24 小时制设置，最后跟随系统。
 	readonly property string timeFormat: {
 		const custom = root.configString(plasmoid.configuration.customTimeFormat);
 		if (custom.length > 0) {
@@ -117,7 +92,7 @@ PlasmoidItem {
 			return "HH:mm";
 		}
 
-		// 跟随系统：去掉秒，保持每分钟刷新一次
+		// 跟随系统格式不显示秒。
 		return Qt.locale().timeFormat(Locale.ShortFormat).replace(/:?s+/g, "");
 	}
 
@@ -126,7 +101,7 @@ PlasmoidItem {
 		return custom.length > 0 ? custom : Qt.locale().dateFormat(Locale.ShortFormat);
 	}
 
-	// ———————————————— 主题：Plasma 6 的 Kirigami.Theme ————————————————
+	// 将主题所需的颜色、字体和间距集中提供给子组件。
 	QtObject {
 		id: themeAdapter
 
@@ -141,7 +116,6 @@ PlasmoidItem {
 
 	readonly property var theme: themeAdapter
 
-	// 面板字体：未自定义时跟随主题默认字体
 	readonly property font panelFont: {
 		const family = root.configString(plasmoid.configuration.fontFamily);
 		const pointSize = root.configNumber(plasmoid.configuration.fontPointSize, 0);
@@ -153,55 +127,37 @@ PlasmoidItem {
 		});
 	}
 
-	// ———————————————— 可选依赖：媒体信息（MPRIS）————————————————
-	// 媒体不可用时面板只显示时钟。独立组件静态 import 私有 MPRIS 模块；
-	// 模块缺失时由这里捕获加载错误，不影响其它功能。
-	// mediaState: 0 = 尚未探测，1 = MPRIS 可用，-1 = 不可用
+	// MPRIS 不可用时仍可使用时钟和日历。
+	// mediaState: 0 = 未探测，1 = 可用，-1 = 不可用。
 	property int mediaState: 0
 	property var mediaProvider: null
 
 	readonly property string trackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 	readonly property bool isPlaying: root.mediaProvider !== null && root.mediaProvider.playing
 
-	// 媒体背景（面板条目上的高亮块）：
-	// - 只要**有媒体**就显示，与是否展开无关（展开时保留，作为「有媒体」的指示）
-	// - 播放中 = 主题高亮色；暂停 = 保持显示但按主题明暗减淡（亮色主题）/ 加深（暗色主题）
+	// 有曲目时显示媒体背景；暂停状态按主题明暗调整高亮色。
 	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
 	readonly property color mediaBackgroundColor: {
 		const base = root.theme.highlightColor;
 		return root.isPlaying ? base : (root.lightTheme ? Qt.lighter(base, 1.4) : Qt.darker(base, 1.4));
 	}
 
-	// ———————————————— 日历 ————————————————
-	// 已核实（2026-09，查看 $QML_IMPORT_PATH/org/kde/plasma/private/）：本机有 digitalclock
-	// 与 mpris，**没有 calendar**，且 digitalclock 也没有导出任何日历类型。
-	// 也就是说不存在任何可复用的 Plasma 日历接口 → 直接用内置 Calender.qml 作为唯一实现。
-	//
-	// 日历入口
-	property date selectedDate: new Date()
+	// 日历跳转目标。
 	property date requestedDate
 
-	// 是否有媒体（决定展开面板右半显示时钟还是媒体控制器）
+	// 有曲目时，展开面板显示媒体控制器。
 	readonly property bool hasMedia: root.trackTitle.length > 0
-	// 面板条目（紧凑表示）显示**什么内容**：面板展开后显示时间，否则有曲目就显示曲目名。
-	// 注意：条目的宽度与媒体背景只看 hasMedia，不跟随这个属性
-	//（展开时条目要保持媒体模式的宽度与背景高亮，只是内容换成时间）。
+	// 展开时紧凑条目显示时钟；否则有曲目时显示曲名。
 	readonly property bool panelShowsMedia: root.hasMedia && !root.expanded
 
 	Plasmoid.title: root.appTitle
 	Plasmoid.icon: root.isPlaying ? "media-playback-start" : root.appIconName
-	// 不要设置 Plasmoid.toolTipMainText / Plasmoid.toolTipSubText：
-	// KF6 的 Plasma::Applet 已移除这组属性（源码里留着 TODO KF6 的
-	// "toolTipMainText toolTipSubText toolTipTextFormat toolTipItem" 待办），
-	// 赋值会报 "Cannot assign to non-existent property" 并导致整个卡片加载失败。
-	// 不设置时 Plasma 用 metadata.json 的 Name / Description 生成默认提示气泡，
-	// 内容与这里原本要设置的值一致，因此没有任何视觉损失。
 
 	Component.onCompleted: {
 		root.resolveMediaProvider();
 	}
 
-	// ———————————————— 媒体实现：运行时加载 ————————————————
+	// 运行时加载媒体实现，组件加载失败时保留其它功能。
 	function resolveMediaProvider() {
 		if (root.mediaState !== 0) {
 			return;
@@ -239,14 +195,14 @@ PlasmoidItem {
 		console.info("Sparkle Land: 私有 MPRIS 实现已生效");
 	}
 
-	// 展开完整视图（日历所在位置），并定位到指定日期（缺省为今天）
+	// 展开日历，并跳转到指定日期；未指定时使用今天。
 	function openCalendar(date) {
 		const target = (date instanceof Date && !isNaN(date.getTime())) ? date : new Date();
 		root.requestedDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
 		root.expanded = true;
 	}
 
-	// 紧凑表示被点击：展开查看日历，再次点击收起
+	// 点击紧凑条目切换日历的展开状态。
 	function toggleCalendar(date) {
 		if (root.expanded) {
 			root.expanded = false;
@@ -255,38 +211,28 @@ PlasmoidItem {
 		openCalendar(date);
 	}
 
-	// ———————————————— 面板（紧凑表示）————————————————
+	// 面板紧凑表示。
 	compactRepresentation: Item {
 		id: compactItem
 
-		// 两块内容的自然宽度取最大，避免切换时抖动（safeMax 保证不会算出 NaN）
 		readonly property int contentWidth: root.safeMax(clockItem.implicitWidth, mediaItem.implicitWidth)
 
-		// 面板条目里的字体：用户没设过字号时按官方算法随面板厚度缩放，否则沿用用户/主题字体。
-		// 高度取条目自身的 height（= 面板厚度），所以字号会跟着面板变。
+		// 紧凑条目使用的主文字、日期和曲名字体。
 		readonly property font primaryFont: root.autoCompactFontSize
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate))
 			: root.panelFont
-		// 次要文字（日期）：0.8 × 主文字
 		readonly property font secondaryFont: root.autoCompactFontSize
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate) * 0.8)
 			: root.fontScaled(root.panelFont, 0.8)
-		// 曲名自己独占一行 → 用单行比例（0.71）
 		readonly property font mediaTitleFont: root.autoCompactFontSize
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, false))
 			: root.panelFont
 
-		// 媒体：内容不超过平均值时申请平均值，超过平均值就直接申请最大值；
-		// 时钟：内容夹在 [最小, 最大] 之间。两种情况都不小于最小宽度。
-		// 判断依据是 hasMedia 而不是 panelShowsMedia：展开时条目内容换成时间，
-		// 但宽度要保持媒体模式的，避免一展开条目就变窄。
+		// 媒体模式在平均宽度与最大宽度间选择；时钟模式按内容宽度限制在配置范围内。
 		readonly property int preferredWidth: root.hasMedia
 			? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
 			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))
 
-		// ⚠ 面板条目必须用 Layout.* 声明尺寸：containment 是按 Layout 摆放面板条目的，
-		// 只给 implicitWidth 不足以定尺寸（本机可用的 plasmusic-toolbar 也只声明 Layout.*）。
-		// 水平面板：长度轴是宽度 → 用 preferredWidth，并填满面板厚度。
 		Layout.fillHeight: true
 		Layout.minimumHeight: 32
 		Layout.minimumWidth: root.panelMinimumWidth
@@ -296,31 +242,7 @@ PlasmoidItem {
 		implicitHeight: 32
 		implicitWidth: preferredWidth
 
-		// 诊断 1：尺寸计算的输入（onCompleted 时布局尚未跑完）
-		Component.onCompleted: console.info("Sparkle Land: 面板尺寸 min =", root.panelMinimumWidth,
-		                                    "max =", root.panelMaximumWidth,
-		                                    "avg =", root.panelAverageWidth,
-		                                    "内容 =", contentWidth,
-		                                    "clock =", clockItem.implicitWidth,
-		                                    "media =", mediaItem.implicitWidth,
-		                                    "hasMedia =", root.hasMedia,
-		                                    "亮色主题 =", root.lightTheme,
-		                                    "显示媒体背景 =", root.mediaBackgroundVisible,
-		                                    "背景色 =", root.mediaBackgroundColor,
-		                                    "时间字号(px/pt) =", compactItem.primaryFont.pixelSize, compactItem.primaryFont.pointSize,
-		                                    "曲名字号(px/pt) =", compactItem.mediaTitleFont.pixelSize, compactItem.mediaTitleFont.pointSize,
-		                                    "媒体模式 =", root.panelShowsMedia)
-
-		// 诊断 2：布局完成后的**实际**尺寸与面板朝向（判断 containment 是否采纳了上面的声明）
-		Timer {
-			interval: 0
-			onTriggered: console.info("Sparkle Land: 实际尺寸 =", compactItem.width, "x", compactItem.height,
-			                          "formFactor =", Plasmoid.formFactor,
-			                          "fillWidth =", Layout.fillWidth, "fillHeight =", Layout.fillHeight)
-		}
-
-		// 媒体背景：有媒体就画（展开时也保留），播放中=主题高亮色，暂停=减淡/加深版。
-		// 放在内容之下（Media 自身的背景已移到这里，好让时钟也能共用同一块背景）。
+		// 展开时仍保留媒体背景，作为曲目存在的提示。
 		Rectangle {
 			anchors.fill: parent
 			color: root.mediaBackgroundColor
@@ -355,16 +277,13 @@ PlasmoidItem {
 			visible: !root.panelShowsMedia
 		}
 
-		// 入口：点击面板只做「打开完整视图」这一件事，不含任何媒体控制
 		MouseArea {
 			anchors.fill: parent
 			onClicked: root.toggleCalendar()
 		}
 	}
 
-	// ———————————————— 展开面板 ————————————————
-	// 布局实现见 Panel.qml：左半日历 / 右半时钟或媒体控制器 + 居中分割线
-	// （QML 要求组件类型名首字母大写，所以文件名必须是 Panel.qml 而不是 panel.qml）
+	// 展开面板：日历与时钟或媒体控制器。
 	fullRepresentation: Panel {
 		hasMedia: root.hasMedia
 		mediaControlsEnabled: root.mediaState === 1
@@ -374,6 +293,5 @@ PlasmoidItem {
 		theme: root.theme
 		timeFormat: root.timeFormat
 
-		onDateSelected: root.selectedDate = date
 	}
 }

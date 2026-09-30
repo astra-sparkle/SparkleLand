@@ -1,23 +1,19 @@
 import QtQuick
 
-// 时钟：只负责走时与渲染。
-// 时间/日期格式、字体、主题色都由 main.qml（入口）决定后传入。
+// 显示时间及可选日期，格式、字体和主题由调用方提供。
 Item {
     id: root
 
     property var theme
-    // 时间/日期字体：由 main.qml（紧凑条目，按官方字号算法算好）
-    // 或 Panel.qml（展开面板，按面板高度缩放）传入。
     property font timeFont
     property font dateFont: root.timeFont
     property string timeFormat: "hh:mm"
     property bool showDate: false
     property string dateFormat: ""
 
-    // 驱动重新求值的计数器
     property int tick
 
-    // 格式里含 "s" 说明要显示秒 → 需要按秒刷新
+    // 格式包含秒时按秒刷新，否则按分钟刷新。
     readonly property bool hasSeconds: root.timeFormat.indexOf("s") >= 0
 
     function nextTickInterval() {
@@ -47,10 +43,7 @@ Item {
     implicitHeight: contentColumn.implicitHeight
     implicitWidth: Math.max(timeLabel.implicitWidth, root.showDate ? dateLabel.implicitWidth : 0) + 24
 
-    // 时间在上、日期（可选）在下，整块在条目里垂直居中
-    // 行高：字号是像素时标签高度取字号值 —— 这正是 digitalclock 的做法
-    //（timeLabel.height = sizehelper.height = 字号），两行刚好塞进面板厚度；
-    // 字号是 pointSize 时（用户/主题字体）用自然行高，不做硬性压缩。
+    // 时间在上，日期（可选）在下。
     Column {
         id: contentColumn
 
@@ -88,8 +81,7 @@ Item {
         }
     }
 
-    // 只在可见（即真的在显示时钟）时运行；
-    // 触发后重新对齐到下一个时间边界，避免空转与累积漂移。
+    // 仅在时钟可见时运行，并对齐到下一个时间边界。
     Timer {
         id: tickTimer
 
