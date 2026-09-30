@@ -21,30 +21,54 @@ PlasmoidItem {
 
 	// ———————————————— 用户设置（KConfig，见 contents/config/main.xml）————————————————
 	// 全部以 plasmoid.configuration 为数据源：启动时读一次，保存设置时自动重新求值。
-	readonly property int panelMinimumWidth: Math.max(16, plasmoid.configuration.minimumPanelWidth)
-	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, plasmoid.configuration.maximumPanelWidth)
+	//
+	// 防御性读取：配置读不到时值是 undefined，直接参与算术会得出 NaN，
+	// 而 NaN 传给 implicitWidth / Layout.preferredWidth 会把整个面板条目压塌成一个小方块，
+	// 所以所有可能为空的配置值都先经过下面两个函数归一化。
+	function configNumber(value, fallback) {
+		const number = Number(value);
+		return isNaN(number) ? fallback : number;
+	}
+
+	function configString(value) {
+		return typeof value === "string" ? value : "";
+	}
+
+	// 安全取最大值：任一侧是 NaN 都按 0 处理
+	function safeMax(first, second) {
+		return Math.max(root.configNumber(first, 0), root.configNumber(second, 0));
+	}
+
+	readonly property int panelMinimumWidth: Math.max(16, root.configNumber(plasmoid.configuration.minimumPanelWidth, 64))
+	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, root.configNumber(plasmoid.configuration.maximumPanelWidth, 240))
 	readonly property int panelAverageWidth: Math.round((root.panelMinimumWidth + root.panelMaximumWidth) / 2)
-	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground
-	readonly property bool showDate: plasmoid.configuration.showDate
+	// 默认 true：配置读不到时按默认值处理
+	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
+	readonly property bool showDate: plasmoid.configuration.showDate === true
 
 	// 时间格式：优先「用户保存的自定义格式」，其次 12/24 小时制，最后跟随系统。
 	readonly property string timeFormat: {
-		if (plasmoid.configuration.customTimeFormat.length > 0) {
-			return plasmoid.configuration.customTimeFormat;
+		const custom = root.configString(plasmoid.configuration.customTimeFormat);
+		if (custom.length > 0) {
+			return custom;
 		}
-		if (plasmoid.configuration.timeFormatMode === 1) {
+
+		const mode = root.configNumber(plasmoid.configuration.timeFormatMode, 0);
+		if (mode === 1) {
 			return "h:mm AP";
 		}
-		if (plasmoid.configuration.timeFormatMode === 2) {
+		if (mode === 2) {
 			return "HH:mm";
 		}
+
 		// 跟随系统：去掉秒，保持每分钟刷新一次
 		return Qt.locale().timeFormat(Locale.ShortFormat).replace(/:?s+/g, "");
 	}
 
-	readonly property string dateFormat: plasmoid.configuration.customDateFormat.length > 0
-		? plasmoid.configuration.customDateFormat
-		: Qt.locale().dateFormat(Locale.ShortFormat)
+	readonly property string dateFormat: {
+		const custom = root.configString(plasmoid.configuration.customDateFormat);
+		return custom.length > 0 ? custom : Qt.locale().dateFormat(Locale.ShortFormat);
+	}
 
 	// ———————————————— 主题：优先 Kirigami.Theme，失败回退 PlasmaCore.Theme ————————————————
 	// 回退实现是声明式的，保证 theme 永远有效；Kirigami 版本在启动时尝试创建，失败就继续用回退。
@@ -65,16 +89,16 @@ PlasmoidItem {
 	readonly property var theme: root.kirigamiTheme !== null ? root.kirigamiTheme : plasmaTheme
 
 	// 面板字体：未自定义时跟随主题默认字体
-	readonly property font panelFont: Qt.font({
-		"bold": plasmoid.configuration.fontBold,
-		"family": plasmoid.configuration.fontFamily.length > 0
-			? plasmoid.configuration.fontFamily
-			: root.theme.defaultFont.family,
-		"italic": plasmoid.configuration.fontItalic,
-		"pointSize": plasmoid.configuration.fontPointSize > 0
-			? plasmoid.configuration.fontPointSize
-			: root.theme.defaultFont.pointSize
-	})
+	readonly property font panelFont: {
+		const family = root.configString(plasmoid.configuration.fontFamily);
+		const pointSize = root.configNumber(plasmoid.configuration.fontPointSize, 0);
+		return Qt.font({
+			"bold": plasmoid.configuration.fontBold === true,
+			"family": family.length > 0 ? family : root.theme.defaultFont.family,
+			"italic": plasmoid.configuration.fontItalic === true,
+			"pointSize": pointSize > 0 ? pointSize : root.theme.defaultFont.pointSize
+		});
+	}
 
 	readonly property font titleFont: Qt.font({
 		"bold": true,
@@ -233,15 +257,33 @@ PlasmoidItem {
 
 	// ———————————————— 面板（紧凑表示）————————————————
 	compactRepresentation: Item {
-		// 两块内容的自然宽度取最大，避免切换时抖动
-		readonly property int contentWidth: Math.max(clockItem.implicitWidth, mediaItem.implicitWidth)
+		// 两块内容的自然宽度取最大，避免切换时抖动（safeMax 保证不会算出 NaN）
+		readonly property int contentWidth: root.safeMax(clockItem.implicitWidth, mediaItem.implicitWidth)
 
-		implicitHeight: 32
 		// 媒体：内容不超过平均值时申请平均值，超过平均值就直接申请最大值；
 		// 时钟：内容夹在 [最小, 最大] 之间。两种情况都不小于最小宽度。
-		implicitWidth: root.panelShowsMedia
+		readonly property int preferredWidth: root.panelShowsMedia
 			? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
 			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))
+
+		// ⚠ 面板条目必须用 Layout.* 声明尺寸：containment 是按 Layout 摆放面板条目的，
+		// 只给 implicitWidth 不足以定尺寸（本机可用的 plasmusic-toolbar 也只声明 Layout.*）。
+		Layout.minimumHeight: 32
+		Layout.minimumWidth: root.panelMinimumWidth
+		Layout.preferredHeight: 32
+		Layout.preferredWidth: preferredWidth
+
+		implicitHeight: 32
+		implicitWidth: preferredWidth
+
+		// 诊断：把尺寸计算的输入打出来，便于定位「面板条目塌成小方块」这类问题
+		Component.onCompleted: console.info("Sparkle Land: 面板尺寸 min =", root.panelMinimumWidth,
+		                                    "max =", root.panelMaximumWidth,
+		                                    "avg =", root.panelAverageWidth,
+		                                    "内容 =", contentWidth,
+		                                    "clock =", clockItem.implicitWidth,
+		                                    "media =", mediaItem.implicitWidth,
+		                                    "媒体模式 =", root.panelShowsMedia)
 
 		Media {
 			id: mediaItem
