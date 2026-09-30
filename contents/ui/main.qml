@@ -109,8 +109,12 @@ PlasmoidItem {
 
 	Plasmoid.title: root.appTitle
 	Plasmoid.icon: root.isPlaying ? "media-playback-start" : root.appIconName
-	Plasmoid.toolTipMainText: root.appTitle
-	Plasmoid.toolTipSubText: root.appDescription
+	// 不要设置 Plasmoid.toolTipMainText / Plasmoid.toolTipSubText：
+	// KF6 的 Plasma::Applet 已移除这组属性（源码里留着 TODO KF6 的
+	// "toolTipMainText toolTipSubText toolTipTextFormat toolTipItem" 待办），
+	// 赋值会报 "Cannot assign to non-existent property" 并导致整个卡片加载失败。
+	// 不设置时 Plasma 用 metadata.json 的 Name / Description 生成默认提示气泡，
+	// 内容与这里原本要设置的值一致，因此没有任何视觉损失。
 
 	Component.onCompleted: {
 		root.resolveTheme();
