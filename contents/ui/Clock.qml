@@ -10,6 +10,10 @@ Item {
     property string timeFormat: "hh:mm"
     property bool showDate: false
     property string dateFormat: ""
+    // 时间字号是否「自动」：由 main.qml 根据「用户是否设过字号」传入。
+    // true  → 按 digitalclock 的算法定字号（见下方「字号」一节）
+    // false → 完全使用传入的 panelFont（展开面板的时钟就是这条路径）
+    property bool autoTimeSize: false
 
     // 驱动重新求值的计数器
     property int tick
@@ -27,40 +31,98 @@ Item {
         return Qt.formatDate(new Date(), root.dateFormat);
     }
 
-    implicitHeight: 32
-    implicitWidth: timeLabel.implicitWidth + (root.showDate ? dateLabel.implicitWidth + 6 : 0) + 24
+    // ———————————————— 字号（对齐 digitalclock）————————————————
+    // digitalclock（plasma-workspace/applets/digital-clock/DigitalClock.qml）自动模式的算法：
+    //     fontHelper.font.pixelSize = 3 * Kirigami.Theme.defaultFont.pixelSize
+    //     sizehelper.height = min(显示日期时 height*0.56 / 否则 height*0.71, fontHelper.font.pixelSize)
+    //     timeLabel.font.pixelSize = sizehelper.height
+    //     dateLabel.height = 0.8 * timeLabel.height，dateLabel.font.pixelSize = 该高度
+    // 即：字号上限为 3 倍主题默认字号，再按可用高度适配。这里照抄。
+    readonly property real availableHeight: root.height > 0 ? root.height : 32
+    readonly property int timeLabelHeight: Math.round(root.availableHeight * (root.showDate ? 0.56 : 0.71))
+    readonly property int autoTimePixelSize: Math.max(8, Math.min(root.timeLabelHeight, 3 * root.themeDefaultPixelSize))
 
-    Text {
-        id: timeLabel
-
-        anchors.left: parent.left
-        anchors.leftMargin: 12
-        anchors.right: root.showDate ? dateLabel.left : parent.right
-        anchors.rightMargin: root.showDate ? 0 : 12
-        anchors.verticalCenter: parent.verticalCenter
-        color: root.theme.textColor
-        elide: Text.ElideRight
-        font: root.panelFont
-        horizontalAlignment: root.showDate ? Text.AlignRight : Text.AlignHCenter
-        text: root.timeText
-        verticalAlignment: Text.AlignVCenter
+    // 主题默认字号的像素值。Kirigami 的 defaultFont 带 pixelSize；
+    // 回退主题用的 Qt.application.font 往往只有 pointSize（pixelSize 为 -1）
+    // → 这时按 digitalclock 的 pointToPixel() 换算：pointSize / 72 * (pixelDensity * 25.4)
+    readonly property int themeDefaultPixelSize: {
+        const defaultFont = root.theme.defaultFont;
+        if (defaultFont.pixelSize > 0) {
+            return defaultFont.pixelSize;
+        }
+        const density = Screen.pixelDensity > 0 ? Screen.pixelDensity : 3.937;
+        return Math.max(8, Math.round(defaultFont.pointSize / 72 * (density * 25.4)));
     }
 
-    Text {
-        id: dateLabel
+    // panelFont 的族/粗细/斜体照用，只覆盖字号（Qt.font 里 pixelSize 与 pointSize 不能同时给）
+    function makeFont(pixelSize, pointSize) {
+        const spec = {
+            "bold": root.panelFont.bold,
+            "family": root.panelFont.family,
+            "italic": root.panelFont.italic
+        };
+        if (pixelSize > 0) {
+            spec.pixelSize = pixelSize;
+        } else {
+            spec.pointSize = pointSize;
+        }
+        return Qt.font(spec);
+    }
 
-        anchors.right: parent.right
-        anchors.rightMargin: 12
-        anchors.verticalCenter: parent.verticalCenter
-        color: root.theme.disabledTextColor
-        elide: Text.ElideRight
-        font: root.panelFont
-        horizontalAlignment: Text.AlignRight
-        // 日期最多占一半宽度，保证时间优先可见
-        width: Math.min(implicitWidth, parent.width / 2)
-        visible: root.showDate
-        text: root.dateText
-        verticalAlignment: Text.AlignVCenter
+    // 手动模式（autoTimeSize === false）**原样**使用传入的字体：
+    // 它可能是 pointSize（紧凑条目用的 panelFont）也可能是 pixelSize
+    //（展开面板传进来的 clockFont 就是 pixelSize）—— 不能统一改写成某一种单位。
+    readonly property font timeFont: root.autoTimeSize
+        ? root.makeFont(root.autoTimePixelSize, 0)
+        : root.panelFont
+    // 日期比时间小一号（digitalclock 用 0.8 倍），单位跟传入字体保持一致
+    readonly property font dateFont: {
+        if (!root.autoTimeSize) {
+            if (root.panelFont.pixelSize > 0) {
+                return root.makeFont(Math.max(1, Math.round(root.panelFont.pixelSize * 0.8)), 0);
+            }
+            return root.makeFont(0, Math.max(1, root.panelFont.pointSize * 0.8));
+        }
+        return root.makeFont(Math.max(1, Math.round(root.autoTimePixelSize * 0.8)), 0);
+    }
+
+    implicitHeight: contentColumn.implicitHeight
+    implicitWidth: Math.max(timeLabel.implicitWidth, root.showDate ? dateLabel.implicitWidth : 0) + 24
+
+    // 时间在上、日期（可选）在下，整块在条目里垂直居中
+    Column {
+        id: contentColumn
+
+        anchors.centerIn: parent
+        spacing: 0
+        width: parent.width
+
+        Text {
+            id: timeLabel
+
+            color: root.theme.textColor
+            elide: Text.ElideRight
+            font: root.timeFont
+            height: root.showDate ? root.timeLabelHeight : Math.round(root.availableHeight * 0.71)
+            horizontalAlignment: Text.AlignHCenter
+            text: root.timeText
+            verticalAlignment: Text.AlignVCenter
+            width: parent.width
+        }
+
+        Text {
+            id: dateLabel
+
+            color: root.theme.disabledTextColor
+            elide: Text.ElideRight
+            font: root.dateFont
+            height: root.showDate ? Math.round(root.timeLabelHeight * 0.8) : 0
+            horizontalAlignment: Text.AlignHCenter
+            text: root.dateText
+            verticalAlignment: Text.AlignVCenter
+            visible: root.showDate
+            width: parent.width
+        }
     }
 
     // 只在可见（即真的在显示时钟）时运行；

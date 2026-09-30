@@ -45,6 +45,9 @@ PlasmoidItem {
 	// 默认 true：配置读不到时按默认值处理
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
 	readonly property bool showDate: plasmoid.configuration.showDate === true
+	// 时间字号是否自动：用户没设过字号（fontPointSize ≤ 0）时视为自动。
+	// 自动时 Clock 按 digitalclock 的算法定字号（3×主题默认字号，再按可用高度适配）。
+	readonly property bool autoTimeFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
 
 	// 亮/暗主题判断：用主题**文字色**的明度（亮色主题文字是深色 → 明度低）。
 	// 不用 backgroundColor —— Plasma 6 的 PlasmaCore.Theme 只有 ColorGroup 枚举、没有颜色属性
@@ -342,6 +345,7 @@ PlasmoidItem {
 			id: clockItem
 
 			anchors.fill: parent
+			autoTimeSize: root.autoTimeFontSize
 			dateFormat: root.dateFormat
 			enabled: visible
 			panelFont: root.panelFont
