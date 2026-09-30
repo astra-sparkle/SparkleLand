@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "astra.sparkle17@gmail.com",
+                "Name": "Astra Sparkle"
+            }
+        ],
+        "Category": "System",
+        "Description": "Provide a view for clock, calendar and media player in panel.",
+        "Icon": "preferences-desktop",
+        "Id": "com.astrasparkle.sparkleland",
+        "Name": "Sparkle Land",
+        "Version": "0.8.5",
+        "Website": ""
+    },
+    "Keywords": "Media;Clock;Calendar;System;Music;",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
