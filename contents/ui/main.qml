@@ -257,6 +257,8 @@ PlasmoidItem {
 
 	// ———————————————— 面板（紧凑表示）————————————————
 	compactRepresentation: Item {
+		id: compactItem
+
 		// 两块内容的自然宽度取最大，避免切换时抖动（safeMax 保证不会算出 NaN）
 		readonly property int contentWidth: root.safeMax(clockItem.implicitWidth, mediaItem.implicitWidth)
 
@@ -268,6 +270,8 @@ PlasmoidItem {
 
 		// ⚠ 面板条目必须用 Layout.* 声明尺寸：containment 是按 Layout 摆放面板条目的，
 		// 只给 implicitWidth 不足以定尺寸（本机可用的 plasmusic-toolbar 也只声明 Layout.*）。
+		// 水平面板：长度轴是宽度 → 用 preferredWidth，并填满面板厚度。
+		Layout.fillHeight: true
 		Layout.minimumHeight: 32
 		Layout.minimumWidth: root.panelMinimumWidth
 		Layout.preferredHeight: 32
@@ -276,7 +280,7 @@ PlasmoidItem {
 		implicitHeight: 32
 		implicitWidth: preferredWidth
 
-		// 诊断：把尺寸计算的输入打出来，便于定位「面板条目塌成小方块」这类问题
+		// 诊断 1：尺寸计算的输入（onCompleted 时布局尚未跑完）
 		Component.onCompleted: console.info("Sparkle Land: 面板尺寸 min =", root.panelMinimumWidth,
 		                                    "max =", root.panelMaximumWidth,
 		                                    "avg =", root.panelAverageWidth,
@@ -284,6 +288,14 @@ PlasmoidItem {
 		                                    "clock =", clockItem.implicitWidth,
 		                                    "media =", mediaItem.implicitWidth,
 		                                    "媒体模式 =", root.panelShowsMedia)
+
+		// 诊断 2：布局完成后的**实际**尺寸与面板朝向（判断 containment 是否采纳了上面的声明）
+		Timer {
+			interval: 0
+			onTriggered: console.info("Sparkle Land: 实际尺寸 =", compactItem.width, "x", compactItem.height,
+			                          "formFactor =", Plasmoid.formFactor,
+			                          "fillWidth =", Layout.fillWidth, "fillHeight =", Layout.fillHeight)
+		}
 
 		Media {
 			id: mediaItem
