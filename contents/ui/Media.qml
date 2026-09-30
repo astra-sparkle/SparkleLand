@@ -3,6 +3,9 @@ import QtQuick
 // 媒体信息：只显示曲目名。
 // 刻意不提供任何播放控制（播放/暂停/上一首/下一首一律不做）——
 // 面板上对媒体条目唯一的交互是 main.qml 里的「打开完整视图」。
+//
+// 背景高亮不在这里画：面板条目的媒体背景由 main.qml 统一绘制
+//（因为展开时条目内容是时钟，但仍要保留媒体背景），这里只负责文字颜色。
 Item {
     id: root
 
@@ -12,18 +15,12 @@ Item {
     property bool useThemeBackground: true
     property string title: ""
 
+    // 背景为「播放中的高亮色」时文字用 highlightedTextColor；
+    // 暂停时背景是减淡/加深过的，用常规文字色更清楚。
     readonly property bool highlighted: root.playing && root.useThemeBackground
 
     implicitHeight: 32
     implicitWidth: titleLabel.implicitWidth + 24
-
-    Rectangle {
-        anchors.fill: parent
-        // 未播放或用户关掉主题色背景时不绘制
-        color: root.highlighted ? root.theme.highlightColor : "transparent"
-        radius: 4
-        visible: root.highlighted
-    }
 
     Text {
         id: titleLabel

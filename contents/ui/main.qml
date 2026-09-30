@@ -46,6 +46,12 @@ PlasmoidItem {
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
 	readonly property bool showDate: plasmoid.configuration.showDate === true
 
+	// 亮/暗主题判断：用主题**文字色**的明度（亮色主题文字是深色 → 明度低）。
+	// 不用 backgroundColor —— Plasma 6 的 PlasmaCore.Theme 只有 ColorGroup 枚举、没有颜色属性
+	// （已核实：plasmashell / libPlasma / core 插件里都搜不到任何颜色属性名），
+	// 而 textColor 是两套主题对象都保证有的。
+	readonly property bool lightTheme: root.theme.textColor.hsvValue < 0.5
+
 	// 时间格式：优先「用户保存的自定义格式」，其次 12/24 小时制，最后跟随系统。
 	readonly property string timeFormat: {
 		const custom = root.configString(plasmoid.configuration.customTimeFormat);
@@ -121,6 +127,15 @@ PlasmoidItem {
 	readonly property string trackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 	readonly property bool isPlaying: root.mediaProvider !== null && root.mediaProvider.playing
 
+	// 媒体背景（面板条目上的高亮块）：
+	// - 只要**有媒体**就显示，与是否展开无关（展开时保留，作为「有媒体」的指示）
+	// - 播放中 = 主题高亮色；暂停 = 保持显示但按主题明暗减淡（亮色主题）/ 加深（暗色主题）
+	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
+	readonly property color mediaBackgroundColor: {
+		const base = root.theme.highlightColor;
+		return root.isPlaying ? base : (root.lightTheme ? Qt.lighter(base, 1.4) : Qt.darker(base, 1.4));
+	}
+
 	// ———————————————— 日历 ————————————————
 	// 已核实（2026-09，查看 $QML_IMPORT_PATH/org/kde/plasma/private/）：本机有 digitalclock
 	// 与 mpris，**没有 calendar**，且 digitalclock 也没有导出任何日历类型。
@@ -132,7 +147,9 @@ PlasmoidItem {
 
 	// 是否有媒体（决定展开面板右半显示时钟还是媒体控制器）
 	readonly property bool hasMedia: root.trackTitle.length > 0
-	// 面板条目（紧凑表示）显示什么：面板展开后显示时间，否则有曲目就显示曲目名
+	// 面板条目（紧凑表示）显示**什么内容**：面板展开后显示时间，否则有曲目就显示曲目名。
+	// 注意：条目的宽度与媒体背景只看 hasMedia，不跟随这个属性
+	//（展开时条目要保持媒体模式的宽度与背景高亮，只是内容换成时间）。
 	readonly property bool panelShowsMedia: root.hasMedia && !root.expanded
 
 	Plasmoid.title: root.appTitle
@@ -260,7 +277,9 @@ PlasmoidItem {
 
 		// 媒体：内容不超过平均值时申请平均值，超过平均值就直接申请最大值；
 		// 时钟：内容夹在 [最小, 最大] 之间。两种情况都不小于最小宽度。
-		readonly property int preferredWidth: root.panelShowsMedia
+		// 判断依据是 hasMedia 而不是 panelShowsMedia：展开时条目内容换成时间，
+		// 但宽度要保持媒体模式的，避免一展开条目就变窄。
+		readonly property int preferredWidth: root.hasMedia
 			? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
 			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))
 
@@ -283,6 +302,10 @@ PlasmoidItem {
 		                                    "内容 =", contentWidth,
 		                                    "clock =", clockItem.implicitWidth,
 		                                    "media =", mediaItem.implicitWidth,
+		                                    "hasMedia =", root.hasMedia,
+		                                    "亮色主题 =", root.lightTheme,
+		                                    "显示媒体背景 =", root.mediaBackgroundVisible,
+		                                    "背景色 =", root.mediaBackgroundColor,
 		                                    "媒体模式 =", root.panelShowsMedia)
 
 		// 诊断 2：布局完成后的**实际**尺寸与面板朝向（判断 containment 是否采纳了上面的声明）
@@ -291,6 +314,15 @@ PlasmoidItem {
 			onTriggered: console.info("Sparkle Land: 实际尺寸 =", compactItem.width, "x", compactItem.height,
 			                          "formFactor =", Plasmoid.formFactor,
 			                          "fillWidth =", Layout.fillWidth, "fillHeight =", Layout.fillHeight)
+		}
+
+		// 媒体背景：有媒体就画（展开时也保留），播放中=主题高亮色，暂停=减淡/加深版。
+		// 放在内容之下（Media 自身的背景已移到这里，好让时钟也能共用同一块背景）。
+		Rectangle {
+			anchors.fill: parent
+			color: root.mediaBackgroundColor
+			radius: 4
+			visible: root.mediaBackgroundVisible
 		}
 
 		Media {
