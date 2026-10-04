@@ -10,7 +10,7 @@ Item {
     property bool useThemeBackground: true
     property string title: ""
 
-    // 仅在播放且启用主题背景时使用高亮文字色。
+    // 仅在播放且启用主题背景时使用强调色之上的文字色。
     readonly property bool highlighted: root.playing && root.useThemeBackground
 
     implicitHeight: 32
@@ -22,7 +22,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: 12
         anchors.rightMargin: 12
-        color: root.highlighted ? root.theme.highlightedTextColor : root.theme.textColor
+        color: root.highlighted ? root.theme.accentTextColor : root.theme.textColor
         elide: Text.ElideRight
         font: root.titleFont
         horizontalAlignment: Text.AlignHCenter

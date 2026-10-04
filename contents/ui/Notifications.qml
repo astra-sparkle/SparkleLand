@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.ksvg as KSvg
 
 // 通知中心：显示当前通知列表，并提供勿扰开关与清除操作。
 // 数据来自 NotificationsProvider，主题与配置由 main.qml 注入。
@@ -18,6 +19,8 @@ Item {
 
     readonly property bool available: root.provider !== null && root.provider.available
     readonly property bool inhibited: root.provider !== null && root.provider.inhibited
+    // 紧急通知的枚举值，用于按主题的警告色着色。
+    readonly property int criticalUrgency: root.provider !== null ? root.provider.criticalUrgency : -1
 
     readonly property int gap: Math.round(root.theme.gridUnit / 3)
     readonly property int buttonSize: Math.round(root.theme.gridUnit * 1.5)
@@ -104,11 +107,12 @@ Item {
                 Layout.preferredWidth: root.buttonSize
                 visible: root.showDoNotDisturb && root.available
 
-                Rectangle { // 生效时整块高亮。
+                // 按钮外观取自桌面主题的 button 元素，随主题切换自动变化。
+                KSvg.FrameSvgItem {
                     anchors.fill: parent
-                    color: root.theme.highlightColor
-                    opacity: root.inhibited ? 1 : (doNotDisturbMouse.containsMouse ? 0.25 : 0)
-                    radius: 4
+                    imagePath: "widgets/button"
+                    prefix: root.inhibited ? "toolbutton-pressed" : "toolbutton-hover"
+                    visible: root.inhibited || doNotDisturbMouse.containsMouse
                 }
 
                 Kirigami.Icon {
@@ -137,6 +141,13 @@ Item {
                 Layout.preferredHeight: root.buttonSize
                 Layout.preferredWidth: root.buttonSize
                 visible: root.showClearAll && notificationList.count > 0
+
+                KSvg.FrameSvgItem {
+                    anchors.fill: parent
+                    imagePath: "widgets/button"
+                    prefix: "toolbutton-hover"
+                    visible: clearAllMouse.containsMouse
+                }
 
                 Kirigami.Icon {
                     anchors.centerIn: parent
@@ -193,16 +204,19 @@ Item {
                     required property bool closable
                     required property date created
                     required property date updated
+                    required property int urgency
 
                     readonly property var stamp: isNaN(entry.updated) ? entry.created : entry.updated
 
                     height: entryRow.implicitHeight + root.gap * 2
                     width: ListView.view ? ListView.view.width : 0
 
-                    Rectangle { // 悬停背景。
+                    // 悬停高亮由桌面主题的 listitem 框架绘制，切换主题时自动跟随。
+                    KSvg.FrameSvgItem {
                         anchors.fill: parent
-                        color: entryMouse.containsMouse ? root.theme.hoverColor : "transparent"
-                        radius: 4
+                        imagePath: "widgets/listitem"
+                        prefix: "hover"
+                        visible: entryMouse.containsMouse
                     }
 
                     // 整行的点击处理，声明在内容之前以便按钮优先接收点击。
@@ -252,9 +266,9 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: root.gap
 
-                                Text { // 应用名。
+                                Text { // 应用名；紧急通知使用主题的警告色。
                                     Layout.fillWidth: true
-                                    color: root.theme.highlightColor
+                                    color: entry.urgency === root.criticalUrgency ? root.theme.negativeTextColor : root.theme.accentColor
                                     elide: Text.ElideRight
                                     font: root.bodyFont
                                     maximumLineCount: 1
@@ -293,6 +307,13 @@ Item {
                             Layout.preferredHeight: root.buttonSize
                             Layout.preferredWidth: root.buttonSize
                             visible: entry.closable
+
+                            KSvg.FrameSvgItem {
+                                anchors.fill: parent
+                                imagePath: "widgets/button"
+                                prefix: "toolbutton-hover"
+                                visible: closeMouse.containsMouse
+                            }
 
                             Kirigami.Icon {
                                 anchors.centerIn: parent

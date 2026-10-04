@@ -1,6 +1,7 @@
 import QtQml
 import QtQuick
 import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
 
 // 内置月历，支持切换月份、选择日期和返回今天。
 Item {
@@ -153,7 +154,7 @@ Item {
             Text {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                color: previousMouse.containsMouse ? root.theme.highlightColor : root.theme.textColor
+                color: previousMouse.containsMouse ? root.theme.accentColor : root.theme.textColor
                 font: root.headerFont
                 text: "\u2039"
 
@@ -169,7 +170,7 @@ Item {
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                color: nextMouse.containsMouse ? root.theme.highlightColor : root.theme.textColor
+                color: nextMouse.containsMouse ? root.theme.accentColor : root.theme.textColor
                 font: root.headerFont
                 text: "\u203A"
 
@@ -225,17 +226,23 @@ Item {
 
                         Layout.fillWidth: true
                         Layout.preferredHeight: root.cellHeight
-                        color: cellIsSelected
-                            ? root.theme.highlightColor
-                            : (index === gridMouse.hoverIndex ? root.theme.hoverColor : "transparent")
-                        radius: 4
+                        color: "transparent"
+
+                        // 选中与悬停都由强调色及其变体绘制；半透明变体让面板底色自然透出。
+                        Rectangle {
+                            anchors.fill: parent
+                            color: cellIsSelected
+                                ? (index === gridMouse.hoverIndex ? root.theme.accentHoverColor : root.theme.accentColor)
+                                : (index === gridMouse.hoverIndex ? root.theme.accentSubtleColor : "transparent")
+                            radius: Kirigami.Units.cornerRadius
+                        }
 
                         Text {
                             anchors.centerIn: parent
                             color: cellIsSelected
-                                ? root.theme.highlightedTextColor
+                                ? root.theme.accentTextColor
                                 : (cellIsToday
-                                    ? root.theme.highlightColor
+                                    ? root.theme.accentColor
                                     : (modelData.inCurrentMonth ? root.theme.textColor : root.theme.disabledTextColor))
                             font: root.theme.defaultFont
                             text: modelData.day
@@ -277,7 +284,7 @@ Item {
                 id: todayLabel
 
                 anchors.centerIn: parent
-                color: todayMouse.containsMouse ? root.theme.highlightColor : root.theme.textColor
+                color: todayMouse.containsMouse ? root.theme.accentColor : root.theme.textColor
                 font: root.theme.defaultFont
                 text: i18n("Today")
             }

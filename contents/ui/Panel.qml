@@ -110,7 +110,7 @@ Item {
                 delegate: Rectangle {
                     required property int index
 
-                    color: leftPane.currentPage === index ? root.theme.highlightColor : root.theme.disabledTextColor
+                    color: leftPane.currentPage === index ? root.theme.accentColor : root.theme.accentMutedColor
                     height: Math.round(root.height * 0.03)
                     opacity: pageMouse.containsMouse ? 1 : 0.7
                     radius: height / 2

@@ -113,16 +113,58 @@ PlasmoidItem {
 	}
 
 	// 将主题所需的颜色、字体和间距集中提供给子组件。
+	// 颜色获取规则：所有强调相关的颜色都由 Plasma 强调色派生，变体在本对象内自行计算；
+	// 只有正文/次要文字与语义色仍取自配色方案，否则对比度与语义无法保证。
 	QtObject {
 		id: themeAdapter
 
 		readonly property color textColor: Kirigami.Theme.textColor
 		readonly property color disabledTextColor: Kirigami.Theme.disabledTextColor
-		readonly property color highlightColor: Kirigami.Theme.highlightColor
-		readonly property color highlightedTextColor: Kirigami.Theme.highlightedTextColor
-		readonly property color hoverColor: Kirigami.Theme.hoverColor
+		// 紧急通知的语义色（红），由配色方案提供，不能由强调色派生。
+		readonly property color negativeTextColor: Kirigami.Theme.negativeTextColor
 		readonly property font defaultFont: Kirigami.Theme.defaultFont
 		readonly property int gridUnit: Kirigami.Units.gridUnit
+
+		// ———————————————— 强调色及其变体 ————————————————
+		// 强调色取自当前生效配色的 DecorationFocus：它就是系统设置里选定的强调色，
+		// 而 Kirigami.Theme.highlightColor 是派生出的选中底色（被冲淡或加深过），并非强调色本身。
+		readonly property color accentColor: Kirigami.Theme.focusColor
+
+		// 变体一：强调色之上的文字/图标。优先采用配色方案为“选中背景”配好的文字色——
+		// 它与强调色同源、对比度由方案保证；方案缺失时按对比度自行择取深浅。
+		readonly property bool schemeTextOnAccentUsable: Kirigami.Theme.highlightedTextColor.a > 0
+		readonly property color accentTextColor: themeAdapter.schemeTextOnAccentUsable
+			? Kirigami.Theme.highlightedTextColor
+			: (themeAdapter.accentNeedsLightText ? "#ffffff" : "#000000")
+
+		// sRGB 相对亮度（WCAG）。必须先做伽马校正，否则中间调会被误判为深色。
+		function relativeLuminance(c) {
+			const r = c.r <= 0.03928 ? c.r / 12.92 : Math.pow((c.r + 0.055) / 1.055, 2.4);
+			const g = c.g <= 0.03928 ? c.g / 12.92 : Math.pow((c.g + 0.055) / 1.055, 2.4);
+			const b = c.b <= 0.03928 ? c.b / 12.92 : Math.pow((c.b + 0.055) / 1.055, 2.4);
+			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+		}
+
+		// 亮度低于该值时浅色文字对比度更高（黑白文字对比度相等的分界点）。
+		readonly property bool accentNeedsLightText: themeAdapter.relativeLuminance(themeAdapter.accentColor) < 0.179
+
+		// 实际使用的文字色是否为浅色，决定悬停该往哪个方向偏移。
+		readonly property bool accentTextIsLight: themeAdapter.relativeLuminance(themeAdapter.accentTextColor) > 0.5
+
+		// 变体二：悬停。始终向背离文字色的方向偏移，保证悬停时对比度不降。
+		readonly property color accentHoverColor: themeAdapter.accentTextIsLight
+			? Qt.darker(themeAdapter.accentColor, 1.12)
+			: Qt.lighter(themeAdapter.accentColor, 1.2)
+
+		// 变体三、四：半透明。由渲染层与面板背景自行合成，无需知道面板底色。
+		readonly property color accentSubtleColor: themeAdapter.accentAlpha(0.18)
+		readonly property color accentMutedColor: themeAdapter.accentAlpha(0.4)
+
+		// 强调色的任意透明度变体。
+		function accentAlpha(alpha) {
+			const c = themeAdapter.accentColor;
+			return Qt.rgba(c.r, c.g, c.b, alpha);
+		}
 	}
 
 	readonly property var theme: themeAdapter
@@ -154,10 +196,10 @@ PlasmoidItem {
 	readonly property bool hasNotifications: root.notificationsEnabled && root.notificationsProvider !== null && root.notificationsProvider.count > 0
 	readonly property int unreadNotificationCount: root.notificationsEnabled && root.notificationsProvider !== null ? root.notificationsProvider.unreadCount : 0
 
-	// 有曲目时显示媒体背景；暂停状态按主题明暗调整高亮色。
+	// 有曲目时显示媒体背景，取自强调色；暂停时向主题明暗的反方向偏移以示区别。
 	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
 	readonly property color mediaBackgroundColor: {
-		const base = root.theme.highlightColor;
+		const base = root.theme.accentColor;
 		return root.isPlaying ? base : (root.lightTheme ? Qt.lighter(base, 1.4) : Qt.darker(base, 1.4));
 	}
 
@@ -364,7 +406,7 @@ PlasmoidItem {
 			anchors.right: parent.right
 			anchors.rightMargin: 3
 			anchors.verticalCenter: parent.verticalCenter
-			color: root.theme.highlightColor
+			color: root.theme.accentColor
 			height: Math.round(Math.max(14, parent.height * 0.42))
 			radius: height / 2
 			visible: root.notificationsEnabled && root.unreadNotificationCount > 0
@@ -374,7 +416,7 @@ PlasmoidItem {
 				id: badgeLabel
 
 				anchors.centerIn: parent
-				color: root.theme.highlightedTextColor
+				color: root.theme.accentTextColor
 				font: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.62)))
 				text: notificationBadge.displayCount >= 99 ? "99+" : String(notificationBadge.displayCount)
 			}

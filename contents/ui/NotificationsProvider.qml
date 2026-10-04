@@ -114,6 +114,7 @@ QtObject {
     // 首次触碰 Server 单例与各模型的操作都发生在这里（而不是绑定中），
     // 避免惰性初始化期间的同步信号造成绑定循环。
     function activate() {
+        root.criticalUrgency = NotificationManager.Notifications.CriticalUrgency;
         root.refreshInhibition();
         root.refreshCounts();
         root.bannerReady = true;
@@ -127,6 +128,8 @@ QtObject {
 
     // 横幅可见的紧急级别；勿扰时只保留紧急通知，与官方浮动通知的取舍一致。
     property int bannerUrgencies: 0
+    // 紧急通知的枚举值（CriticalUrgency），供视图按主题的警告色着色。
+    property int criticalUrgency: -1
 
     // 读取通知服务状态。模型由 plasmashell 进程内的通知服务填充，只要服务在运行即可读到数据；
     // 不能只看 valid（它仅表示本单例是否抢到了 DBus 名称）。
@@ -187,6 +190,32 @@ QtObject {
         }
 
         return null;
+    }
+
+    // 按通知 id 查找其在列表中的行号；未找到返回 -1。
+    function rowForId(notificationId) {
+        const N = NotificationManager.Notifications;
+        for (let row = 0; row < root.listModel.count; ++row) {
+            if (root.listModel.data(root.listModel.index(row, 0), N.IdRole) === notificationId) {
+                return row;
+            }
+        }
+
+        return -1;
+    }
+
+    // 按 id 关闭并移除通知，供横幅的关闭按钮使用。
+    function closeById(notificationId) {
+        const row = root.rowForId(notificationId);
+        if (row >= 0) {
+            root.close(row);
+        }
+    }
+
+    // 按 id 触发通知的默认动作，供点击横幅正文使用。
+    function triggerById(notificationId) {
+        const row = root.rowForId(notificationId);
+        return row >= 0 ? root.trigger(row) : false;
     }
 
     // 供勿扰状态计算使用。
