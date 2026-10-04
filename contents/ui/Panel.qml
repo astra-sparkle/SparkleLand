@@ -46,8 +46,8 @@ Item {
 
     readonly property bool playing: root.mediaProvider !== null && root.mediaProvider.playing
 
-    // 页码指示器需要预留的高度。
-    readonly property int indicatorHeight: Math.round(root.height * 0.06)
+    // 页码指示器需要预留的高度：圆点本身加上下各一圈命中余量。
+    readonly property int indicatorHeight: Math.round(root.height * 0.08)
 
     // ———————————————— 左半：日历 / 通知 ————————————————
     Item { // 左侧：有媒体且有通知时，在通知页与日历页之间切换。
@@ -56,16 +56,29 @@ Item {
         // 有媒体时右半被播放器占用，通知改到左半与日历分页显示。
         readonly property bool paged: root.hasMedia && root.hasNotifications
         readonly property int contentMargin: Math.round(root.height * 0.05)
+        // 页数：只有一页时既不需要切换也不需要指示器。
+        readonly property int pageCount: leftPane.paged ? 2 : 1
         // 0 = 通知页，1 = 日历页。
         property int currentPage: 0
+        // 拖动过程中的临时位移，单位同样是“页”。
+        property real dragOffset: 0
 
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.top: parent.top
         width: parent.width / 2
 
-        // 页面容器，底部为页码指示器留出空间。
+        // 切页；越界时保持不变。
+        function showPage(index) {
+            if (index >= 0 && index < leftPane.pageCount) {
+                leftPane.currentPage = index;
+            }
+        }
+
+        // 分页视口：两页并排放在同一行里，整行左右平移完成切换，超出部分被裁掉。
         Item {
+            id: pageViewport
+
             anchors.bottom: parent.bottom
             anchors.bottomMargin: leftPane.contentMargin + (leftPane.paged ? root.indicatorHeight : 0)
             anchors.left: parent.left
@@ -74,54 +87,129 @@ Item {
             anchors.rightMargin: leftPane.contentMargin
             anchors.top: parent.top
             anchors.topMargin: leftPane.contentMargin
+            clip: true
 
-            Notifications { // 通知页。
-                anchors.fill: parent
-                enabled: visible
-                provider: root.notificationsProvider
-                showClearAll: root.notificationsShowClearAll
-                showDoNotDisturb: root.notificationsShowDoNotDisturb
-                theme: root.theme
-                visible: leftPane.paged && leftPane.currentPage === 0
+            // 左右拖动切页：横向拖动超过阈值才接管，因此不影响页面内的点击。
+            DragHandler {
+                id: pageDrag
+
+                enabled: leftPane.paged
+                target: null
+                xAxis.enabled: true
+                yAxis.enabled: false
+
+                onTranslationChanged: if (active) {
+                    leftPane.dragOffset = pageDrag.translation.x / pageViewport.width;
+                }
+                onActiveChanged: if (!active) {
+                    // 松手后吸附到最近的一页。
+                    const target = Math.round(leftPane.currentPage - leftPane.dragOffset);
+                    leftPane.dragOffset = 0;
+                    leftPane.showPage(target);
+                }
             }
 
-            Calender { // 日历页。
-                anchors.fill: parent
-                enabled: visible
-                requestedDate: root.requestedDate
-                theme: root.theme
-                visible: !leftPane.paged || leftPane.currentPage === 1
+            Row {
+                id: pages
+
+                // 整行的位置（单位：页）= 当前页减去拖动偏移。
+                readonly property real position: leftPane.currentPage - leftPane.dragOffset
+
+                height: pageViewport.height
+                spacing: 0
+                width: pageViewport.width * leftPane.pageCount
+                x: -Math.round(pages.position * pageViewport.width)
+
+                Behavior on x {
+                    enabled: !pageDrag.active
+
+                    NumberAnimation {
+                        duration: Kirigami.Units.longDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Notifications { // 通知页：只在分页时出现在左半，否则在右半显示。
+                    height: pageViewport.height
+                    width: leftPane.paged ? pageViewport.width : 0
+
+                    // 分页时两页都常驻以便滑动，但只有轮到自己时才接受操作、标记已读。
+                    readonly property bool isCurrent: leftPane.paged && leftPane.currentPage === 0
+
+                    enabled: isCurrent
+                    pageActive: isCurrent
+                    provider: root.notificationsProvider
+                    showClearAll: root.notificationsShowClearAll
+                    showDoNotDisturb: root.notificationsShowDoNotDisturb
+                    theme: root.theme
+                    visible: leftPane.paged
+                }
+
+                Calender { // 日历页。
+                    height: pageViewport.height
+                    width: pageViewport.width
+
+                    enabled: !leftPane.paged || leftPane.currentPage === 1
+                    requestedDate: root.requestedDate
+                    theme: root.theme
+                }
             }
         }
 
-        // 页码指示器：点击切换通知页与日历页。
+        // 页码指示器：点击切页，当前页用拉长的胶囊表示。
         Row {
             id: pageIndicator
+
+            readonly property int dotSize: Math.round(root.height * 0.03)
+            // 命中区域比圆点大一圈，便于点击。
+            readonly property int hitPadding: Math.round(pageIndicator.dotSize * 0.6)
 
             anchors.bottom: parent.bottom
             anchors.bottomMargin: Math.round(root.height * 0.015)
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: Math.round(root.height * 0.02)
+            spacing: Math.round(root.height * 0.01)
             visible: leftPane.paged
 
             Repeater {
-                model: 2
+                model: leftPane.pageCount
 
-                delegate: Rectangle {
+                delegate: Item {
                     required property int index
 
-                    color: leftPane.currentPage === index ? root.theme.accentColor : root.theme.accentMutedColor
-                    height: Math.round(root.height * 0.03)
-                    opacity: pageMouse.containsMouse ? 1 : 0.7
-                    radius: height / 2
-                    width: height
+                    readonly property bool current: leftPane.currentPage === index
+                    readonly property int currentWidth: Math.round(pageIndicator.dotSize * 2.6)
+
+                    height: pageIndicator.dotSize + pageIndicator.hitPadding * 2
+                    width: (current ? currentWidth : pageIndicator.dotSize) + pageIndicator.hitPadding * 2
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        color: current ? root.theme.accentColor : root.theme.accentMutedColor
+                        height: pageIndicator.dotSize
+                        opacity: pageMouse.containsMouse ? 1 : 0.85
+                        radius: height / 2
+                        width: current ? currentWidth : pageIndicator.dotSize
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Kirigami.Units.shortDuration
+                            }
+                        }
+
+                        Behavior on width {
+                            NumberAnimation {
+                                duration: Kirigami.Units.shortDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
 
                     MouseArea {
                         id: pageMouse
 
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: leftPane.currentPage = index
+                        onClicked: leftPane.showPage(index)
                     }
                 }
             }

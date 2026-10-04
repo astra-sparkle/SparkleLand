@@ -17,6 +17,12 @@ Item {
     // 相对时间的刷新计数，由下方定时器递增。
     property int timeTick
 
+    // 分页场景下本组件会一直构建。该属性表示“当前是否轮到本页面对用户展示”。
+    // 只有真正在前台才标记已读，避免用户在看日历页时未读被清空。
+    property bool pageActive: true
+    // 真正对用户可见 = 自身可见，且所属分页在前台。
+    readonly property bool effectiveActive: root.visible && root.pageActive
+
     readonly property bool available: root.provider !== null && root.provider.available
     readonly property bool inhibited: root.provider !== null && root.provider.inhibited
     // 紧急通知的枚举值，用于按主题的警告色着色。
@@ -72,11 +78,11 @@ Item {
         root.provider.markAllRead();
     }
 
-    onVisibleChanged: if (visible) {
+    onEffectiveActiveChanged: if (root.effectiveActive) {
         root.refresh();
     }
 
-    Component.onCompleted: if (visible) {
+    Component.onCompleted: if (root.effectiveActive) {
         root.refresh();
     }
 
