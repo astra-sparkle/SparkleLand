@@ -36,6 +36,11 @@ PlasmoidItem {
 	readonly property bool notificationsIncludeExpired: plasmoid.configuration.notificationsIncludeExpired === true
 	readonly property bool notificationsShowDoNotDisturb: plasmoid.configuration.notificationsShowDoNotDisturb !== false
 	readonly property bool notificationsShowClearAll: plasmoid.configuration.notificationsShowClearAll !== false
+	// 自建横幅的开关与显示时长；横幅由 plasmashell 定位在本小组件旁。
+	readonly property bool notificationsShowPopups: plasmoid.configuration.notificationsShowPopups !== false
+	readonly property int notificationsBannerTimeout: Math.max(1, root.configNumber(plasmoid.configuration.notificationsBannerTimeout, 5))
+	// 面板所在的屏幕边缘，供横幅决定弹出方向（取值同 Plasma::Types::Location）。
+	readonly property int panelLocation: plasmoid.location
 	readonly property bool showDate: plasmoid.configuration.showDate === true
 	// 未设置字号时，紧凑条目字号随面板高度缩放。
 	readonly property bool autoCompactFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
@@ -246,6 +251,18 @@ PlasmoidItem {
 			return;
 		}
 
+		// 配置在运行时变化时同步给数据源，无需重载 applet。
+		provider.includeExpired = Qt.binding(function() {
+			return root.notificationsIncludeExpired;
+		});
+		provider.maxVisible = Qt.binding(function() {
+			return root.notificationsMaxVisible;
+		});
+
+		// 唯一初始化入口：在这里（而不是绑定中）首次触碰 Server 单例与各通知模型，
+		// 避免惰性初始化期间的同步信号造成绑定循环。
+		provider.activate();
+
 		root.notificationsProvider = provider;
 		root.notificationsState = 1;
 		console.info("Sparkle Land: 私有通知实现已生效");
@@ -361,6 +378,15 @@ PlasmoidItem {
 				font: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.62)))
 				text: notificationBadge.displayCount >= 99 ? "99+" : String(notificationBadge.displayCount)
 			}
+		}
+
+		// 通知横幅：由 plasmashell 定位在本小组件旁；声明在 MouseArea 之前以免影响点击。
+		NotificationsPopup {
+			appletExpanded: root.expanded
+			displayTime: root.notificationsBannerTimeout * 1000
+			panelLocation: root.panelLocation
+			provider: root.notificationsProvider
+			showPopups: root.notificationsShowPopups
 		}
 
 		MouseArea {

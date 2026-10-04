@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
+import QtQuick.Layouts
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
@@ -21,7 +22,9 @@ KCM.SimpleKCM {
 
     property alias cfg_notificationsEnabled: notificationsEnabledCheck.checked
     property alias cfg_notificationsIncludeExpired: notificationsIncludeExpiredCheck.checked
+    property alias cfg_notificationsBannerTimeout: notificationsBannerTimeoutSpin.value
     property alias cfg_notificationsMaxVisible: notificationsMaxVisibleSpin.value
+    property alias cfg_notificationsShowPopups: notificationsShowPopupsCheck.checked
     property alias cfg_notificationsShowClearAll: notificationsClearAllCheck.checked
     property alias cfg_notificationsShowDoNotDisturb: notificationsDoNotDisturbCheck.checked
 
@@ -118,6 +121,38 @@ KCM.SimpleKCM {
             Kirigami.FormData.label: i18n("Notifications:")
             checked: Plasmoid.configuration.notificationsEnabled
             text: i18n("Replace the clock or calendar area with the notification list")
+        }
+
+        QQC2.CheckBox {
+            id: notificationsShowPopupsCheck
+
+            Kirigami.FormData.label: i18n("Banners:")
+            checked: Plasmoid.configuration.notificationsShowPopups
+            enabled: notificationsEnabledCheck.checked
+            text: i18n("Show notifications as banners next to this widget")
+        }
+
+        QQC2.SpinBox {
+            id: notificationsBannerTimeoutSpin
+
+            Kirigami.FormData.label: i18n("Banner duration:")
+            enabled: notificationsEnabledCheck.checked && notificationsShowPopupsCheck.checked
+            from: 1
+            textFromValue: function(value) {
+                return i18np("%1 second", "%1 seconds", value);
+            }
+            to: 60
+            value: Plasmoid.configuration.notificationsBannerTimeout
+        }
+
+        QQC2.Label {
+            Layout.fillWidth: true
+            enabled: notificationsShowPopupsCheck.checked
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
+            text: i18n("Remove the Plasma Notifications widget from the panel, otherwise every notification is shown twice.")
+            visible: notificationsShowPopupsCheck.checked
+            wrapMode: Text.WordWrap
         }
 
         QQC2.SpinBox {
