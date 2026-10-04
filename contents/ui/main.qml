@@ -30,6 +30,12 @@ PlasmoidItem {
 	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, root.configNumber(plasmoid.configuration.maximumPanelWidth, 240))
 	readonly property int panelAverageWidth: Math.round((root.panelMinimumWidth + root.panelMaximumWidth) / 2)
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
+	// 通知功能默认开启；关闭后完全沿用原有布局。
+	readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
+	readonly property int notificationsMaxVisible: Math.max(0, root.configNumber(plasmoid.configuration.notificationsMaxVisible, 5))
+	readonly property bool notificationsIncludeExpired: plasmoid.configuration.notificationsIncludeExpired === true
+	readonly property bool notificationsShowDoNotDisturb: plasmoid.configuration.notificationsShowDoNotDisturb !== false
+	readonly property bool notificationsShowClearAll: plasmoid.configuration.notificationsShowClearAll !== false
 	readonly property bool showDate: plasmoid.configuration.showDate === true
 	// 未设置字号时，紧凑条目字号随面板高度缩放。
 	readonly property bool autoCompactFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
@@ -135,6 +141,14 @@ PlasmoidItem {
 	readonly property string trackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 	readonly property bool isPlaying: root.mediaProvider !== null && root.mediaProvider.playing
 
+	// 通知服务不可用时只影响通知区域，其余功能照常。
+	// notificationsState: 0 = 未探测，1 = 可用，-1 = 不可用。
+	property int notificationsState: 0
+	property var notificationsProvider: null
+
+	readonly property bool hasNotifications: root.notificationsEnabled && root.notificationsProvider !== null && root.notificationsProvider.count > 0
+	readonly property int unreadNotificationCount: root.notificationsEnabled && root.notificationsProvider !== null ? root.notificationsProvider.unreadCount : 0
+
 	// 有曲目时显示媒体背景；暂停状态按主题明暗调整高亮色。
 	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
 	readonly property color mediaBackgroundColor: {
@@ -155,6 +169,7 @@ PlasmoidItem {
 
 	Component.onCompleted: {
 		root.resolveMediaProvider();
+		root.resolveNotificationsProvider();
 	}
 
 	// 运行时加载媒体实现，组件加载失败时保留其它功能。
@@ -195,6 +210,47 @@ PlasmoidItem {
 		console.info("Sparkle Land: 私有 MPRIS 实现已生效");
 	}
 
+	// 与媒体实现相同的加载方式：运行时加载，失败时保留时钟与日历。
+	function resolveNotificationsProvider() {
+		if (root.notificationsState !== 0 || !root.notificationsEnabled) {
+			return;
+		}
+
+		const component = Qt.createComponent("NotificationsProvider.qml");
+		if (component.status === Component.Loading) {
+			component.statusChanged.connect(function() {
+				root.useNotificationsComponent(component);
+			});
+			return;
+		}
+		root.useNotificationsComponent(component);
+	}
+
+	function useNotificationsComponent(component) {
+		if (component.status === Component.Error) {
+			root.notificationsState = -1;
+			console.info("Sparkle Land: 通知服务不可用：", component.errorString());
+			return;
+		}
+		if (component.status !== Component.Ready) {
+			return;
+		}
+
+		const provider = component.createObject(root, {
+			"includeExpired": root.notificationsIncludeExpired,
+			"maxVisible": root.notificationsMaxVisible
+		});
+		if (!provider) {
+			root.notificationsState = -1;
+			console.warn("Sparkle Land: 通知组件实例化失败：", component.errorString());
+			return;
+		}
+
+		root.notificationsProvider = provider;
+		root.notificationsState = 1;
+		console.info("Sparkle Land: 私有通知实现已生效");
+	}
+
 	// 展开日历，并跳转到指定日期；未指定时使用今天。
 	function openCalendar(date) {
 		const target = (date instanceof Date && !isNaN(date.getTime())) ? date : new Date();
@@ -228,10 +284,13 @@ PlasmoidItem {
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, false))
 			: root.panelFont
 
+		// 未读角标占用的额外宽度，避免遮挡时间与曲名。
+		readonly property int badgeSpace: notificationBadge.visible ? notificationBadge.width + 4 : 0
+
 		// 媒体模式在平均宽度与最大宽度间选择；时钟模式按内容宽度限制在配置范围内。
-		readonly property int preferredWidth: root.hasMedia
+		readonly property int preferredWidth: (root.hasMedia
 			? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
-			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))
+			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))) + badgeSpace
 
 		Layout.fillHeight: true
 		Layout.minimumHeight: 32
@@ -254,6 +313,7 @@ PlasmoidItem {
 			id: mediaItem
 
 			anchors.fill: parent
+			anchors.rightMargin: compactItem.badgeSpace
 			enabled: visible
 			playing: root.isPlaying
 			theme: root.theme
@@ -267,6 +327,7 @@ PlasmoidItem {
 			id: clockItem
 
 			anchors.fill: parent
+			anchors.rightMargin: compactItem.badgeSpace
 			dateFont: compactItem.secondaryFont
 			dateFormat: root.dateFormat
 			enabled: visible
@@ -277,17 +338,46 @@ PlasmoidItem {
 			visible: !root.panelShowsMedia
 		}
 
+		// 未读通知提示：圆点背景加数字，位于紧凑条目右侧。
+		Rectangle {
+			id: notificationBadge
+
+			readonly property int displayCount: Math.min(99, root.unreadNotificationCount)
+
+			anchors.right: parent.right
+			anchors.rightMargin: 3
+			anchors.verticalCenter: parent.verticalCenter
+			color: root.theme.highlightColor
+			height: Math.round(Math.max(14, parent.height * 0.42))
+			radius: height / 2
+			visible: root.notificationsEnabled && root.unreadNotificationCount > 0
+			width: Math.max(height, badgeLabel.implicitWidth + Math.round(height * 0.5))
+
+			Text {
+				id: badgeLabel
+
+				anchors.centerIn: parent
+				color: root.theme.highlightedTextColor
+				font: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.62)))
+				text: notificationBadge.displayCount >= 99 ? "99+" : String(notificationBadge.displayCount)
+			}
+		}
+
 		MouseArea {
 			anchors.fill: parent
 			onClicked: root.toggleCalendar()
 		}
 	}
 
-	// 展开面板：日历与时钟或媒体控制器。
+	// 展开面板：日历与时钟或媒体控制器，有通知时预留通知区域。
 	fullRepresentation: Panel {
 		hasMedia: root.hasMedia
+		hasNotifications: root.hasNotifications
 		mediaControlsEnabled: root.mediaState === 1
 		mediaProvider: root.mediaProvider
+		notificationsProvider: root.notificationsProvider
+		notificationsShowClearAll: root.notificationsShowClearAll
+		notificationsShowDoNotDisturb: root.notificationsShowDoNotDisturb
 		requestedDate: root.requestedDate
 		textFont: root.panelFont
 		theme: root.theme

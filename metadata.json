@@ -15,6 +15,6 @@
         "Version": "0.8.3",
         "Website": ""
     },
-    "Keywords": "Media;Clock;Calendar;System;",
+    "Keywords": "Media;Clock;Calendar;Notifications;System;",
     "X-Plasma-API-Minimum-Version": "6.0"
 }

@@ -14,6 +14,10 @@ Item {
     property var mediaProvider
     property bool hasMedia: false
     property bool mediaControlsEnabled: true
+    property var notificationsProvider
+    property bool hasNotifications: false
+    property bool notificationsShowDoNotDisturb: true
+    property bool notificationsShowClearAll: true
     property date requestedDate
 
     // ———————————————— 尺寸 ————————————————
@@ -42,19 +46,85 @@ Item {
 
     readonly property bool playing: root.mediaProvider !== null && root.mediaProvider.playing
 
-    // ———————————————— 左半：日历 ————————————————
-    Item { // 左侧日历。
+    // 页码指示器需要预留的高度。
+    readonly property int indicatorHeight: Math.round(root.height * 0.06)
+
+    // ———————————————— 左半：日历 / 通知 ————————————————
+    Item { // 左侧：有媒体且有通知时，在通知页与日历页之间切换。
+        id: leftPane
+
+        // 有媒体时右半被播放器占用，通知改到左半与日历分页显示。
+        readonly property bool paged: root.hasMedia && root.hasNotifications
+        readonly property int contentMargin: Math.round(root.height * 0.05)
+        // 0 = 通知页，1 = 日历页。
+        property int currentPage: 0
 
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.top: parent.top
         width: parent.width / 2
 
-        Calender {
-            anchors.fill: parent
-            anchors.margins: Math.round(root.height * 0.05)
-            theme: root.theme
-            requestedDate: root.requestedDate
+        // 页面容器，底部为页码指示器留出空间。
+        Item {
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: leftPane.contentMargin + (leftPane.paged ? root.indicatorHeight : 0)
+            anchors.left: parent.left
+            anchors.leftMargin: leftPane.contentMargin
+            anchors.right: parent.right
+            anchors.rightMargin: leftPane.contentMargin
+            anchors.top: parent.top
+            anchors.topMargin: leftPane.contentMargin
+
+            Notifications { // 通知页。
+                anchors.fill: parent
+                enabled: visible
+                provider: root.notificationsProvider
+                showClearAll: root.notificationsShowClearAll
+                showDoNotDisturb: root.notificationsShowDoNotDisturb
+                theme: root.theme
+                visible: leftPane.paged && leftPane.currentPage === 0
+            }
+
+            Calender { // 日历页。
+                anchors.fill: parent
+                enabled: visible
+                requestedDate: root.requestedDate
+                theme: root.theme
+                visible: !leftPane.paged || leftPane.currentPage === 1
+            }
+        }
+
+        // 页码指示器：点击切换通知页与日历页。
+        Row {
+            id: pageIndicator
+
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Math.round(root.height * 0.015)
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: Math.round(root.height * 0.02)
+            visible: leftPane.paged
+
+            Repeater {
+                model: 2
+
+                delegate: Rectangle {
+                    required property int index
+
+                    color: leftPane.currentPage === index ? root.theme.highlightColor : root.theme.disabledTextColor
+                    height: Math.round(root.height * 0.03)
+                    opacity: pageMouse.containsMouse ? 1 : 0.7
+                    radius: height / 2
+                    width: height
+
+                    MouseArea {
+                        id: pageMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: leftPane.currentPage = index
+                    }
+                }
+            }
         }
     }
 
@@ -67,23 +137,39 @@ Item {
         width: 1
     }
 
-    // ———————————————— 右半：时钟 / 媒体控制器 ————————————————
-    Item { // 右侧时钟或媒体控制器。
+    // ———————————————— 右半：时钟 / 媒体控制器 / 通知 ————————————————
+    Item { // 右侧：无媒体且有通知时显示通知，否则显示时钟或播放器。
+        id: rightPane
+
+        // 无媒体播放且有通知时，通知占用时钟的位置。
+        readonly property bool showsNotifications: !root.hasMedia && root.hasNotifications
 
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         anchors.top: parent.top
         width: parent.width / 2
 
-        // ———— 无媒体：时钟 ————
+        // ———— 无媒体且无通知：时钟 ————
         Clock {
             anchors.centerIn: parent
             height: Math.round(parent.height * 0.4)
             theme: root.theme
             timeFont: root.clockFont
             timeFormat: root.timeFormat
-            visible: !root.hasMedia
+            visible: !root.hasMedia && !rightPane.showsNotifications
             width: Math.round(parent.width * 0.9)
+        }
+
+        // ———— 无媒体：通知 ————
+        Notifications {
+            anchors.fill: parent
+            anchors.margins: Math.round(root.height * 0.05)
+            enabled: visible
+            provider: root.notificationsProvider
+            showClearAll: root.notificationsShowClearAll
+            showDoNotDisturb: root.notificationsShowDoNotDisturb
+            theme: root.theme
+            visible: rightPane.showsNotifications
         }
 
         // ———— 有媒体：媒体控制器 ————
