@@ -1,7 +1,10 @@
 import QtQuick
 import org.kde.plasma.configuration
 
-// 声明 applet 设置页，由 Plasma 处理应用和保存。
+
+
+// Applet settings page. Plasma handles loading and saving.
+// 小组件设置页；由 Plasma 处理加载与保存。
 ConfigModel {
     ConfigCategory {
         icon: "preferences-desktop-theme"

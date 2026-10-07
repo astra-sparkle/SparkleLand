@@ -45,6 +45,8 @@ PlasmoidItem {
 	// 未设置字号时，紧凑条目字号随面板高度缩放。
 	readonly property bool autoCompactFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
 
+
+
 	// 紧凑条目字号在时间、日期和曲目间保持一致。
 	// 主题默认字号的像素值；主题只提供 pointSize 时按屏幕密度换算。
 	readonly property int themeDefaultPixelSize: {
@@ -112,6 +114,8 @@ PlasmoidItem {
 		return custom.length > 0 ? custom : Qt.locale().dateFormat(Locale.ShortFormat);
 	}
 
+
+
 	// 将主题所需的颜色、字体和间距集中提供给子组件。
 	// 颜色获取规则：所有强调相关的颜色都由 Plasma 强调色派生，变体在本对象内自行计算；
 	// 只有正文/次要文字与语义色仍取自配色方案，否则对比度与语义无法保证。
@@ -169,6 +173,8 @@ PlasmoidItem {
 
 	readonly property var theme: themeAdapter
 
+
+
 	readonly property font panelFont: {
 		const family = root.configString(plasmoid.configuration.fontFamily);
 		const pointSize = root.configNumber(plasmoid.configuration.fontPointSize, 0);
@@ -214,10 +220,15 @@ PlasmoidItem {
 	Plasmoid.title: root.appTitle
 	Plasmoid.icon: root.isPlaying ? "media-playback-start" : root.appIconName
 
+
+
 	Component.onCompleted: {
 		root.resolveMediaProvider();
 		root.resolveNotificationsProvider();
 	}
+
+
+
 
 	// 运行时加载媒体实现，组件加载失败时保留其它功能。
 	function resolveMediaProvider() {
@@ -317,6 +328,9 @@ PlasmoidItem {
 		root.expanded = true;
 	}
 
+
+
+
 	// 点击紧凑条目切换日历的展开状态。
 	function toggleCalendar(date) {
 		if (root.expanded) {
@@ -325,6 +339,9 @@ PlasmoidItem {
 		}
 		openCalendar(date);
 	}
+
+
+
 
 	// 面板紧凑表示。
 	compactRepresentation: Item {
@@ -436,6 +453,9 @@ PlasmoidItem {
 			onClicked: root.toggleCalendar()
 		}
 	}
+
+
+
 
 	// 展开面板：日历与时钟或媒体控制器，有通知时预留通知区域。
 	fullRepresentation: Panel {

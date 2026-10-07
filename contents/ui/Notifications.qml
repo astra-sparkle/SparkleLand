@@ -3,24 +3,27 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.ksvg as KSvg
 
-// 通知中心：显示当前通知列表，并提供勿扰开关与清除操作。
-// 数据来自 NotificationsProvider，主题与配置由 main.qml 注入。
+
+
+// Notification list with do-not-disturb and clear actions.
+// 通知列表，包含勿扰和清除操作。
 Item {
     id: root
 
-    // ———————————————— 由 main.qml 注入 ————————————————
+    // Injected from main.qml.
+    // 由 main.qml 注入。
     property var theme
     property var provider
     property bool showDoNotDisturb: true
     property bool showClearAll: true
 
-    // 相对时间的刷新计数，由下方定时器递增。
+    // Time refresh counter.
+    // 时间刷新计数器。
     property int timeTick
 
-    // 分页场景下本组件会一直构建。该属性表示“当前是否轮到本页面对用户展示”。
-    // 只有真正在前台才标记已读，避免用户在看日历页时未读被清空。
+    // Only mark as active when the page is actually visible.
+    // 仅在页面真正可见时才视为激活。
     property bool pageActive: true
-    // 真正对用户可见 = 自身可见，且所属分页在前台。
     readonly property bool effectiveActive: root.visible && root.pageActive
 
     readonly property bool available: root.provider !== null && root.provider.available
@@ -42,7 +45,8 @@ Item {
         "pointSize": Math.max(1, root.theme.defaultFont.pointSize - 1)
     })
 
-    // 把时间格式化为「刚刚 / n 分钟前 / n 小时前 / n 天前」。
+    // Relative string like "just now" or "2 min ago".
+    // 相对时间字符串，例如“刚刚”或“2 分钟前”。
     function relativeTime(value) {
         root.timeTick;
 
@@ -68,7 +72,8 @@ Item {
         return i18np("%1 day ago", "%1 days ago", Math.floor(hours / 24));
     }
 
-    // 展开时标记已读并同步勿扰状态；首次创建时同样执行一次。
+    // Mark as read and sync do-not-disturb when active.
+    // 激活时标记已读并同步勿扰状态。
     function refresh() {
         if (root.provider === null) {
             return;
@@ -85,6 +90,8 @@ Item {
     Component.onCompleted: if (root.effectiveActive) {
         root.refresh();
     }
+
+
 
     ColumnLayout {
         anchors.fill: parent
@@ -370,6 +377,8 @@ Item {
             }
         }
     }
+
+
 
     // 刷新相对时间，并定期重算勿扰状态（定时抑制会自然到期）。
     Timer {

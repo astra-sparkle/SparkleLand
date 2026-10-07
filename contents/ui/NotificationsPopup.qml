@@ -4,23 +4,23 @@ import org.kde.kirigami as Kirigami
 import org.kde.ksvg as KSvg
 import org.kde.plasma.core as PlasmaCore
 
-// 通知横幅：以 Plasma 工具提示窗口承载，由 plasmashell 负责定位在本小组件旁、不抢焦点。
-// 内容由本文件自定义（Plasma 只提供窗口与定位），因此可以放入关闭按钮；
-// 鼠标移入时 Plasma 会自动暂停关闭计时，移出后自动收起。
+
+
+// Notification banner shown in a Plasma tooltip area next to the widget.
+// 小组件旁边显示的通知横幅，基于 Plasma 工具提示区域。
 PlasmaCore.ToolTipArea {
     id: root
 
-    // ———————————————— 由 main.qml 注入 ————————————————
+    // Injected from main.qml.
+    // 由 main.qml 注入。
     property var provider
     property bool showPopups: true
-    // 单条横幅的显示时长（毫秒）。
     property int displayTime: 5000
-    // 展开面板处于打开状态时不再弹出横幅，避免与通知页重复。
     property bool appletExpanded: false
-    // 面板所在的屏幕边缘（Plasma::Types::Location），决定横幅从哪一侧弹出。
     property int panelLocation: 0
 
-    // 待展示队列与当前正在展示的通知 id。
+    // Pending banner IDs and active ID.
+    // 待展示横幅 ID 和当前激活 ID。
     property var pending: []
     property int currentId: -1
 
@@ -51,18 +51,17 @@ PlasmaCore.ToolTipArea {
     interactive: true
     timeout: root.displayTime
 
-    // ———————————————— 队列 ————————————————
-    // 收到新通知时入队；重复的 id 会被忽略。
+    // Queue new banner requests and avoid duplicates.
+    // 入队新横幅请求并避免重复。
     function enqueue(notificationId) {
         if (!root.bannerEnabled || root.appletExpanded || notificationId <= 0) {
             return;
         }
-        if (root.currentId === notificationId || root.pending.indexOf(notificationId) >= 0) {
+        if (root.currentId === notificationId || root.pending.includes(notificationId)) {
             return;
         }
 
-        const next = root.pending.slice();
-        next.push(notificationId);
+        const next = [...root.pending, notificationId];
         root.pending = next;
 
         if (root.currentId < 0) {
@@ -70,7 +69,8 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-    // 依次展示队列中的通知；期间已失效的直接跳过。
+    // Show the next valid banner.
+    // 显示下一个有效横幅。
     function showNext() {
         while (root.pending.length > 0) {
             const id = root.pending[0];
@@ -97,7 +97,8 @@ PlasmaCore.ToolTipArea {
         root.currentId = -1;
     }
 
-    // 当前通知已从模型消失（被关闭或超时）时立即收起。
+    // Close banners whose notification is no longer valid.
+    // 若通知失效则关闭对应横幅。
     function checkCurrent() {
         if (root.currentId < 0 || root.provider === null) {
             return;
@@ -107,7 +108,8 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-    // 收起横幅并清空队列；仅在确实由本组件占用工具提示时才收起共享窗口。
+    // Dismiss current banner and clear queued entries.
+    // 关闭当前横幅并清空队列。
     function dismiss() {
         const wasShowing = root.currentId >= 0;
         root.currentId = -1;
@@ -140,6 +142,9 @@ PlasmaCore.ToolTipArea {
         root.currentId = -1;
         root.hideImmediately();
     }
+
+
+
 
     // ———————————————— 横幅内容 ————————————————
     // Plasma 只提供窗口与定位，内容与外观由此项决定。
@@ -242,6 +247,9 @@ PlasmaCore.ToolTipArea {
             }
         }
     }
+
+
+
 
     // ———————————————— 生命周期 ————————————————
     onBannerEnabledChanged: if (!root.bannerEnabled) {

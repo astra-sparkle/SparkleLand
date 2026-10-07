@@ -3,11 +3,15 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import org.kde.kirigami as Kirigami
 
+
+
 // 展开面板：左侧为日历，右侧根据媒体状态显示时钟或播放器。
+// Expanded panel: calendar on the left, clock or player on the right.
 Item {
     id: root
 
-    // ———————————————— 由 main.qml 注入 ————————————————
+    // Injected from main.qml.
+    // 由 main.qml 注入。
     property var theme
     property font textFont
     property string timeFormat
@@ -19,25 +23,20 @@ Item {
     property bool notificationsShowDoNotDisturb: true
     property bool notificationsShowClearAll: true
     property date requestedDate
+    readonly property string currentTrackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 
-    // ———————————————— 尺寸 ————————————————
-    // 宽度用 Plasma 弹窗的**默认宽度**：shell 的 CompactApplet.qml 在 fullRepresentation
-    // 没有声明 Layout.preferredWidth / implicitWidth 时，用的就是这个值：
-    //     return Kirigami.Units.iconSizes.sizeForLabels * 35;
-    // 高度不声明 → 一并交给 Plasma 用它自己的默认高度（同一文件里是 sizeForLabels * 25）。
-    // 不依赖 Screen，多屏下行为一致。
-    // Plasma 弹窗的默认宽度。
+    // Panel sizing.
+    // 面板大小。
     readonly property real plasmaDefaultWidth: Kirigami.Units.iconSizes.sizeForLabels * 35
 
     implicitWidth: Math.round(root.plasmaDefaultWidth)
 
-    // 专辑封面边长：分别按面板宽度、高度算出 50%，取较小者
-    // （等价于 0.5 × min(宽, 高)），面板变窄时封面会跟着收，不会溢出。
-    // 专辑封面边长随面板可用空间调整。
+    // Album-art size follows the available panel space.
+    // 专辑封面大小随面板可用空间缩放。
     readonly property real coverSize: Math.round(0.5 * Math.min(root.width, root.height))
 
-    // 展开面板里的时钟字体：族沿用用户/主题的字体，字号按面板高度缩放
-    // 展开面板时钟字体。
+    // Expanded-panel clock font scales with panel height.
+    // 展开面板时钟字号按面板高度缩放。
     readonly property font clockFont: Qt.font({
         "bold": true,
         "family": root.textFont.family,
@@ -49,8 +48,10 @@ Item {
     // 页码指示器需要预留的高度：圆点本身加上下各一圈命中余量。
     readonly property int indicatorHeight: Math.round(root.height * 0.08)
 
-    // ———————————————— 左半：日历 / 通知 ————————————————
-    Item { // 左侧：有媒体且有通知时，在通知页与日历页之间切换。
+
+
+    // Left pane for calendar and notifications.
+    Item { // Switch between notifications and calendar when both are enabled.
         id: leftPane
 
         // 有媒体时右半被播放器占用，通知改到左半与日历分页显示。
@@ -216,8 +217,12 @@ Item {
         }
     }
 
-    // ———————————————— 中间：分割线（居中、长 95%）————————————————
-    Rectangle { // 中间分割线。
+
+
+    // Divider between the two panes.
+    // 两个面板之间的分隔线。
+    Rectangle { // Divider.
+    // 分隔线。
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
         color: root.theme.disabledTextColor
@@ -225,8 +230,11 @@ Item {
         width: 1
     }
 
-    // ———————————————— 右半：时钟 / 媒体控制器 / 通知 ————————————————
-    Item { // 右侧：无媒体且有通知时显示通知，否则显示时钟或播放器。
+
+
+
+    // Right pane for clock, media controls or notifications.
+    Item { // Show notifications when there is no media; otherwise clock or controls.
         id: rightPane
 
         // 无媒体播放且有通知时，通知占用时钟的位置。
@@ -313,7 +321,7 @@ Item {
                 }
             }
 
-            // 曲目名称。
+            // Track title.
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: coverBox.bottom
@@ -326,7 +334,7 @@ Item {
                 font: root.textFont
                 horizontalAlignment: Text.AlignHCenter
                 maximumLineCount: 2
-                text: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
+                text: root.currentTrackTitle
                 verticalAlignment: Text.AlignVCenter
                 wrapMode: Text.WordWrap
             }
@@ -346,60 +354,33 @@ Item {
                 spacing: Math.round(width * gapRatio)
                 width: Math.round(mediaController.width * 0.6)
 
-                Item {
+                Media.MediaControlButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        height: Math.round(parent.height * 0.85)
-                        source: "media-skip-backward"
-                        width: height
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: if (root.mediaProvider !== null) {
-                            root.mediaProvider.previous();
-                        }
+                    source: "media-skip-backward"
+                    theme: root.theme
+                    onClicked: if (root.mediaProvider !== null) {
+                        root.mediaProvider.previous();
                     }
                 }
 
-                Item {
+                Media.MediaControlButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        height: Math.round(parent.height * 0.85)
-                        source: root.playing ? "media-playback-pause" : "media-playback-start"
-                        width: height
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: if (root.mediaProvider !== null) {
-                            root.mediaProvider.togglePlaying();
-                        }
+                    source: root.playing ? "media-playback-pause" : "media-playback-start"
+                    theme: root.theme
+                    onClicked: if (root.mediaProvider !== null) {
+                        root.mediaProvider.togglePlaying();
                     }
                 }
 
-                Item {
+                Media.MediaControlButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        height: Math.round(parent.height * 0.85)
-                        source: "media-skip-forward"
-                        width: height
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: if (root.mediaProvider !== null) {
-                            root.mediaProvider.next();
-                        }
+                    source: "media-skip-forward"
+                    theme: root.theme
+                    onClicked: if (root.mediaProvider !== null) {
+                        root.mediaProvider.next();
                     }
                 }
             }

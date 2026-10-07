@@ -1,14 +1,18 @@
 import QtQuick
 import org.kde.plasma.private.mpris as Mpris
 
-// 使用 Plasma 私有 MPRIS 模块提供曲目信息、封面和播放控制。
+
+
+// MPRIS data provider for track title, artwork and playback actions.
+// 提供曲目名称、专辑封面和播放控制的 MPRIS 数据源。
 QtObject {
     id: root
 
     readonly property var mpris2Model: Mpris.Mpris2Model {
     }
 
-    // 无播放器或曲名无效时返回空字符串。
+    // Return an empty string when no player or title is available.
+    // 当没有播放器或曲目标题时返回空字符串。
     readonly property string trackTitle: {
         const player = root.mpris2Model.currentPlayer;
         const track = player ? player.track : undefined;

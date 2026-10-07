@@ -5,11 +5,15 @@ import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-// 配置页通过 cfg_<entry> 属性与 KConfig 绑定。
+
+
+// Config page binds cfg_ entries to KConfig values.
+// 配置页将 cfg_ 条目绑定到 KConfig 值。
 KCM.SimpleKCM {
     id: page
 
-    // 与 main.xml 对应的配置项。
+    // Keep in sync with the XML config entries.
+    // 保持与 XML 配置项同步。
     property alias cfg_maximumPanelWidth: maximumWidthSpin.value
     property alias cfg_minimumPanelWidth: minimumWidthSpin.value
 

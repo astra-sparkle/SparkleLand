@@ -3,11 +3,15 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// 内置月历，支持切换月份、选择日期和返回今天。
+
+
+// Simple month calendar with month switching and date selection.
+// 简单月历，支持切换月份和日期选择。
 Item {
     id: root
 
-    // 主题由 main.qml 注入。
+    // Injected from main.qml.
+    // 由 main.qml 注入。
     property var theme
 
     property date displayedMonth: new Date()
@@ -18,12 +22,14 @@ Item {
     readonly property real todayStart: dayStart(root.today).getTime()
     readonly property real selectedStart: dayStart(root.selectedDate).getTime()
 
-    // 本地一周第一天：0 = 周日 … 6 = 周六（与 JS Date 的 getDay() 一致）
+    // Week starts according to locale.
+    // 按地区设置决定一周起始日。
     readonly property int firstDayOfWeek: Qt.locale().firstDayOfWeek
 
     readonly property real cellHeight: Math.round(root.theme.gridUnit * 2)
 
-    // 月份标题使用可翻译的格式字符串。
+    // Month title is localised by the locale.
+    // 月份标题按当前地区语言进行本地化。
     readonly property string monthTitle: i18nc("Format: month year", "%1 %2",
         Qt.locale().standaloneMonthName(root.displayedMonth.getMonth(), Locale.LongFormat),
         root.displayedMonth.getFullYear())
@@ -36,7 +42,7 @@ Item {
         return names;
     }
 
-    // 固定显示 6 周，确保日历高度稳定。
+    // Keep six weeks visible so the calendar height stays stable.
     readonly property var days: {
         const year = root.displayedMonth.getFullYear();
         const month = root.displayedMonth.getMonth();
@@ -123,12 +129,15 @@ Item {
 
         const cell = root.days[index];
         if (!cell.inCurrentMonth) {
+            root.displayedMonth = new Date(cell.date.getFullYear(), cell.date.getMonth(), 1);
         }
         root.selectDate(cell.date);
     }
 
     implicitHeight: mainColumn.implicitHeight
     implicitWidth: Math.round(root.theme.gridUnit * 15)
+
+
 
     ColumnLayout {
         id: mainColumn

@@ -1,6 +1,9 @@
 import QtQuick
 
-// 显示时间及可选日期，格式、字体和主题由调用方提供。
+
+
+// Display time and optional date. Styling is provided by the caller.
+// 显示时间和可选日期；样式由调用方提供。
 Item {
     id: root
 
@@ -13,7 +16,8 @@ Item {
 
     property int tick
 
-    // 格式包含秒时按秒刷新，否则按分钟刷新。
+    // Refresh every second when seconds are shown; otherwise update on the next minute.
+    // 显示秒时按秒刷新，否则按分钟更新。
     readonly property bool hasSeconds: root.timeFormat.indexOf("s") >= 0
 
     function nextTickInterval() {
@@ -42,6 +46,8 @@ Item {
 
     implicitHeight: contentColumn.implicitHeight
     implicitWidth: Math.max(timeLabel.implicitWidth, root.showDate ? dateLabel.implicitWidth : 0) + 24
+
+
 
     // 时间在上，日期（可选）在下。
     Column {
@@ -80,6 +86,8 @@ Item {
             width: parent.width
         }
     }
+
+
 
     // 仅在时钟可见时运行，并对齐到下一个时间边界。
     Timer {
