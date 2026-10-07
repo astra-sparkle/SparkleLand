@@ -291,47 +291,53 @@ QtObject {
 
     // Trigger default action or return false.
     function trigger(row) {
-        const index = root.listModel.index(row, 0);
-        if (!root.listModel.data(index, NotificationManager.Notifications.HasDefaultActionRole)) {
+        const model = root.listModel;
+        const index = model.index(row, 0);
+        if (!model.data(index, NotificationManager.Notifications.HasDefaultActionRole)) {
             return false;
         }
 
-        root.listModel.invokeDefaultAction(index);
+        model.invokeDefaultAction(index);
         return true;
     }
 
+    // The single URL attached to this entry, if any.
     // 该行唯一的附带 URL，例如截图或收到的文件；没有时返回空串。
     function firstUrl(row) {
-        const urls = root.listModel.data(root.listModel.index(row, 0), NotificationManager.Notifications.UrlsRole);
-        return (urls && urls.length === 1) ? String(urls[0]) : "";
+        const model = root.listModel;
+        const urls = model.data(model.index(row, 0), NotificationManager.Notifications.UrlsRole);
+        return Array.isArray(urls) && urls.length === 1 ? String(urls[0]) : "";
     }
 
     function openUrl(url) {
         Qt.openUrlExternally(url);
     }
 
+    // Close rows from the end to avoid shifting indexes during removal.
     // 逐行关闭，从后往前避免删除过程中行号偏移。
     function clearAll() {
-        if (!root.available) {
+        const model = root.listModel;
+        if (!root.available || model === null) {
             return;
         }
 
-        for (let row = root.listModel.count - 1; row >= 0; --row) {
+        for (let row = model.count - 1; row >= 0; --row) {
             root.close(row);
         }
     }
 
+    // Mark all current notifications as read to clear the compact badge.
     // 把当前通知全部标记为已读，用于清空紧凑条目的未读角标。
     function markAllRead() {
-        if (!root.available) {
+        const model = root.listModel;
+        if (!root.available || model === null) {
             return;
         }
 
-        // 记录已读时间点，未出现在列表中的通知也一并算作已读。
-        root.listModel.lastRead = new Date();
+        model.lastRead = new Date();
 
-        for (let row = 0; row < root.listModel.count; ++row) {
-            root.listModel.setData(root.listModel.index(row, 0), true, NotificationManager.Notifications.ReadRole);
+        for (let row = 0; row < model.count; ++row) {
+            model.setData(model.index(row, 0), true, NotificationManager.Notifications.ReadRole);
         }
     }
 }

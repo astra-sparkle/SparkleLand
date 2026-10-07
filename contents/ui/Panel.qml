@@ -294,7 +294,7 @@ Item {
 
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
-                    source: root.mediaProvider !== null ? root.mediaProvider.artUrl : ""
+                    source: mediaController.visible && root.mediaProvider !== null ? root.mediaProvider.artUrl : ""
                     visible: source != "" && status === Image.Ready
 
                     layer.enabled: visible
