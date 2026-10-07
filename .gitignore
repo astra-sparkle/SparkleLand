@@ -1,3 +1,4 @@
-# QML 运行期缓存（plasmashell/qmlscene 可能写在 QML 文件旁）
 *.qmlc
 *.jsc
+_probe_*.qml
+
