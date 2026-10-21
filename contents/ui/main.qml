@@ -94,10 +94,6 @@ PlasmoidItem {
 		});
 	}
 
-	// Infer the light or dark theme from text luminance
-	// 根据文字明度判断亮色或暗色主题
-	readonly property bool lightTheme: root.theme.textColor.hsvValue < 0.5
-
 	// Prefer a custom time format, then 12/24-hour mode, then the system locale
 	// 时间格式依次采用自定义值、12/24 小时制和系统设置
 	readonly property string timeFormat: {
@@ -131,8 +127,8 @@ PlasmoidItem {
 	QtObject {
 		id: themeAdapter
 
-		// root.palette exposes the full QPalette, including tooltip roles
-		// root.palette 提供完整 QPalette，包括工具提示角色
+		// Font colors are bound to QPalette roles so the active color scheme stays authoritative
+		// 字体颜色全部绑定到 QPalette 角色，由当前配色方案决定
 		readonly property color textColor: root.palette.active.windowText
 		readonly property color disabledTextColor: root.palette.disabled.windowText
 		// QPalette has no semantic error role; use Breeze negative red
@@ -141,13 +137,15 @@ PlasmoidItem {
 		readonly property font defaultFont: Kirigami.Theme.defaultFont
 		readonly property int gridUnit: Kirigami.Units.gridUnit
 
-		// QPalette::Accent is available since Qt 6.6; Qt falls back to Highlight when unset
-		// QPalette::Accent 从 Qt 6.6 起可用；未设置时 Qt 回退到 Highlight
-		readonly property color accentColor: root.palette.active.accent
+		// QPalette::Accent is available since Qt 6.6; fall back to Highlight on older Qt
+		// QPalette::Accent 从 Qt 6.6 起可用；旧版 Qt 回退到 Highlight
+		readonly property color accentColor: root.palette.active.accent !== undefined
+			? root.palette.active.accent
+			: root.palette.active.highlight
 
-		// Choose contrasting text and icons for the accent color
-		// 根据对比度选择强调色上的文字与图标颜色
-		readonly property color accentTextColor: themeAdapter.accentNeedsLightText ? "#ffffff" : "#000000"
+		// Palette pairs HighlightedText with the accent, so no manual black/white choice is needed
+		// 调色板为强调色成对提供 HighlightedText，无需再手工挑选黑白
+		readonly property color accentTextColor: root.palette.active.highlightedText
 
 		// WCAG sRGB luminance requires gamma correction to classify midtones correctly
 		// WCAG sRGB 相对亮度需先伽马校正，避免中间调被误判
@@ -157,10 +155,6 @@ PlasmoidItem {
 			const b = c.b <= 0.03928 ? c.b / 12.92 : Math.pow((c.b + 0.055) / 1.055, 2.4);
 			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 		}
-
-		// Below this crossover, light text has higher contrast
-		// 低于此分界值时浅色文字对比度更高
-		readonly property bool accentNeedsLightText: themeAdapter.relativeLuminance(themeAdapter.accentColor) < 0.179
 
 		// Text luminance determines the hover-color direction
 		// 根据文字明度决定悬停色的变化方向
@@ -221,7 +215,9 @@ PlasmoidItem {
 	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
 	readonly property color mediaBackgroundColor: {
 		const base = root.theme.accentColor;
-		return root.isPlaying ? base : (root.lightTheme ? Qt.lighter(base, 1.4) : Qt.darker(base, 1.4));
+		// Shift away from the palette text color so the paused state keeps contrast
+		// 朝调色板文字色的反方向调整，保证暂停态仍有足够对比度
+		return root.isPlaying ? base : (root.theme.accentTextIsLight ? Qt.darker(base, 1.4) : Qt.lighter(base, 1.4));
 	}
 
 	// Date requested for the calendar
