@@ -1,4 +1,3 @@
-import QtCore
 import QtQml
 import QtQuick
 import QtQuick.Layouts
@@ -118,77 +117,24 @@ PlasmoidItem {
 
 
 	// 将主题所需的颜色、字体和间距集中提供给子组件。
-	// 颜色获取规则：强调色直接读取 kdeglobals（系统设置里选定的强调色），所有强调相关的
-	// 颜色变体都在本对象内自行计算；只有正文/次要文字与语义色仍取自配色方案，
-	// 否则对比度与语义无法保证。
+	// 颜色全部取自运行时调色板（QPalette）；强调色的各变体在本对象内自行计算。
 	QtObject {
 		id: themeAdapter
 
-		readonly property color textColor: Kirigami.Theme.textColor
-		readonly property color disabledTextColor: Kirigami.Theme.disabledTextColor
-		// 紧急通知的语义色（红），由配色方案提供，不能由强调色派生。
-		readonly property color negativeTextColor: Kirigami.Theme.negativeTextColor
+		// root.palette 暴露完整的 QPalette（含 toolTip 等全部角色）。
+		readonly property color textColor: root.palette.active.windowText
+		readonly property color disabledTextColor: root.palette.disabled.windowText
+		// QPalette 没有语义红，直接用 Breeze 的负向红（web 颜色代码）绘制。
+		readonly property color negativeTextColor: "#da4453"
 		readonly property font defaultFont: Kirigami.Theme.defaultFont
 		readonly property int gridUnit: Kirigami.Units.gridUnit
 
 		// ———————————————— 强调色及其变体 ————————————————
-		// 强调色直接取自 kdeglobals 的 [General] AccentColor，即“系统设置 → 颜色”里选定的强调色。
-		// 不能用 Kirigami.Theme.focusColor：在 plasmashell 中它由桌面主题自带的 colors 文件提供
-		// （[Colors:Button] DecorationFocus），会盖掉用户在系统设置中选择的强调色。
-		property color accentColor: themeAdapter.fallbackAccentColor
-		// 读取失败时的回退色（配色方案自身的焦点色）。
-		readonly property color fallbackAccentColor: Kirigami.Theme.focusColor
-		// 强调色是否真的来自 kdeglobals；只有回退时才敢沿用配色方案的“选中文字色”。
-		property bool accentFromKdeGlobals: false
+		// Qt 6.6+ 的 QPalette::Accent；平台未设置时 Qt 会退回 Highlight。
+		readonly property color accentColor: root.palette.active.accent
 
-		// kdeglobals 的路径；文件不存在时 locate() 返回空 URL。
-		readonly property url kdeGlobalsUrl: StandardPaths.locate(StandardPaths.GenericConfigLocation, "kdeglobals")
-		readonly property bool hasKdeGlobals: themeAdapter.kdeGlobalsUrl.toString().length > 0
-
-		// 读取器：QSettings 把 INI 的顶层键归入 [General] 段，所以直接查 "AccentColor" 即命中
-		// [General] AccentColor；sync() 保证读到其它程序（系统设置）刚写入的值。
-		property Settings kdeGlobals: Settings {
-			location: themeAdapter.kdeGlobalsUrl
-		}
-
-		// 解析 kdeglobals 中 "R,G,B" 形式的强调色，不可用时返回 null。
-		function parseAccentColor(value) {
-			const text = String(value).trim();
-			if (text.length === 0 || text === "undefined" || text === "null") {
-				return null;
-			}
-			const channels = text.split(",");
-			if (channels.length !== 3) {
-				return null;
-			}
-			const red = Number(channels[0]);
-			const green = Number(channels[1]);
-			const blue = Number(channels[2]);
-			if (isNaN(red) || isNaN(green) || isNaN(blue)) {
-				return null;
-			}
-			return Qt.rgba(red / 255, green / 255, blue / 255, 1);
-		}
-
-		// 重新读取强调色。kdeglobals 不发出变更信号，因此由初始化与定时器显式调用。
-		function refreshAccentColor() {
-			if (!themeAdapter.hasKdeGlobals) {
-				themeAdapter.accentFromKdeGlobals = false;
-				themeAdapter.accentColor = themeAdapter.fallbackAccentColor;
-				return;
-			}
-			themeAdapter.kdeGlobals.sync();
-			const accent = themeAdapter.parseAccentColor(themeAdapter.kdeGlobals.value("AccentColor", ""));
-			themeAdapter.accentFromKdeGlobals = accent !== null;
-			themeAdapter.accentColor = accent !== null ? accent : themeAdapter.fallbackAccentColor;
-		}
-
-		// 变体一：强调色之上的文字/图标。回退到配色方案的焦点色时，沿用方案为“选中背景”配好的
-		// 文字色（与强调色同源、对比度由方案保证）；强调色来自 kdeglobals 时与方案无关，按对比度择取深浅。
-		readonly property bool schemeTextOnAccentUsable: !themeAdapter.accentFromKdeGlobals && Kirigami.Theme.highlightedTextColor.a > 0
-		readonly property color accentTextColor: themeAdapter.schemeTextOnAccentUsable
-			? Kirigami.Theme.highlightedTextColor
-			: (themeAdapter.accentNeedsLightText ? "#ffffff" : "#000000")
+		// 变体一：强调色之上的文字/图标，按对比度择取深浅。
+		readonly property color accentTextColor: themeAdapter.accentNeedsLightText ? "#ffffff" : "#000000"
 
 		// sRGB 相对亮度（WCAG）。必须先做伽马校正，否则中间调会被误判为深色。
 		function relativeLuminance(c) {
@@ -221,15 +167,6 @@ PlasmoidItem {
 	}
 
 	readonly property var theme: themeAdapter
-
-	// 系统设置改动强调色时只写入 kdeglobals、不会发出信号；定期重读以保持同步。
-	Timer {
-		interval: 10000
-		repeat: true
-		running: true
-
-		onTriggered: themeAdapter.refreshAccentColor()
-	}
 
 
 
@@ -281,7 +218,6 @@ PlasmoidItem {
 
 
 	Component.onCompleted: {
-		themeAdapter.refreshAccentColor();
 		root.resolveMediaProvider();
 		root.resolveNotificationsProvider();
 	}

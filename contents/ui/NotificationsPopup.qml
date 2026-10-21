@@ -151,8 +151,8 @@ PlasmaCore.ToolTipArea {
     readonly property Item bannerContent: Item {
         id: bannerContentItem
 
-        // 工具提示窗口的配色组与面板不同，必须显式指定，否则文字在横幅底色上不可读。
-        // 取值与 Plasma 自带的 DefaultToolTip.qml 保持一致（Window，而非 Tooltip）。
+        // 工具提示窗口自成一配色组（与 DefaultToolTip.qml 一致，取 Window），
+        // 仅用于 Kirigami.Icon 的图标色；文字颜色直接取自 QPalette。
         Kirigami.Theme.colorSet: Kirigami.Theme.Window
         Kirigami.Theme.inherit: false
 
@@ -186,9 +186,9 @@ PlasmaCore.ToolTipArea {
                 Layout.fillWidth: true
                 spacing: 0
 
-                Text { // 应用名：强调色（工具提示窗口自成一配色组，故直接取 focusColor）。
+                Text { // 应用名：强调色。
                     Layout.fillWidth: true
-                    color: Kirigami.Theme.focusColor
+                    color: root.palette.active.accent
                     elide: Text.ElideRight
                     font: Kirigami.Theme.defaultFont
                     maximumLineCount: 1
@@ -197,7 +197,7 @@ PlasmaCore.ToolTipArea {
 
                 Text { // 通知标题。
                     Layout.fillWidth: true
-                    color: Kirigami.Theme.textColor
+                    color: root.palette.active.toolTipText
                     elide: Text.ElideRight
                     font: root.bannerTitleFont
                     maximumLineCount: 1
@@ -207,7 +207,7 @@ PlasmaCore.ToolTipArea {
 
                 Text { // 通知正文，最多两行。
                     Layout.fillWidth: true
-                    color: Kirigami.Theme.disabledTextColor
+                    color: root.palette.disabled.toolTipText
                     maximumLineCount: 2
                     text: root.bannerBody
                     visible: text.length > 0
@@ -231,6 +231,7 @@ PlasmaCore.ToolTipArea {
 
                 Kirigami.Icon {
                     anchors.centerIn: parent
+                    color: root.palette.active.toolTipText
                     height: Math.round(parent.height * 0.7)
                     opacity: closeMouse.containsMouse ? 1 : 0.7
                     source: "window-close"
