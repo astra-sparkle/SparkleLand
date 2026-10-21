@@ -5,13 +5,13 @@ import org.kde.kirigami as Kirigami
 
 
 
-// Simple month calendar with month switching and date selection.
-// 简单月历，支持切换月份和日期选择。
+// Simple month calendar with month switching and date selection
+// 简单月历，支持切换月份和日期选择
 Item {
     id: root
 
-    // Injected from main.qml.
-    // 由 main.qml 注入。
+    // Properties injected by main.qml
+    // 由 main.qml 注入的属性
     property var theme
 
     property date displayedMonth: new Date()
@@ -22,14 +22,14 @@ Item {
     readonly property real todayStart: dayStart(root.today).getTime()
     readonly property real selectedStart: dayStart(root.selectedDate).getTime()
 
-    // Week starts according to locale.
-    // 按地区设置决定一周起始日。
+    // Week starts according to the current locale
+    // 一周起始日遵循当前地区设置
     readonly property int firstDayOfWeek: Qt.locale().firstDayOfWeek
 
     readonly property real cellHeight: Math.round(root.theme.gridUnit * 2)
 
-    // Month title is localised by the locale.
-    // 月份标题按当前地区语言进行本地化。
+    // Month title formatted for the current locale
+    // 按当前地区语言格式化的月份标题
     readonly property string monthTitle: i18nc("Format: month year", "%1 %2",
         Qt.locale().standaloneMonthName(root.displayedMonth.getMonth(), Locale.LongFormat),
         root.displayedMonth.getFullYear())
@@ -42,7 +42,8 @@ Item {
         return names;
     }
 
-    // Keep six weeks visible so the calendar height stays stable.
+    // Keep six weeks visible to stabilize the calendar height
+    // 始终显示六周，保持日历高度稳定
     readonly property var days: {
         const year = root.displayedMonth.getFullYear();
         const month = root.displayedMonth.getMonth();
@@ -142,13 +143,11 @@ Item {
     ColumnLayout {
         id: mainColumn
 
-        // 顶部对齐，高度由内容决定
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         spacing: Math.round(root.theme.gridUnit / 3)
 
-        // 头部：上月 / 月份标题 / 下月
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.round(root.theme.gridUnit * 1.6)
@@ -193,7 +192,6 @@ Item {
             }
         }
 
-        // 星期表头（固定 7 项，不随切月重建）
         GridLayout {
             Layout.fillWidth: true
             columnSpacing: 0
@@ -215,7 +213,6 @@ Item {
             }
         }
 
-        // 日期网格 + 唯一的鼠标处理
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: root.cellHeight * 6
@@ -237,7 +234,8 @@ Item {
                         Layout.preferredHeight: root.cellHeight
                         color: "transparent"
 
-                        // 选中与悬停都由强调色及其变体绘制；半透明变体让面板底色自然透出。
+                        // Accent variants mark selection and hover while preserving the panel background
+                        // 强调色变体标记选中与悬停，同时透出面板背景
                         Rectangle {
                             anchors.fill: parent
                             color: cellIsSelected
@@ -284,7 +282,6 @@ Item {
             }
         }
 
-        // 底部：回到今天
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.round(root.theme.gridUnit * 1.6)
@@ -308,7 +305,8 @@ Item {
         }
     }
 
-    // 跨零点刷新今天的标记。
+    // Refresh today's marker across midnight
+    // 跨零点刷新“今天”标记
     Timer {
         id: midnightTimer
 

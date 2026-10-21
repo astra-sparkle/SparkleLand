@@ -4,15 +4,16 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-// Applet 入口：协调时钟、媒体信息、日历及配置。
+// Applet entry point coordinating the clock, media, calendar, and settings
+// 小组件入口，协调时钟、媒体、日历与配置
 PlasmoidItem {
 	id: root
 
-	// Applet 元数据
 	readonly property string appTitle: i18n("Sparkle Land")
 	readonly property string appIconName: "preferences-desktop"
 
-	// 将配置值归一化，避免缺省值参与尺寸计算时产生 NaN。
+	// Normalize config values to prevent NaN in size calculations
+	// 归一化配置值，避免尺寸计算产生 NaN
 	function configNumber(value, fallback) {
 		const number = Number(value);
 		return isNaN(number) ? fallback : number;
@@ -30,25 +31,29 @@ PlasmoidItem {
 	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, root.configNumber(plasmoid.configuration.maximumPanelWidth, 240))
 	readonly property int panelAverageWidth: Math.round((root.panelMinimumWidth + root.panelMaximumWidth) / 2)
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
-	// 通知功能默认开启；关闭后完全沿用原有布局。
+	// Notifications default to enabled; disabling them restores the original layout
+	// 通知默认开启，关闭后恢复原布局
 	readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
 	readonly property int notificationsMaxVisible: Math.max(0, root.configNumber(plasmoid.configuration.notificationsMaxVisible, 5))
 	readonly property bool notificationsIncludeExpired: plasmoid.configuration.notificationsIncludeExpired === true
 	readonly property bool notificationsShowDoNotDisturb: plasmoid.configuration.notificationsShowDoNotDisturb !== false
 	readonly property bool notificationsShowClearAll: plasmoid.configuration.notificationsShowClearAll !== false
-	// 自建横幅的开关与显示时长；横幅由 plasmashell 定位在本小组件旁。
+	// Banner visibility and duration; plasmashell positions banners beside the applet
+	// 横幅开关与时长；位置由 plasmashell 锚定在小组件旁
 	readonly property bool notificationsShowPopups: plasmoid.configuration.notificationsShowPopups !== false
 	readonly property int notificationsBannerTimeout: Math.max(1, root.configNumber(plasmoid.configuration.notificationsBannerTimeout, 5))
-	// 面板所在的屏幕边缘，供横幅决定弹出方向（取值同 Plasma::Types::Location）。
+	// Screen edge used to position banners (Plasma::Types::Location)
+	// 面板所在屏幕边缘，供横幅定位（Plasma::Types::Location）
 	readonly property int panelLocation: plasmoid.location
 	readonly property bool showDate: plasmoid.configuration.showDate === true
-	// 未设置字号时，紧凑条目字号随面板高度缩放。
+	// Scale compact text with panel height when no font size is configured
+	// 未配置字号时，紧凑文本随面板高度缩放
 	readonly property bool autoCompactFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
 
 
 
-	// 紧凑条目字号在时间、日期和曲目间保持一致。
-	// 主题默认字号的像素值；主题只提供 pointSize 时按屏幕密度换算。
+	// Keep compact text sizes consistent and convert point size using screen density when needed
+	// 保持紧凑文本字号一致，必要时按屏幕密度换算 pointSize
 	readonly property int themeDefaultPixelSize: {
 		const defaultFont = root.theme.defaultFont;
 		if (defaultFont.pixelSize > 0) {
@@ -58,7 +63,8 @@ PlasmoidItem {
 		return Math.max(8, Math.round(defaultFont.pointSize / 72 * (density * 25.4)));
 	}
 
-	// 根据面板条目高度计算单行或双行文字的字号。
+	// Calculate one- or two-line text size from the panel item height
+	// 根据面板条目高度计算单行或双行字号
 	function panelPixelSize(height, twoLines) {
 		const available = height > 0 ? height : 32;
 		const fitted = Math.round(available * (twoLines ? 0.56 : 0.71));
@@ -74,7 +80,8 @@ PlasmoidItem {
 		});
 	}
 
-	// 按比例缩放字体，同时保留源字体使用的字号单位。
+	// Scale a font while preserving its pixel or point size unit
+	// 按比例缩放字体，并保留像素或磅值单位
 	function fontScaled(sourceFont, factor) {
 		if (sourceFont.pixelSize > 0) {
 			return root.fontWithPixelSize(sourceFont, sourceFont.pixelSize * factor);
@@ -87,10 +94,12 @@ PlasmoidItem {
 		});
 	}
 
-	// 用文字颜色明度区分亮色与暗色主题。
+	// Infer the light or dark theme from text luminance
+	// 根据文字明度判断亮色或暗色主题
 	readonly property bool lightTheme: root.theme.textColor.hsvValue < 0.5
 
-	// 时间格式优先使用自定义值，其次使用 12/24 小时制设置，最后跟随系统。
+	// Prefer a custom time format, then 12/24-hour mode, then the system locale
+	// 时间格式依次采用自定义值、12/24 小时制和系统设置
 	readonly property string timeFormat: {
 		const custom = root.configString(plasmoid.configuration.customTimeFormat);
 		if (custom.length > 0) {
@@ -105,7 +114,8 @@ PlasmoidItem {
 			return "HH:mm";
 		}
 
-		// 跟随系统格式不显示秒。
+		// Omit seconds when following the system format
+		// 跟随系统格式时不显示秒
 		return Qt.locale().timeFormat(Locale.ShortFormat).replace(/:?s+/g, "");
 	}
 
@@ -116,27 +126,31 @@ PlasmoidItem {
 
 
 
-	// 将主题所需的颜色、字体和间距集中提供给子组件。
-	// 颜色全部取自运行时调色板（QPalette）；强调色的各变体在本对象内自行计算。
+	// Share theme colors, fonts, and spacing with child components; derive accent variants here
+	// 向子组件提供主题颜色、字体和间距，并在此计算强调色变体
 	QtObject {
 		id: themeAdapter
 
-		// root.palette 暴露完整的 QPalette（含 toolTip 等全部角色）。
+		// root.palette exposes the full QPalette, including tooltip roles
+		// root.palette 提供完整 QPalette，包括工具提示角色
 		readonly property color textColor: root.palette.active.windowText
 		readonly property color disabledTextColor: root.palette.disabled.windowText
-		// QPalette 没有语义红，直接用 Breeze 的负向红（web 颜色代码）绘制。
+		// QPalette has no semantic error role; use Breeze negative red
+		// QPalette 没有语义错误色，使用 Breeze 负向红
 		readonly property color negativeTextColor: "#da4453"
 		readonly property font defaultFont: Kirigami.Theme.defaultFont
 		readonly property int gridUnit: Kirigami.Units.gridUnit
 
-		// ———————————————— 强调色及其变体 ————————————————
-		// Qt 6.6+ 的 QPalette::Accent；平台未设置时 Qt 会退回 Highlight。
+		// QPalette::Accent is available since Qt 6.6; Qt falls back to Highlight when unset
+		// QPalette::Accent 从 Qt 6.6 起可用；未设置时 Qt 回退到 Highlight
 		readonly property color accentColor: root.palette.active.accent
 
-		// 变体一：强调色之上的文字/图标，按对比度择取深浅。
+		// Choose contrasting text and icons for the accent color
+		// 根据对比度选择强调色上的文字与图标颜色
 		readonly property color accentTextColor: themeAdapter.accentNeedsLightText ? "#ffffff" : "#000000"
 
-		// sRGB 相对亮度（WCAG）。必须先做伽马校正，否则中间调会被误判为深色。
+		// WCAG sRGB luminance requires gamma correction to classify midtones correctly
+		// WCAG sRGB 相对亮度需先伽马校正，避免中间调被误判
 		function relativeLuminance(c) {
 			const r = c.r <= 0.03928 ? c.r / 12.92 : Math.pow((c.r + 0.055) / 1.055, 2.4);
 			const g = c.g <= 0.03928 ? c.g / 12.92 : Math.pow((c.g + 0.055) / 1.055, 2.4);
@@ -144,22 +158,27 @@ PlasmoidItem {
 			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 		}
 
-		// 亮度低于该值时浅色文字对比度更高（黑白文字对比度相等的分界点）。
+		// Below this crossover, light text has higher contrast
+		// 低于此分界值时浅色文字对比度更高
 		readonly property bool accentNeedsLightText: themeAdapter.relativeLuminance(themeAdapter.accentColor) < 0.179
 
-		// 实际使用的文字色是否为浅色，决定悬停该往哪个方向偏移。
+		// Text luminance determines the hover-color direction
+		// 根据文字明度决定悬停色的变化方向
 		readonly property bool accentTextIsLight: themeAdapter.relativeLuminance(themeAdapter.accentTextColor) > 0.5
 
-		// 变体二：悬停。始终向背离文字色的方向偏移，保证悬停时对比度不降。
+		// Move hover color away from the text color to preserve contrast
+		// 悬停色向文字色反方向变化，以保持对比度
 		readonly property color accentHoverColor: themeAdapter.accentTextIsLight
 			? Qt.darker(themeAdapter.accentColor, 1.12)
 			: Qt.lighter(themeAdapter.accentColor, 1.2)
 
-		// 变体三、四：半透明。由渲染层与面板背景自行合成，无需知道面板底色。
+		// Alpha variants blend with the panel without requiring its background color
+		// 半透明变体由渲染层与面板背景合成，无需读取底色
 		readonly property color accentSubtleColor: themeAdapter.accentAlpha(0.18)
 		readonly property color accentMutedColor: themeAdapter.accentAlpha(0.4)
 
-		// 强调色的任意透明度变体。
+		// Return the accent color with the requested alpha
+		// 返回指定透明度的强调色
 		function accentAlpha(alpha) {
 			const c = themeAdapter.accentColor;
 			return Qt.rgba(c.r, c.g, c.b, alpha);
@@ -181,35 +200,35 @@ PlasmoidItem {
 		});
 	}
 
-	// MPRIS 不可用时仍可使用时钟和日历。
-	// mediaState: 0 = 未探测，1 = 可用，-1 = 不可用。
+	// Clock and calendar remain available without MPRIS; mediaState: 0 = unchecked, 1 = available, -1 = unavailable
+	// MPRIS 不可用时仍可使用时钟和日历；mediaState：0 = 未检测，1 = 可用，-1 = 不可用
 	property int mediaState: 0
 	property var mediaProvider: null
 
 	readonly property string trackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 	readonly property bool isPlaying: root.mediaProvider !== null && root.mediaProvider.playing
 
-	// 通知服务不可用时只影响通知区域，其余功能照常。
-	// notificationsState: 0 = 未探测，1 = 可用，-1 = 不可用。
+	// Notification failures do not affect other features; notificationsState: 0 = unchecked, 1 = available, -1 = unavailable
+	// 通知服务故障不影响其他功能；notificationsState：0 = 未检测，1 = 可用，-1 = 不可用
 	property int notificationsState: 0
 	property var notificationsProvider: null
 
 	readonly property bool hasNotifications: root.notificationsEnabled && root.notificationsProvider !== null && root.notificationsProvider.count > 0
 	readonly property int unreadNotificationCount: root.notificationsEnabled && root.notificationsProvider !== null ? root.notificationsProvider.unreadCount : 0
 
-	// 有曲目时显示媒体背景，取自强调色；暂停时向主题明暗的反方向偏移以示区别。
+	// Use the accent as the media background and shift it when paused
+	// 媒体背景使用强调色，暂停时按主题明暗调整以作区分
 	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
 	readonly property color mediaBackgroundColor: {
 		const base = root.theme.accentColor;
 		return root.isPlaying ? base : (root.lightTheme ? Qt.lighter(base, 1.4) : Qt.darker(base, 1.4));
 	}
 
-	// 日历跳转目标。
+	// Date requested for the calendar
+	// 日历跳转目标日期
 	property date requestedDate
 
-	// 有曲目时，展开面板显示媒体控制器。
 	readonly property bool hasMedia: root.trackTitle.length > 0
-	// 展开时紧凑条目显示时钟；否则有曲目时显示曲名。
 	readonly property bool panelShowsMedia: root.hasMedia && !root.expanded
 
 	Plasmoid.title: root.appTitle
@@ -225,7 +244,8 @@ PlasmoidItem {
 
 
 
-	// 运行时加载媒体实现，组件加载失败时保留其它功能。
+	// Load the media provider at runtime so failures leave other features available
+	// 运行时加载媒体数据源，失败时保留其他功能
 	function resolveMediaProvider() {
 		if (root.mediaState !== 0) {
 			return;
@@ -263,7 +283,8 @@ PlasmoidItem {
 		console.info("Sparkle Land: 私有 MPRIS 实现已生效");
 	}
 
-	// 与媒体实现相同的加载方式：运行时加载，失败时保留时钟与日历。
+	// Load notifications at runtime so failures leave the clock and calendar available
+	// 运行时加载通知数据源，失败时保留时钟与日历
 	function resolveNotificationsProvider() {
 		if (root.notificationsState !== 0 || !root.notificationsEnabled) {
 			return;
@@ -299,7 +320,8 @@ PlasmoidItem {
 			return;
 		}
 
-		// 配置在运行时变化时同步给数据源，无需重载 applet。
+		// Propagate config changes without reloading the applet
+		// 配置变化时同步给数据源，无需重载小组件
 		provider.includeExpired = Qt.binding(function() {
 			return root.notificationsIncludeExpired;
 		});
@@ -307,8 +329,8 @@ PlasmoidItem {
 			return root.notificationsMaxVisible;
 		});
 
-		// 唯一初始化入口：在这里（而不是绑定中）首次触碰 Server 单例与各通知模型，
-		// 避免惰性初始化期间的同步信号造成绑定循环。
+		// Initialize models here, not in bindings, to avoid loops from synchronous lazy-init signals
+		// 在此初始化模型而非绑定中触碰，避免惰性初始化信号造成绑定循环
 		provider.activate();
 
 		root.notificationsProvider = provider;
@@ -316,7 +338,8 @@ PlasmoidItem {
 		console.info("Sparkle Land: 私有通知实现已生效");
 	}
 
-	// 展开日历，并跳转到指定日期；未指定时使用今天。
+	// Expand the calendar and select the requested date, or today by default
+	// 展开日历并跳转到指定日期；未指定时使用今天
 	function openCalendar(date) {
 		const target = (date instanceof Date && !isNaN(date.getTime())) ? date : new Date();
 		root.requestedDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
@@ -326,7 +349,6 @@ PlasmoidItem {
 
 
 
-	// 点击紧凑条目切换日历的展开状态。
 	function toggleCalendar(date) {
 		if (root.expanded) {
 			root.expanded = false;
@@ -338,13 +360,11 @@ PlasmoidItem {
 
 
 
-	// 面板紧凑表示。
 	compactRepresentation: Item {
 		id: compactItem
 
 		readonly property int contentWidth: root.safeMax(clockItem.implicitWidth, mediaItem.implicitWidth)
 
-		// 紧凑条目使用的主文字、日期和曲名字体。
 		readonly property font primaryFont: root.autoCompactFontSize
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate))
 			: root.panelFont
@@ -355,10 +375,12 @@ PlasmoidItem {
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, false))
 			: root.panelFont
 
-		// 未读角标占用的额外宽度，避免遮挡时间与曲名。
+		// Reserve space for the badge so it does not cover the time or track title
+		// 为角标预留空间，避免遮挡时间或曲名
 		readonly property int badgeSpace: notificationBadge.visible ? notificationBadge.width + 4 : 0
 
-		// 媒体模式在平均宽度与最大宽度间选择；时钟模式按内容宽度限制在配置范围内。
+		// Media uses average or maximum width; clock width follows content within configured limits
+		// 媒体模式取平均或最大宽度；时钟模式按内容宽度限制在配置范围内
 		readonly property int preferredWidth: (root.hasMedia
 			? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
 			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))) + badgeSpace
@@ -372,7 +394,8 @@ PlasmoidItem {
 		implicitHeight: 32
 		implicitWidth: preferredWidth
 
-		// 展开时仍保留媒体背景，作为曲目存在的提示。
+		// Keep the media background visible while expanded as a track indicator
+		// 展开时保留媒体背景，提示当前有曲目
 		Rectangle {
 			anchors.fill: parent
 			color: root.mediaBackgroundColor
@@ -409,7 +432,6 @@ PlasmoidItem {
 			visible: !root.panelShowsMedia
 		}
 
-		// 未读通知提示：圆点背景加数字，位于紧凑条目右侧。
 		Rectangle {
 			id: notificationBadge
 
@@ -434,7 +456,8 @@ PlasmoidItem {
 			}
 		}
 
-		// 通知横幅：由 plasmashell 定位在本小组件旁；声明在 MouseArea 之前以免影响点击。
+		// Plasma positions this banner beside the applet; declare it before MouseArea to preserve clicks
+		// 横幅由 Plasma 锚定在小组件旁；置于 MouseArea 前以保留点击操作
 		NotificationsPopup {
 			appletExpanded: root.expanded
 			displayTime: root.notificationsBannerTimeout * 1000
@@ -452,7 +475,6 @@ PlasmoidItem {
 
 
 
-	// 展开面板：日历与时钟或媒体控制器，有通知时预留通知区域。
 	fullRepresentation: Panel {
 		hasMedia: root.hasMedia
 		hasNotifications: root.hasNotifications

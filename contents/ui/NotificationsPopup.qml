@@ -4,32 +4,32 @@ import org.kde.kirigami as Kirigami
 import org.kde.ksvg as KSvg
 import org.kde.plasma.core as PlasmaCore
 
-
-
-// Notification banner shown in a Plasma tooltip area next to the widget.
-// 小组件旁边显示的通知横幅，基于 Plasma 工具提示区域。
+// Notification banner shown in a Plasma tooltip area beside the widget
+// 在小组件旁的 Plasma 工具提示区域中显示通知横幅
 PlasmaCore.ToolTipArea {
     id: root
 
-    // Injected from main.qml.
-    // 由 main.qml 注入。
+    // Injected banner provider and display options
+    // 注入的横幅数据源与显示选项
     property var provider
     property bool showPopups: true
     property int displayTime: 5000
     property bool appletExpanded: false
     property int panelLocation: 0
 
-    // Pending banner IDs and active ID.
-    // 待展示横幅 ID 和当前激活 ID。
+    // Queued notification IDs and the active ID
+    // 待展示通知 ID 与当前 ID
     property var pending: []
     property int currentId: -1
 
     readonly property bool bannerEnabled: root.showPopups && root.provider !== null && root.provider.available
 
-    // 上一条收起与下一条弹出之间的间隔，避免动画重叠。
+    // Gap between banners to prevent overlapping transitions
+    // 横幅间隔，避免动画重叠
     readonly property int gap: 250
 
-    // 当前横幅的展示内容，由 showNext() 填充。
+    // Current banner content, populated by showNext()
+    // 当前横幅内容由 showNext() 填充
     property string bannerApplicationName: ""
     property string bannerSummary: ""
     property string bannerBody: ""
@@ -41,18 +41,18 @@ PlasmaCore.ToolTipArea {
         "pointSize": Kirigami.Theme.defaultFont.pointSize
     })
 
-    // 显式给出锚定边缘，避免依赖 ToolTipArea 自身的父链推断。
+    // Set the edge explicitly instead of relying on parent-chain inference
+    // 显式设置边缘，避免依赖父链推断
     location: root.panelLocation
     active: root.bannerEnabled
-    // 内容由 bannerContent 提供；interactive 让鼠标移入时暂停关闭计时并允许点击关闭按钮。
-    // 注：本机 6.7.5 的 ToolTipArea 尚无 hideOnClick 属性，但内容项会被移入工具提示窗口、
-    // 不再是本项的子树，因此「点击子项即收起」的过滤逻辑不会作用于横幅内容。
+    // Hover pauses the timeout and enables the close button
+    // 悬停时暂停计时，并允许点击关闭按钮
     mainItem: root.bannerContent
     interactive: true
     timeout: root.displayTime
 
-    // Queue new banner requests and avoid duplicates.
-    // 入队新横幅请求并避免重复。
+    // Queue a banner unless it is already active or pending
+    // 当前横幅或队列中已有该通知时不重复入队
     function enqueue(notificationId) {
         if (!root.bannerEnabled || root.appletExpanded || notificationId <= 0) {
             return;
@@ -69,8 +69,8 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-    // Show the next valid banner.
-    // 显示下一个有效横幅。
+    // Show the next valid banner and skip stale requests
+    // 显示下一个有效横幅，并跳过已失效的请求
     function showNext() {
         while (root.pending.length > 0) {
             const id = root.pending[0];
@@ -87,8 +87,8 @@ PlasmaCore.ToolTipArea {
             root.bannerBody = banner.body;
             root.bannerIcon = banner.icon;
 
-            // ToolTipArea 的工具提示窗口在整个 plasmashell 内共享：上一条仍在淡出时
-            // 直接显示会把定位设置作用在已暴露的窗口上并触发告警，故先收起再显示。
+            // Hide the shared tooltip window before resetting its location
+            // 重新设置位置前先立即收起 plasmashell 共享的工具提示窗口
             root.hideImmediately();
             root.showToolTip();
             return;
@@ -97,8 +97,8 @@ PlasmaCore.ToolTipArea {
         root.currentId = -1;
     }
 
-    // Close banners whose notification is no longer valid.
-    // 若通知失效则关闭对应横幅。
+    // Dismiss the banner when its notification is no longer valid
+    // 通知失效时关闭对应横幅
     function checkCurrent() {
         if (root.currentId < 0 || root.provider === null) {
             return;
@@ -108,8 +108,8 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-    // Dismiss current banner and clear queued entries.
-    // 关闭当前横幅并清空队列。
+    // Dismiss the current banner and clear the queue
+    // 关闭当前横幅并清空队列
     function dismiss() {
         const wasShowing = root.currentId >= 0;
         root.currentId = -1;
@@ -120,7 +120,8 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-    // 关闭当前横幅对应的通知，并让队列继续。
+    // Close the notification and continue the queue
+    // 关闭当前通知并继续队列
     function closeCurrent() {
         const id = root.currentId;
         if (id >= 0 && root.provider !== null) {
@@ -131,7 +132,8 @@ PlasmaCore.ToolTipArea {
         root.hideImmediately();
     }
 
-    // 触发当前横幅对应通知的默认动作。
+    // Trigger the current notification's default action
+    // 触发当前通知的默认动作
     function activateCurrent() {
         const id = root.currentId;
         if (id < 0 || root.provider === null) {
@@ -143,37 +145,32 @@ PlasmaCore.ToolTipArea {
         root.hideImmediately();
     }
 
-
-
-
-    // ———————————————— 横幅内容 ————————————————
-    // Plasma 只提供窗口与定位，内容与外观由此项决定。
+    // Plasma supplies the tooltip window; this item defines its content
+    // Plasma 提供工具提示窗口，此项定义横幅内容
     readonly property Item bannerContent: Item {
-        id: bannerContentItem
-
-        // 工具提示窗口自成一配色组（与 DefaultToolTip.qml 一致，取 Window），
-        // 仅用于 Kirigami.Icon 的图标色；文字颜色直接取自 QPalette。
+        // Keep symbolic icons in the tooltip's Window color set
+        // 图标使用工具提示窗口的 Window 配色组
         Kirigami.Theme.colorSet: Kirigami.Theme.Window
         Kirigami.Theme.inherit: false
 
-        // 工具提示窗口按 mainItem 的隐式尺寸决定自身大小，与 DefaultToolTip.qml 同一算法。
+        // ToolTipArea sizes its window from mainItem's implicit size
+        // ToolTipArea 根据 mainItem 的隐式尺寸设置窗口大小
         implicitHeight: bannerColumn.implicitHeight + Kirigami.Units.largeSpacing * 2
         implicitWidth: Math.round(Kirigami.Units.gridUnit * 18)
 
-        // 整块可点击：触发默认动作。声明在内容之前，关闭按钮优先接收点击。
+        // Clicking the banner activates it; later controls take click priority
+        // 点击横幅触发默认操作，后声明的控件优先接收点击
         MouseArea {
             anchors.fill: parent
             onClicked: root.activateCurrent()
         }
 
         RowLayout {
-            id: bannerRow
-
             anchors.fill: parent
             anchors.margins: Kirigami.Units.largeSpacing
             spacing: Kirigami.Units.smallSpacing
 
-            Kirigami.Icon { // 应用图标。
+            Kirigami.Icon {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
@@ -186,7 +183,7 @@ PlasmaCore.ToolTipArea {
                 Layout.fillWidth: true
                 spacing: 0
 
-                Text { // 应用名：强调色。
+                Text {
                     Layout.fillWidth: true
                     color: root.palette.active.accent
                     elide: Text.ElideRight
@@ -195,7 +192,7 @@ PlasmaCore.ToolTipArea {
                     text: root.bannerApplicationName.length > 0 ? root.bannerApplicationName : i18n("Notifications")
                 }
 
-                Text { // 通知标题。
+                Text {
                     Layout.fillWidth: true
                     color: root.palette.active.toolTipText
                     elide: Text.ElideRight
@@ -205,7 +202,7 @@ PlasmaCore.ToolTipArea {
                     visible: text.length > 0
                 }
 
-                Text { // 通知正文，最多两行。
+                Text {
                     Layout.fillWidth: true
                     color: root.palette.disabled.toolTipText
                     maximumLineCount: 2
@@ -215,9 +212,7 @@ PlasmaCore.ToolTipArea {
                 }
             }
 
-            Item { // 关闭按钮。
-                id: closeButton
-
+            Item {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
@@ -249,15 +244,12 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-
-
-
-    // ———————————————— 生命周期 ————————————————
     onBannerEnabledChanged: if (!root.bannerEnabled) {
         root.dismiss();
     }
 
-    // 收起后稍作停顿再显示下一条。
+    // Resume the queue after a short gap when the tooltip closes
+    // 工具提示关闭后稍作停顿，再继续横幅队列
     onToolTipVisibleChanged: function(toolTipVisible) {
         if (toolTipVisible) {
             return;
@@ -287,7 +279,8 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-    // 列表内容变化时确认当前横幅是否仍然有效。
+    // Recheck the active banner when the notification list changes
+    // 通知列表变化时重新检查当前横幅
     Connections {
         target: root.provider !== null ? root.provider.popupModel : null
 

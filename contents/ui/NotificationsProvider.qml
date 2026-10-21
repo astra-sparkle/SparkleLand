@@ -3,18 +3,18 @@ import org.kde.notificationmanager as NotificationManager
 
 
 
-// Data provider for the Plasma notification model and actions.
-// Plasma 通知模型与操作的数据提供器。
+// Data provider for the Plasma notification model and actions
+// Plasma 通知模型与操作的数据提供器
 QtObject {
     id: root
 
-    // Injected from main.qml.
-    // 由 main.qml 注入。
+    // Properties injected by main.qml
+    // 由 main.qml 注入的属性
     property int maxVisible: 5
     property bool includeExpired: true
 
-    // Global notification settings and server state.
-    // 全局通知设置与服务状态。
+    // Global notification settings and server state
+    // 全局通知设置与服务状态
     readonly property NotificationManager.Settings settings: NotificationManager.Settings {
         onInhibitNotificationsWhenFullscreenChanged: root.refreshInhibition()
         onInhibitNotificationsWhenScreensMirroredChanged: root.refreshInhibition()
@@ -22,16 +22,16 @@ QtObject {
         onNotificationsInhibitedUntilChanged: root.refreshInhibition()
     }
 
-    // Availability is computed explicitly to avoid binding loops.
-    // 通过显式计算服务可用性，避免绑定循环。
+    // Compute availability explicitly to avoid binding loops
+    // 显式计算服务可用性，避免绑定循环
     property bool available: false
 
-    // Whether do-not-disturb is currently active.
-    // 当前是否处于勿扰状态。
+    // Whether do-not-disturb is currently active
+    // 当前是否处于勿扰状态
     property bool inhibited: false
 
-    // Notification list model for the UI.
-    // UI 使用的通知列表模型。
+    // Notification list model used by the UI
+    // UI 使用的通知列表模型
     readonly property NotificationManager.Notifications listModel: NotificationManager.Notifications {
         expandUnread: false
         groupMode: NotificationManager.Notifications.GroupDisabled
@@ -43,12 +43,12 @@ QtObject {
         sortOrder: Qt.DescendingOrder
     }
 
-    // Banner requests are handled by the popup component.
-    // 横幅请求由弹出组件处理。
+    // Banner requests are handled by the popup component
+    // 横幅请求由弹出组件处理
     signal bannerRequested(int notificationId)
 
-    // Popup model contains only banner-eligible notifications.
-    // 弹出模型仅包含符合展示条件的通知。
+    // Popup model contains only banner-eligible notifications
+    // 弹出模型仅包含符合展示条件的通知
     readonly property NotificationManager.Notifications popupModel: NotificationManager.Notifications {
         expandUnread: false
         groupMode: NotificationManager.Notifications.GroupDisabled
@@ -62,15 +62,15 @@ QtObject {
         urgencies: root.bannerUrgencies
     }
 
-    // Count values are updated explicitly to avoid binding loops.
-    // 计数值通过显式更新，避免绑定循环。
+    // Update count values explicitly to avoid binding loops
+    // 显式更新计数值，避免绑定循环
     property int count: 0
     property int unreadCount: 0
 
 
 
-    // Refresh counters when the list content changes.
-    // 列表内容变化时刷新计数。
+    // Refresh counters when the list content changes
+    // 列表内容变化时刷新计数
     readonly property Connections listWatcher: Connections {
         target: root.listModel
 
@@ -91,10 +91,12 @@ QtObject {
         }
     }
 
-    // Delay banner display until the provider is fully ready.
+    // Delay banners until the provider is fully initialized
+    // 数据源完成初始化后再显示横幅
     property bool bannerReady: false
 
-    // Watch for newly inserted notifications.
+    // Watch for newly inserted notifications
+    // 监听新插入的通知
     readonly property Connections bannerWatcher: Connections {
         target: root.popupModel
 
@@ -115,7 +117,8 @@ QtObject {
 
 
 
-    // One-time init path after configuration is ready.
+    // Initialize once after configuration is ready
+    // 配置就绪后执行一次初始化
     function activate() {
         root.criticalUrgency = NotificationManager.Notifications.CriticalUrgency;
         root.refreshInhibition();
@@ -126,24 +129,24 @@ QtObject {
 
 
 
-    // Refresh list counts and unread count.
     function refreshCounts() {
         root.count = root.available ? root.listModel.count : 0;
         root.unreadCount = root.available ? root.listModel.unreadNotificationsCount : 0;
     }
 
-    // Banner urgency filter, keeping critical alerts when do-not-disturb is active.
+    // Keep critical alerts eligible during do-not-disturb when configured
+    // 按设置在勿扰期间保留紧急横幅
     property int bannerUrgencies: 0
     property int criticalUrgency: -1
 
-    // Check whether the notification daemon is active.
     function refreshAvailability() {
         const server = NotificationManager.Server;
         root.available = server.valid
             || server.currentOwner.status === NotificationManager.ServerInfo.Running;
     }
 
-    // Update banner urgency filter from the current do-not-disturb state.
+    // Update eligible banner urgencies from do-not-disturb state
+    // 根据勿扰状态更新可显示的横幅级别
     function refreshBannerUrgencies() {
         const N = NotificationManager.Notifications;
         let urgencies = 0;
@@ -161,12 +164,14 @@ QtObject {
         root.bannerUrgencies = urgencies;
     }
 
-    // Only show banners for recent notifications.
+    // Show banners only for recent notifications
+    // 仅为近期通知显示横幅
     function isRecent(created) {
         return (created instanceof Date) && !isNaN(created.getTime()) && (Date.now() - created.getTime() < 15000);
     }
 
-    // Return banner payload for a given row, or null if invalid.
+    // Return banner data for a row, or null if invalid
+    // 返回指定行的横幅数据，无效时返回 null
     function bannerFor(row) {
         const model = root.popupModel;
         if (row < 0 || row >= model.count) {
@@ -185,7 +190,8 @@ QtObject {
         };
     }
 
-    // Look up a banner by notification ID.
+    // Find banner data by notification ID
+    // 按通知 ID 查找横幅数据
     function bannerForId(notificationId) {
         const model = root.popupModel;
         for (let row = 0; row < model.count; ++row) {
@@ -198,7 +204,8 @@ QtObject {
         return null;
     }
 
-    // Look up a list row by notification ID.
+    // Find a notification row by ID
+    // 按通知 ID 查找列表行
     function rowForId(notificationId) {
         const model = root.listModel;
         const N = NotificationManager.Notifications;
@@ -211,7 +218,8 @@ QtObject {
         return -1;
     }
 
-    // Close a notification by ID.
+    // Close a notification by ID
+    // 按 ID 关闭通知
     function closeById(notificationId) {
         const row = root.rowForId(notificationId);
         if (row >= 0) {
@@ -219,18 +227,21 @@ QtObject {
         }
     }
 
-    // Trigger the default action for a notification by ID.
+    // Trigger a notification's default action by ID
+    // 按 ID 触发通知的默认操作
     function triggerById(notificationId) {
         const row = root.rowForId(notificationId);
         return row >= 0 ? root.trigger(row) : false;
     }
 
-    // Helper for do-not-disturb checks.
+    // Validate dates used by do-not-disturb settings
+    // 验证勿扰设置中的日期
     function isValidDate(value) {
         return value instanceof Date && !isNaN(value.getTime());
     }
 
-    // Recompute service and do-not-disturb state.
+    // Recompute service availability and do-not-disturb state
+    // 重新计算服务可用性与勿扰状态
     function refreshInhibition() {
         root.refreshAvailability();
 
@@ -261,7 +272,8 @@ QtObject {
 
 
 
-    // Toggle do-not-disturb using the same pattern as the stock widget.
+    // Toggle do-not-disturb using Plasma's notification settings
+    // 使用 Plasma 通知设置切换勿扰状态
     function toggleInhibition() {
         if (root.inhibited) {
             root.settings.notificationsInhibitedUntil = undefined;
@@ -281,7 +293,8 @@ QtObject {
 
 
 
-    // List operations use row indexes.
+    // List operations use model row indexes
+    // 列表操作使用模型行号
     function close(row) {
         root.listModel.close(root.listModel.index(row, 0));
     }
@@ -289,7 +302,8 @@ QtObject {
 
 
 
-    // Trigger default action or return false.
+    // Trigger the default action and return false when unavailable
+    // 触发默认操作；不可用时返回 false
     function trigger(row) {
         const model = root.listModel;
         const index = model.index(row, 0);
@@ -301,8 +315,8 @@ QtObject {
         return true;
     }
 
-    // The single URL attached to this entry, if any.
-    // 该行唯一的附带 URL，例如截图或收到的文件；没有时返回空串。
+    // Return the single URL attached to this entry, if any
+    // 返回该行唯一的附带 URL，例如截图或收到的文件；没有时返回空串
     function firstUrl(row) {
         const model = root.listModel;
         const urls = model.data(model.index(row, 0), NotificationManager.Notifications.UrlsRole);
@@ -313,8 +327,8 @@ QtObject {
         Qt.openUrlExternally(url);
     }
 
-    // Close rows from the end to avoid shifting indexes during removal.
-    // 逐行关闭，从后往前避免删除过程中行号偏移。
+    // Close rows from the end to avoid shifting indexes during removal
+    // 从后往前逐行关闭，避免删除过程中行号偏移
     function clearAll() {
         const model = root.listModel;
         if (!root.available || model === null) {
@@ -326,8 +340,8 @@ QtObject {
         }
     }
 
-    // Mark all current notifications as read to clear the compact badge.
-    // 把当前通知全部标记为已读，用于清空紧凑条目的未读角标。
+    // Mark all current notifications as read to clear the compact badge
+    // 将当前通知全部标记为已读，以清空紧凑条目的未读角标
     function markAllRead() {
         const model = root.listModel;
         if (!root.available || model === null) {

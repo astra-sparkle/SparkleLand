@@ -5,13 +5,13 @@ import org.kde.kirigami as Kirigami
 
 
 
-// 展开面板：左侧为日历，右侧根据媒体状态显示时钟或播放器。
-// Expanded panel: calendar on the left, clock or player on the right.
+// Expanded panel with a calendar on the left and context-dependent content on the right
+// 展开面板左侧显示日历，右侧内容根据当前状态变化
 Item {
     id: root
 
-    // Injected from main.qml.
-    // 由 main.qml 注入。
+    // Properties injected by main.qml
+    // 由 main.qml 注入的属性
     property var theme
     property font textFont
     property string timeFormat
@@ -25,18 +25,16 @@ Item {
     property date requestedDate
     readonly property string currentTrackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 
-    // Panel sizing.
-    // 面板大小。
     readonly property real plasmaDefaultWidth: Kirigami.Units.iconSizes.sizeForLabels * 35
 
     implicitWidth: Math.round(root.plasmaDefaultWidth)
 
-    // Album-art size follows the available panel space.
-    // 专辑封面大小随面板可用空间缩放。
+    // Scale album artwork with the available panel space
+    // 专辑封面大小随面板可用空间缩放
     readonly property real coverSize: Math.round(0.5 * Math.min(root.width, root.height))
 
-    // Expanded-panel clock font scales with panel height.
-    // 展开面板时钟字号按面板高度缩放。
+    // Scale the expanded-panel clock font with panel height
+    // 展开面板时钟字号随面板高度缩放
     readonly property font clockFont: Qt.font({
         "bold": true,
         "family": root.textFont.family,
@@ -45,23 +43,25 @@ Item {
 
     readonly property bool playing: root.mediaProvider !== null && root.mediaProvider.playing
 
-    // 页码指示器需要预留的高度：圆点本身加上下各一圈命中余量。
+    // Height reserved for the page indicator and its hit area
+    // 为页码指示器及其点击区域预留的高度
     readonly property int indicatorHeight: Math.round(root.height * 0.08)
 
 
 
-    // Left pane for calendar and notifications.
-    Item { // Switch between notifications and calendar when both are enabled.
+    Item {
         id: leftPane
 
-        // 有媒体时右半被播放器占用，通知改到左半与日历分页显示。
+        // When media uses the right pane, notifications share the left pane with the calendar
+        // 媒体占用右侧时，通知与日历在左侧分页显示
         readonly property bool paged: root.hasMedia && root.hasNotifications
         readonly property int contentMargin: Math.round(root.height * 0.05)
-        // 页数：只有一页时既不需要切换也不需要指示器。
         readonly property int pageCount: leftPane.paged ? 2 : 1
-        // 0 = 通知页，1 = 日历页。
+        // Page index: 0 = notifications, 1 = calendar
+        // 页面索引：0 = 通知页，1 = 日历页
         property int currentPage: 0
-        // 拖动过程中的临时位移，单位同样是“页”。
+        // Temporary drag offset measured in pages
+        // 拖动中的临时位移，单位为页
         property real dragOffset: 0
 
         anchors.bottom: parent.bottom
@@ -69,14 +69,14 @@ Item {
         anchors.top: parent.top
         width: parent.width / 2
 
-        // 切页；越界时保持不变。
         function showPage(index) {
             if (index >= 0 && index < leftPane.pageCount) {
                 leftPane.currentPage = index;
             }
         }
 
-        // 分页视口：两页并排放在同一行里，整行左右平移完成切换，超出部分被裁掉。
+        // Place pages side by side and translate the clipped row to switch
+        // 两页并排放置，通过平移裁剪行完成切换
         Item {
             id: pageViewport
 
@@ -90,7 +90,8 @@ Item {
             anchors.topMargin: leftPane.contentMargin
             clip: true
 
-            // 左右拖动切页：横向拖动超过阈值才接管，因此不影响页面内的点击。
+            // Take over horizontal drags only past the threshold so page clicks still work
+            // 仅接管超过阈值的横向拖动，以保留页面内点击
             DragHandler {
                 id: pageDrag
 
@@ -103,7 +104,8 @@ Item {
                     leftPane.dragOffset = pageDrag.translation.x / pageViewport.width;
                 }
                 onActiveChanged: if (!active) {
-                    // 松手后吸附到最近的一页。
+                    // Snap to the nearest page on release
+                    // 松手后吸附到最近一页
                     const target = Math.round(leftPane.currentPage - leftPane.dragOffset);
                     leftPane.dragOffset = 0;
                     leftPane.showPage(target);
@@ -113,7 +115,8 @@ Item {
             Row {
                 id: pages
 
-                // 整行的位置（单位：页）= 当前页减去拖动偏移。
+                // Row position in pages = current page minus drag offset
+                // 行位置（页）= 当前页减去拖动偏移
                 readonly property real position: leftPane.currentPage - leftPane.dragOffset
 
                 height: pageViewport.height
@@ -130,11 +133,12 @@ Item {
                     }
                 }
 
-                Notifications { // 通知页：只在分页时出现在左半，否则在右半显示。
+                Notifications {
                     height: pageViewport.height
                     width: leftPane.paged ? pageViewport.width : 0
 
-                    // 分页时两页都常驻以便滑动，但只有轮到自己时才接受操作、标记已读。
+                    // Keep both pages instantiated for swiping; only the active page accepts input and marks notifications read
+                    // 两页常驻以支持滑动，仅活动页接收操作并标记通知已读
                     readonly property bool isCurrent: leftPane.paged && leftPane.currentPage === 0
 
                     enabled: isCurrent
@@ -146,7 +150,7 @@ Item {
                     visible: leftPane.paged
                 }
 
-                Calender { // 日历页。
+                Calender {
                     height: pageViewport.height
                     width: pageViewport.width
 
@@ -157,12 +161,10 @@ Item {
             }
         }
 
-        // 页码指示器：点击切页，当前页用拉长的胶囊表示。
         Row {
             id: pageIndicator
 
             readonly property int dotSize: Math.round(root.height * 0.03)
-            // 命中区域比圆点大一圈，便于点击。
             readonly property int hitPadding: Math.round(pageIndicator.dotSize * 0.6)
 
             anchors.bottom: parent.bottom
@@ -219,10 +221,7 @@ Item {
 
 
 
-    // Divider between the two panes.
-    // 两个面板之间的分隔线。
-    Rectangle { // Divider.
-    // 分隔线。
+    Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
         color: root.theme.disabledTextColor
@@ -233,11 +232,11 @@ Item {
 
 
 
-    // Right pane for clock, media controls or notifications.
-    Item { // Show notifications when there is no media; otherwise clock or controls.
+    Item {
         id: rightPane
 
-        // 无媒体播放且有通知时，通知占用时钟的位置。
+        // Notifications replace the clock when no media is playing
+        // 无媒体播放且有通知时，通知占用时钟的位置
         readonly property bool showsNotifications: !root.hasMedia && root.hasNotifications
 
         anchors.bottom: parent.bottom
@@ -245,7 +244,6 @@ Item {
         anchors.top: parent.top
         width: parent.width / 2
 
-        // ———— 无媒体且无通知：时钟 ————
         Clock {
             anchors.centerIn: parent
             height: Math.round(parent.height * 0.4)
@@ -256,7 +254,6 @@ Item {
             width: Math.round(parent.width * 0.9)
         }
 
-        // ———— 无媒体：通知 ————
         Notifications {
             anchors.fill: parent
             anchors.margins: Math.round(root.height * 0.05)
@@ -268,7 +265,6 @@ Item {
             visible: rightPane.showsNotifications
         }
 
-        // ———— 有媒体：媒体控制器 ————
         Item {
             id: mediaController
 
@@ -277,7 +273,6 @@ Item {
 
             readonly property real gap: Math.round(root.height * 0.02)
 
-            // 专辑封面，缺失时显示占位图形。
             Item {
                 id: coverBox
 
@@ -321,7 +316,6 @@ Item {
                 }
             }
 
-            // Track title.
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: coverBox.bottom
@@ -339,7 +333,6 @@ Item {
                 wrapMode: Text.WordWrap
             }
 
-            // 上一曲、播放/暂停、下一曲。
             RowLayout {
                 id: controlsRow
 

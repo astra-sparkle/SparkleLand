@@ -7,13 +7,13 @@ import org.kde.plasma.plasmoid
 
 
 
-// Config page binds cfg_ entries to KConfig values.
-// 配置页将 cfg_ 条目绑定到 KConfig 值。
+// Bind cfg_ entries on the configuration page to KConfig values
+// 将配置页中的 cfg_ 条目绑定到 KConfig 值
 KCM.SimpleKCM {
     id: page
 
-    // Keep in sync with the XML config entries.
-    // 保持与 XML 配置项同步。
+    // Keep this page in sync with the XML configuration entries
+    // 保持此页面与 XML 配置项同步
     property alias cfg_maximumPanelWidth: maximumWidthSpin.value
     property alias cfg_minimumPanelWidth: minimumWidthSpin.value
 

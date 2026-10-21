@@ -3,8 +3,8 @@ import org.kde.kirigami as Kirigami
 
 
 
-// Compact media title. Controls are rendered in the expanded panel.
-// 紧凑条目中的曲目名；播放控制位于展开面板。
+// Compact media title; controls are rendered in the expanded panel
+// 紧凑条目中的曲目名，播放控制位于展开面板
 Item {
     id: root
 
@@ -14,8 +14,8 @@ Item {
     property bool useThemeBackground: true
     property string title: ""
 
-    // Use accent text only while playing and the theme background is enabled.
-    // 仅在播放且启用主题背景时使用强调色文字。
+    // Use accent text only while playing with the theme background enabled
+    // 仅在播放且启用主题背景时使用强调色文字
     readonly property bool highlighted: root.playing && root.useThemeBackground
 
     implicitHeight: 32
@@ -41,13 +41,13 @@ Item {
 
 
 
-    // Playback buttons with a lightweight hover highlight.
-    // 轻量悬停高亮的播放控制按钮。
+    // Playback buttons with a lightweight hover highlight
+    // 带轻量悬停高亮的播放控制按钮
     component MediaControlButton: Item {
         id: button
 
-        // Injected from Panel.qml.
-        // 由 Panel.qml 注入。
+        // Properties injected by Panel.qml
+        // 由 Panel.qml 注入的属性
         property var theme
         property string source: ""
 
@@ -58,7 +58,8 @@ Item {
         Kirigami.ShadowedRectangle {
             anchors.fill: parent
 
-            // 阴影相对底框的偏移量（“右下”即 x、y 均为正）。
+            // Positive offsets place the shadow at the bottom right
+            // x、y 为正时阴影位于右下方
             readonly property real shadowOffset: Math.round(Kirigami.Units.smallSpacing / 2)
 
             border.width: 0

@@ -5,30 +5,31 @@ import org.kde.ksvg as KSvg
 
 
 
-// Notification list with do-not-disturb and clear actions.
-// 通知列表，包含勿扰和清除操作。
+// Notification list with do-not-disturb and clear actions
+// 通知列表，包含勿扰和清除操作
 Item {
     id: root
 
-    // Injected from main.qml.
-    // 由 main.qml 注入。
+    // Properties injected by main.qml
+    // 由 main.qml 注入的属性
     property var theme
     property var provider
     property bool showDoNotDisturb: true
     property bool showClearAll: true
 
-    // Time refresh counter.
-    // 时间刷新计数器。
+    // Counter used to refresh relative-time labels
+    // 用于刷新相对时间文本的计数器
     property int timeTick
 
-    // Only mark as active when the page is actually visible.
-    // 仅在页面真正可见时才视为激活。
+    // Activate only when the page is visible and selected
+    // 仅当页面可见且处于选中状态时才激活
     property bool pageActive: true
     readonly property bool effectiveActive: root.visible && root.pageActive
 
     readonly property bool available: root.provider !== null && root.provider.available
     readonly property bool inhibited: root.provider !== null && root.provider.inhibited
-    // 紧急通知的枚举值，用于按主题的警告色着色。
+    // Critical urgency enum value used for warning-color styling
+    // 用于警告色样式的紧急级别枚举值
     readonly property int criticalUrgency: root.provider !== null ? root.provider.criticalUrgency : -1
 
     readonly property int gap: Math.round(root.theme.gridUnit / 3)
@@ -45,8 +46,8 @@ Item {
         "pointSize": Math.max(1, root.theme.defaultFont.pointSize - 1)
     })
 
-    // Relative string like "just now" or "2 min ago".
-    // 相对时间字符串，例如“刚刚”或“2 分钟前”。
+    // Format a timestamp as a relative string
+    // 将时间戳格式化为相对时间
     function relativeTime(value) {
         root.timeTick;
 
@@ -72,8 +73,8 @@ Item {
         return i18np("%1 day ago", "%1 days ago", Math.floor(hours / 24));
     }
 
-    // Mark as read and sync do-not-disturb when active.
-    // 激活时标记已读并同步勿扰状态。
+    // Mark notifications as read and sync do-not-disturb while active
+    // 激活时标记通知为已读并同步勿扰状态
     function refresh() {
         if (root.provider === null) {
             return;
@@ -97,7 +98,6 @@ Item {
         anchors.fill: parent
         spacing: root.gap
 
-        // ———————————————— 顶部：标题、勿扰与清除 ————————————————
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: root.buttonSize
@@ -112,7 +112,6 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            // 勿扰开关。
             Item {
                 id: doNotDisturbButton
 
@@ -120,7 +119,6 @@ Item {
                 Layout.preferredWidth: root.buttonSize
                 visible: root.showDoNotDisturb && root.available
 
-                // 按钮外观取自桌面主题的 button 元素，随主题切换自动变化。
                 KSvg.FrameSvgItem {
                     anchors.fill: parent
                     imagePath: "widgets/button"
@@ -147,7 +145,6 @@ Item {
                 }
             }
 
-            // 清除全部。
             Item {
                 id: clearAllButton
 
@@ -182,7 +179,6 @@ Item {
             }
         }
 
-        // 勿扰生效时的说明。
         Text {
             Layout.fillWidth: true
             color: root.theme.disabledTextColor
@@ -193,7 +189,6 @@ Item {
             visible: root.inhibited
         }
 
-        // ———————————————— 通知列表 ————————————————
         Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
@@ -224,7 +219,6 @@ Item {
                     height: entryRow.implicitHeight + root.gap * 2
                     width: ListView.view ? ListView.view.width : 0
 
-                    // 悬停高亮由桌面主题的 listitem 框架绘制，切换主题时自动跟随。
                     KSvg.FrameSvgItem {
                         anchors.fill: parent
                         imagePath: "widgets/listitem"
@@ -232,7 +226,8 @@ Item {
                         visible: entryMouse.containsMouse
                     }
 
-                    // 整行的点击处理，声明在内容之前以便按钮优先接收点击。
+                    // Handle row clicks before content so later buttons receive input first
+                    // 整行点击区域先声明，使后续按钮优先接收输入
                     MouseArea {
                         id: entryMouse
 
@@ -263,7 +258,7 @@ Item {
                         anchors.top: parent.top
                         spacing: root.gap
 
-                        Kirigami.Icon { // 应用图标。
+                        Kirigami.Icon {
                             Layout.alignment: Qt.AlignTop
                             Layout.preferredHeight: Math.round(root.theme.gridUnit * 1.8)
                             Layout.preferredWidth: height
@@ -279,7 +274,7 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: root.gap
 
-                                Text { // 应用名；紧急通知使用主题的警告色。
+                                Text {
                                     Layout.fillWidth: true
                                     color: entry.urgency === root.criticalUrgency ? root.theme.negativeTextColor : root.theme.accentColor
                                     elide: Text.ElideRight
@@ -288,14 +283,14 @@ Item {
                                     text: entry.applicationName
                                 }
 
-                                Text { // 相对时间。
+                                Text {
                                     color: root.theme.disabledTextColor
                                     font: root.bodyFont
                                     text: root.relativeTime(entry.stamp)
                                 }
                             }
 
-                            Text { // 通知标题。
+                            Text {
                                 Layout.fillWidth: true
                                 color: root.theme.textColor
                                 elide: Text.ElideRight
@@ -304,7 +299,7 @@ Item {
                                 text: entry.summary
                             }
 
-                            Text { // 通知正文，最多两行。
+                            Text {
                                 Layout.fillWidth: true
                                 color: root.theme.disabledTextColor
                                 font: root.bodyFont
@@ -315,7 +310,7 @@ Item {
                             }
                         }
 
-                        Item { // 关闭按钮。
+                        Item {
                             Layout.alignment: Qt.AlignTop
                             Layout.preferredHeight: root.buttonSize
                             Layout.preferredWidth: root.buttonSize
@@ -350,7 +345,6 @@ Item {
                 }
             }
 
-            // 空列表或服务不可用时的占位提示。
             Column {
                 id: placeholder
 
@@ -380,7 +374,8 @@ Item {
 
 
 
-    // 刷新相对时间，并定期重算勿扰状态（定时抑制会自然到期）。
+    // Refresh relative times and do-not-disturb state, including timed expiry
+    // 刷新相对时间和勿扰状态，并处理定时抑制到期
     Timer {
         id: refreshTimer
 
