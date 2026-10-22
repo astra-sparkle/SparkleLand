@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_com.astrasparkle.sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
-"POT-Creation-Date: 2026-10-22 20:35+0800\n"
+"POT-Creation-Date: 2026-10-22 20:48+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -39,7 +39,7 @@ msgid "Font"
 msgstr ""
 
 #: contents/config/option.qml:75 contents/config/option.qml:87
-#: contents/config/option.qml:242 contents/config/option.qml:262
+#: contents/config/option.qml:232 contents/config/option.qml:252
 msgid "Follow system"
 msgstr ""
 
@@ -83,114 +83,110 @@ msgstr ""
 msgid "Background:"
 msgstr ""
 
-#: contents/config/option.qml:130
+#: contents/config/option.qml:129
 msgid "Use the theme highlight color as background while playing"
 msgstr ""
 
-#: contents/config/option.qml:137
-msgid "The playback icon style never uses a background color."
-msgstr ""
-
-#: contents/config/option.qml:144 contents/ui/Notifications.qml:111
+#: contents/config/option.qml:134 contents/ui/Notifications.qml:111
 #: contents/ui/NotificationsPopup.qml:192
 msgid "Notifications"
 msgstr ""
 
-#: contents/config/option.qml:150
+#: contents/config/option.qml:140
 msgid "Notifications:"
 msgstr ""
 
-#: contents/config/option.qml:152
+#: contents/config/option.qml:142
 msgid "Replace the clock or calendar area with the notification list"
 msgstr ""
 
-#: contents/config/option.qml:158
+#: contents/config/option.qml:148
 msgid "Banners:"
 msgstr ""
 
-#: contents/config/option.qml:161
+#: contents/config/option.qml:151
 msgid "Show notifications as banners next to this widget"
 msgstr ""
 
-#: contents/config/option.qml:167
+#: contents/config/option.qml:157
 msgid "Banner duration:"
 msgstr ""
 
-#: contents/config/option.qml:171
+#: contents/config/option.qml:161
 msgid "%1 second"
 msgid_plural "%1 seconds"
 msgstr[0] ""
 msgstr[1] ""
 
-#: contents/config/option.qml:182
+#: contents/config/option.qml:172
 msgid ""
 "Remove the Plasma Notifications widget from the panel, otherwise every "
 "notification is shown twice."
 msgstr ""
 
-#: contents/config/option.qml:190
+#: contents/config/option.qml:180
 msgid "Maximum shown:"
 msgstr ""
 
-#: contents/config/option.qml:194
+#: contents/config/option.qml:184
 msgid "No limit"
 msgstr ""
 
-#: contents/config/option.qml:194
+#: contents/config/option.qml:184
 msgid "%1 notification"
 msgid_plural "%1 notifications"
 msgstr[0] ""
 msgstr[1] ""
 
-#: contents/config/option.qml:205
+#: contents/config/option.qml:195
 msgid "Keep notifications that timed out or were dismissed"
 msgstr ""
 
-#: contents/config/option.qml:213
+#: contents/config/option.qml:203
 msgid "Show the do not disturb button"
 msgstr ""
 
-#: contents/config/option.qml:221
+#: contents/config/option.qml:211
 msgid "Show the clear all button"
 msgstr ""
 
-#: contents/config/option.qml:229
+#: contents/config/option.qml:219
 msgid "Show the unread count in the notification dot"
 msgstr ""
 
-#: contents/config/option.qml:234
+#: contents/config/option.qml:224
 msgid "Time and date"
 msgstr ""
 
-#: contents/config/option.qml:240
+#: contents/config/option.qml:230
 msgid "Clock:"
 msgstr ""
 
-#: contents/config/option.qml:242
+#: contents/config/option.qml:232
 msgid "12-hour"
 msgstr ""
 
-#: contents/config/option.qml:242
+#: contents/config/option.qml:232
 msgid "24-hour"
 msgstr ""
 
-#: contents/config/option.qml:246
+#: contents/config/option.qml:236
 msgid "Custom time format:"
 msgstr ""
 
-#: contents/config/option.qml:247
+#: contents/config/option.qml:237
 msgid "Use the setting above"
 msgstr ""
 
-#: contents/config/option.qml:255
+#: contents/config/option.qml:245
 msgid "Date:"
 msgstr ""
 
-#: contents/config/option.qml:257
+#: contents/config/option.qml:247
 msgid "Show the date under the time"
 msgstr ""
 
-#: contents/config/option.qml:261
+#: contents/config/option.qml:251
 msgid "Date format:"
 msgstr ""
 

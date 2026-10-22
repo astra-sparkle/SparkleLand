@@ -126,17 +126,7 @@ KCM.SimpleKCM {
 
             Kirigami.FormData.label: i18n("Background:")
             checked: Plasmoid.configuration.mediaUseThemeBackground
-            enabled: mediaCompactStyleCombo.currentIndex !== 2
             text: i18n("Use the theme highlight color as background while playing")
-        }
-
-        QQC2.Label {
-            Layout.fillWidth: true
-            font: Kirigami.Theme.smallFont
-            opacity: 0.7
-            text: i18n("The playback icon style never uses a background color.")
-            visible: mediaCompactStyleCombo.currentIndex === 2
-            wrapMode: Text.WordWrap
         }
 
         QQC2.Label {

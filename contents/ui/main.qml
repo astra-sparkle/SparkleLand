@@ -221,9 +221,7 @@ PlasmoidItem {
 
 	// Use the accent as the media background and shift it when paused
 	// 媒体背景使用强调色，暂停时按主题明暗调整以作区分
-	// The playback icon style never draws the background
-	// 播放图标样式不绘制背景
-	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground && root.mediaCompactStyle !== 2
+	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
 	readonly property color mediaBackgroundColor: {
 		const base = root.theme.accentColor;
 		// Shift away from the palette text color so the paused state keeps contrast
@@ -436,8 +434,10 @@ PlasmoidItem {
 			visible: root.panelShowsMedia
 		}
 
-		// Music note tinted with the accent, placed left of the clock in the icon style
-		// 图标样式下位于时钟左侧的强调色音符
+		// Music note left of the clock in the icon style, accent colored without a background
+		// 图标样式下位于时钟左侧的音符，无背景时使用强调色
+		// Switch to the text color over the media background so the icon stays legible
+		// 媒体背景显示时改用文字色，保证图标在背景上清晰可见
 		Kirigami.Icon {
 			id: mediaPlaybackIcon
 
@@ -446,7 +446,7 @@ PlasmoidItem {
 			anchors.left: parent.left
 			anchors.leftMargin: 6
 			anchors.verticalCenter: parent.verticalCenter
-			color: root.theme.accentColor
+			color: root.mediaBackgroundVisible ? root.theme.textColor : root.theme.accentColor
 			height: iconSize
 			source: "music-note-16th"
 			visible: root.compactShowsMediaIcon
@@ -477,7 +477,9 @@ PlasmoidItem {
 			anchors.right: parent.right
 			anchors.rightMargin: 3
 			anchors.verticalCenter: parent.verticalCenter
-			color: root.theme.accentColor
+			// Over the media background the dot turns into the text color and the count takes the background color
+			// 媒体背景显示时圆点改用文字色，计数文字改用背景色
+			color: root.mediaBackgroundVisible ? root.theme.textColor : root.theme.accentColor
 			height: Math.round(Math.max(16, parent.height * 0.55))
 			radius: height / 2
 			visible: root.notificationsEnabled && root.unreadNotificationCount > 0
@@ -489,7 +491,7 @@ PlasmoidItem {
 				id: badgeLabel
 
 				anchors.centerIn: parent
-				color: root.theme.accentTextColor
+				color: root.mediaBackgroundVisible ? root.mediaBackgroundColor : root.theme.accentTextColor
 				font: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.6)))
 				text: notificationBadge.displayCount >= 99 ? "99+" : String(notificationBadge.displayCount)
 				visible: root.notificationsShowUnreadCount
