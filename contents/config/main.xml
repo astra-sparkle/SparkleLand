@@ -54,6 +54,9 @@
         <entry name="notificationsShowClearAll" type="Bool">
             <default>true</default>
         </entry>
+        <entry name="notificationsShowUnreadCount" type="Bool">
+            <default>true</default>
+        </entry>
         <entry name="notificationsShowPopups" type="Bool">
             <default>true</default>
         </entry>

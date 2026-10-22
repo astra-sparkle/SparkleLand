@@ -44,6 +44,9 @@ PlasmoidItem {
 	readonly property bool notificationsIncludeExpired: plasmoid.configuration.notificationsIncludeExpired === true
 	readonly property bool notificationsShowDoNotDisturb: plasmoid.configuration.notificationsShowDoNotDisturb !== false
 	readonly property bool notificationsShowClearAll: plasmoid.configuration.notificationsShowClearAll !== false
+	// Unread count inside the compact dot; when off the dot stays as a plain indicator
+	// 紧凑圆点是否显示未读数量；关闭后圆点仅作为提示
+	readonly property bool notificationsShowUnreadCount: plasmoid.configuration.notificationsShowUnreadCount !== false
 	// Banner visibility and duration; plasmashell positions banners beside the applet
 	// 横幅开关与时长；位置由 plasmashell 锚定在小组件旁
 	readonly property bool notificationsShowPopups: plasmoid.configuration.notificationsShowPopups !== false
@@ -475,18 +478,21 @@ PlasmoidItem {
 			anchors.rightMargin: 3
 			anchors.verticalCenter: parent.verticalCenter
 			color: root.theme.accentColor
-			height: Math.round(Math.max(14, parent.height * 0.42))
+			height: Math.round(Math.max(16, parent.height * 0.55))
 			radius: height / 2
 			visible: root.notificationsEnabled && root.unreadNotificationCount > 0
-			width: Math.max(height, badgeLabel.implicitWidth + Math.round(height * 0.5))
+			width: root.notificationsShowUnreadCount
+				? Math.max(height, badgeLabel.implicitWidth + Math.round(height * 0.5))
+				: height
 
 			Text {
 				id: badgeLabel
 
 				anchors.centerIn: parent
 				color: root.theme.accentTextColor
-				font: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.62)))
+				font: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.6)))
 				text: notificationBadge.displayCount >= 99 ? "99+" : String(notificationBadge.displayCount)
+				visible: root.notificationsShowUnreadCount
 			}
 		}
 

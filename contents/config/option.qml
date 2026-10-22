@@ -32,6 +32,7 @@ KCM.SimpleKCM {
     property alias cfg_notificationsShowPopups: notificationsShowPopupsCheck.checked
     property alias cfg_notificationsShowClearAll: notificationsClearAllCheck.checked
     property alias cfg_notificationsShowDoNotDisturb: notificationsDoNotDisturbCheck.checked
+    property alias cfg_notificationsShowUnreadCount: notificationsUnreadCountCheck.checked
 
     property string cfg_customDateFormat: Plasmoid.configuration.customDateFormat
     property string cfg_customTimeFormat: Plasmoid.configuration.customTimeFormat
@@ -218,6 +219,14 @@ KCM.SimpleKCM {
             checked: Plasmoid.configuration.notificationsShowClearAll
             enabled: notificationsEnabledCheck.checked
             text: i18n("Show the clear all button")
+        }
+
+        QQC2.CheckBox {
+            id: notificationsUnreadCountCheck
+
+            checked: Plasmoid.configuration.notificationsShowUnreadCount
+            enabled: notificationsEnabledCheck.checked
+            text: i18n("Show the unread count in the notification dot")
         }
 
         QQC2.Label {
