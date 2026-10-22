@@ -221,7 +221,7 @@ KCM.SimpleKCM {
 
             Kirigami.FormData.label: i18n("Date:")
             checked: Plasmoid.configuration.showDate
-            text: i18n("Show the date next to the time")
+            text: i18n("Show the date under the time")
         }
 
         QQC2.TextField {

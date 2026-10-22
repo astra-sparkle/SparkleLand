@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_com.astrasparkle.sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
-"POT-Creation-Date: 2026-10-22 19:01+0800\n"
+"POT-Creation-Date: 2026-10-22 19:19+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,6 +20,162 @@ msgstr ""
 #: contents/config/config.qml:11
 msgctxt "@title:group for configuration dialog page"
 msgid "General"
+msgstr ""
+
+#: contents/config/option.qml:43
+msgid "Panel"
+msgstr ""
+
+#: contents/config/option.qml:49
+msgid "Minimum width:"
+msgstr ""
+
+#: contents/config/option.qml:58
+msgid "Maximum width:"
+msgstr ""
+
+#: contents/config/option.qml:66
+msgid "Font"
+msgstr ""
+
+#: contents/config/option.qml:72
+msgid "Family:"
+msgstr ""
+
+#: contents/config/option.qml:74 contents/config/option.qml:84
+#: contents/config/option.qml:209
+msgid "Follow system"
+msgstr ""
+
+#: contents/config/option.qml:81
+msgid "Size:"
+msgstr ""
+
+#: contents/config/option.qml:84
+msgid "%1 pt"
+msgstr ""
+
+#: contents/config/option.qml:94
+msgid "Bold"
+msgstr ""
+
+#: contents/config/option.qml:101
+msgid "Italic"
+msgstr ""
+
+#: contents/config/option.qml:106
+msgid "Media"
+msgstr ""
+
+#: contents/config/option.qml:112
+msgid "Background:"
+msgstr ""
+
+#: contents/config/option.qml:114
+msgid "Use the theme highlight color as background while playing"
+msgstr ""
+
+#: contents/config/option.qml:119 contents/ui/Notifications.qml:111
+#: contents/ui/NotificationsPopup.qml:192
+msgid "Notifications"
+msgstr ""
+
+#: contents/config/option.qml:125
+msgid "Notifications:"
+msgstr ""
+
+#: contents/config/option.qml:127
+msgid "Replace the clock or calendar area with the notification list"
+msgstr ""
+
+#: contents/config/option.qml:133
+msgid "Banners:"
+msgstr ""
+
+#: contents/config/option.qml:136
+msgid "Show notifications as banners next to this widget"
+msgstr ""
+
+#: contents/config/option.qml:142
+msgid "Banner duration:"
+msgstr ""
+
+#: contents/config/option.qml:146
+msgid "%1 second"
+msgid_plural "%1 seconds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/config/option.qml:157
+msgid ""
+"Remove the Plasma Notifications widget from the panel, otherwise every "
+"notification is shown twice."
+msgstr ""
+
+#: contents/config/option.qml:165
+msgid "Maximum shown:"
+msgstr ""
+
+#: contents/config/option.qml:169
+msgid "No limit"
+msgstr ""
+
+#: contents/config/option.qml:169
+msgid "%1 notification"
+msgid_plural "%1 notifications"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/config/option.qml:180
+msgid "Keep notifications that timed out or were dismissed"
+msgstr ""
+
+#: contents/config/option.qml:188
+msgid "Show the do not disturb button"
+msgstr ""
+
+#: contents/config/option.qml:196
+msgid "Show the clear all button"
+msgstr ""
+
+#: contents/config/option.qml:201
+msgid "Time and date"
+msgstr ""
+
+#: contents/config/option.qml:207
+msgid "Clock:"
+msgstr ""
+
+#: contents/config/option.qml:209
+msgid "12-hour"
+msgstr ""
+
+#: contents/config/option.qml:209
+msgid "24-hour"
+msgstr ""
+
+#: contents/config/option.qml:213
+msgid "Custom time format:"
+msgstr ""
+
+#: contents/config/option.qml:214
+msgid "Empty: use the setting above"
+msgstr ""
+
+#: contents/config/option.qml:222
+msgid "Date:"
+msgstr ""
+
+#: contents/config/option.qml:224
+msgid "Show the date under the time"
+msgstr ""
+
+#: contents/config/option.qml:228
+msgid "Date format:"
+msgstr ""
+
+#: contents/config/option.qml:229
+msgid "Empty: follow system"
 msgstr ""
 
 #: contents/ui/Calender.qml:33
@@ -53,11 +209,6 @@ msgid_plural "%1 days ago"
 msgstr[0] ""
 msgstr[1] ""
 
-#: contents/ui/Notifications.qml:111 contents/ui/NotificationsPopup.qml:192
-#: contents/ui/option.qml:119
-msgid "Notifications"
-msgstr ""
-
 #: contents/ui/Notifications.qml:188
 msgid "Do not disturb is active"
 msgstr ""
@@ -72,155 +223,4 @@ msgstr ""
 
 #: contents/ui/main.qml:12
 msgid "Sparkle Land"
-msgstr ""
-
-#: contents/ui/option.qml:43
-msgid "Panel"
-msgstr ""
-
-#: contents/ui/option.qml:49
-msgid "Minimum width:"
-msgstr ""
-
-#: contents/ui/option.qml:58
-msgid "Maximum width:"
-msgstr ""
-
-#: contents/ui/option.qml:66
-msgid "Font"
-msgstr ""
-
-#: contents/ui/option.qml:72
-msgid "Family:"
-msgstr ""
-
-#: contents/ui/option.qml:74 contents/ui/option.qml:84
-#: contents/ui/option.qml:209
-msgid "Follow system"
-msgstr ""
-
-#: contents/ui/option.qml:81
-msgid "Size:"
-msgstr ""
-
-#: contents/ui/option.qml:84
-msgid "%1 pt"
-msgstr ""
-
-#: contents/ui/option.qml:94
-msgid "Bold"
-msgstr ""
-
-#: contents/ui/option.qml:101
-msgid "Italic"
-msgstr ""
-
-#: contents/ui/option.qml:106
-msgid "Media"
-msgstr ""
-
-#: contents/ui/option.qml:112
-msgid "Background:"
-msgstr ""
-
-#: contents/ui/option.qml:114
-msgid "Use the theme highlight color as background while playing"
-msgstr ""
-
-#: contents/ui/option.qml:125
-msgid "Notifications:"
-msgstr ""
-
-#: contents/ui/option.qml:127
-msgid "Replace the clock or calendar area with the notification list"
-msgstr ""
-
-#: contents/ui/option.qml:133
-msgid "Banners:"
-msgstr ""
-
-#: contents/ui/option.qml:136
-msgid "Show notifications as banners next to this widget"
-msgstr ""
-
-#: contents/ui/option.qml:142
-msgid "Banner duration:"
-msgstr ""
-
-#: contents/ui/option.qml:146
-msgid "%1 second"
-msgid_plural "%1 seconds"
-msgstr[0] ""
-msgstr[1] ""
-
-#: contents/ui/option.qml:157
-msgid ""
-"Remove the Plasma Notifications widget from the panel, otherwise every "
-"notification is shown twice."
-msgstr ""
-
-#: contents/ui/option.qml:165
-msgid "Maximum shown:"
-msgstr ""
-
-#: contents/ui/option.qml:169
-msgid "No limit"
-msgstr ""
-
-#: contents/ui/option.qml:169
-msgid "%1 notification"
-msgid_plural "%1 notifications"
-msgstr[0] ""
-msgstr[1] ""
-
-#: contents/ui/option.qml:180
-msgid "Keep notifications that timed out or were dismissed"
-msgstr ""
-
-#: contents/ui/option.qml:188
-msgid "Show the do not disturb button"
-msgstr ""
-
-#: contents/ui/option.qml:196
-msgid "Show the clear all button"
-msgstr ""
-
-#: contents/ui/option.qml:201
-msgid "Time and date"
-msgstr ""
-
-#: contents/ui/option.qml:207
-msgid "Clock:"
-msgstr ""
-
-#: contents/ui/option.qml:209
-msgid "12-hour"
-msgstr ""
-
-#: contents/ui/option.qml:209
-msgid "24-hour"
-msgstr ""
-
-#: contents/ui/option.qml:213
-msgid "Custom time format:"
-msgstr ""
-
-#: contents/ui/option.qml:214
-msgid "Empty: use the setting above"
-msgstr ""
-
-#: contents/ui/option.qml:222
-msgid "Date:"
-msgstr ""
-
-#: contents/ui/option.qml:224
-msgid "Show the date next to the time"
-msgstr ""
-
-#: contents/ui/option.qml:228
-msgid "Date format:"
-msgstr ""
-
-#: contents/ui/option.qml:229
-msgid "Empty: follow system"
 msgstr ""
