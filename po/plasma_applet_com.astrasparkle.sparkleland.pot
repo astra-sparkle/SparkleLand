@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_com.astrasparkle.sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
-"POT-Creation-Date: 2026-10-22 19:47+0800\n"
+"POT-Creation-Date: 2026-10-22 19:51+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,16 +38,13 @@ msgstr ""
 msgid "Font"
 msgstr ""
 
-#: contents/config/option.qml:73 contents/config/option.qml:230
-msgid "Empty: follow system"
+#: contents/config/option.qml:73 contents/config/option.qml:85
+#: contents/config/option.qml:210 contents/config/option.qml:230
+msgid "Follow system"
 msgstr ""
 
 #: contents/config/option.qml:82
 msgid "Size:"
-msgstr ""
-
-#: contents/config/option.qml:85 contents/config/option.qml:210
-msgid "Follow system"
 msgstr ""
 
 #: contents/config/option.qml:85
@@ -158,7 +155,7 @@ msgid "Custom time format:"
 msgstr ""
 
 #: contents/config/option.qml:215
-msgid "Empty: use the setting above"
+msgid "Use the setting above"
 msgstr ""
 
 #: contents/config/option.qml:223

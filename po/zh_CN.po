@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_com.astrasparkle.sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
-"POT-Creation-Date: 2026-10-22 19:47+0800\n"
+"POT-Creation-Date: 2026-10-22 19:51+0800\n"
 "PO-Revision-Date: 2026-10-22 00:00+0800\n"
 "Last-Translator: Astra Sparkle <astra.sparkle17@gmail.com>\n"
 "Language-Team: Chinese (Simplified) <kde-i18n-doc@kde.org>\n"
@@ -39,17 +39,14 @@ msgstr "最大宽度："
 msgid "Font"
 msgstr "字体"
 
-#: contents/config/option.qml:73 contents/config/option.qml:230
-msgid "Empty: follow system"
-msgstr "留空：跟随系统"
+#: contents/config/option.qml:73 contents/config/option.qml:85
+#: contents/config/option.qml:210 contents/config/option.qml:230
+msgid "Follow system"
+msgstr "跟随系统"
 
 #: contents/config/option.qml:82
 msgid "Size:"
 msgstr "字号："
-
-#: contents/config/option.qml:85 contents/config/option.qml:210
-msgid "Follow system"
-msgstr "跟随系统"
 
 #: contents/config/option.qml:85
 msgid "%1 pt"
@@ -157,8 +154,8 @@ msgid "Custom time format:"
 msgstr "自定义时间格式："
 
 #: contents/config/option.qml:215
-msgid "Empty: use the setting above"
-msgstr "留空：使用上方设置"
+msgid "Use the setting above"
+msgstr "使用上方设置"
 
 #: contents/config/option.qml:223
 msgid "Date:"

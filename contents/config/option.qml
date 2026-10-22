@@ -70,7 +70,7 @@ KCM.SimpleKCM {
             id: fontFamilyField
 
             Layout.fillWidth: true
-            placeholderText: i18n("Empty: follow system")
+            placeholderText: i18n("Follow system")
             // Trim stray whitespace
             // 去除多余空白
             onEditingFinished: text = text.trim()
@@ -212,7 +212,7 @@ KCM.SimpleKCM {
 
         QQC2.TextField {
             Kirigami.FormData.label: i18n("Custom time format:")
-            placeholderText: i18n("Empty: use the setting above")
+            placeholderText: i18n("Use the setting above")
             text: page.cfg_customTimeFormat
             onTextEdited: page.cfg_customTimeFormat = text
         }
@@ -227,7 +227,7 @@ KCM.SimpleKCM {
 
         QQC2.TextField {
             Kirigami.FormData.label: i18n("Date format:")
-            placeholderText: i18n("Empty: follow system")
+            placeholderText: i18n("Follow system")
             text: page.cfg_customDateFormat
             onTextEdited: page.cfg_customDateFormat = text
         }
