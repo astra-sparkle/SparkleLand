@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_com.astrasparkle.sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
-"POT-Creation-Date: 2026-10-22 19:51+0800\n"
+"POT-Creation-Date: 2026-10-22 20:12+0800\n"
 "PO-Revision-Date: 2026-10-22 00:00+0800\n"
 "Last-Translator: Astra Sparkle <astra.sparkle17@gmail.com>\n"
 "Language-Team: Chinese (Simplified) <kde-i18n-doc@kde.org>\n"
@@ -23,149 +23,169 @@ msgctxt "@title:group for configuration dialog page"
 msgid "General"
 msgstr "常规"
 
-#: contents/config/option.qml:43
+#: contents/config/option.qml:44
 msgid "Panel"
 msgstr "面板"
 
-#: contents/config/option.qml:49
+#: contents/config/option.qml:50
 msgid "Minimum width:"
 msgstr "最小宽度："
 
-#: contents/config/option.qml:58
+#: contents/config/option.qml:59
 msgid "Maximum width:"
 msgstr "最大宽度："
 
-#: contents/config/option.qml:66
+#: contents/config/option.qml:67
 msgid "Font"
 msgstr "字体"
 
-#: contents/config/option.qml:73 contents/config/option.qml:85
-#: contents/config/option.qml:210 contents/config/option.qml:230
+#: contents/config/option.qml:74 contents/config/option.qml:86
+#: contents/config/option.qml:233 contents/config/option.qml:253
 msgid "Follow system"
 msgstr "跟随系统"
 
-#: contents/config/option.qml:82
+#: contents/config/option.qml:83
 msgid "Size:"
 msgstr "字号："
 
-#: contents/config/option.qml:85
+#: contents/config/option.qml:86
 msgid "%1 pt"
 msgstr "%1 pt"
 
-#: contents/config/option.qml:95
+#: contents/config/option.qml:96
 msgid "Bold"
 msgstr "粗体"
 
-#: contents/config/option.qml:102
+#: contents/config/option.qml:103
 msgid "Italic"
 msgstr "斜体"
 
-#: contents/config/option.qml:107
+#: contents/config/option.qml:108
 msgid "Media"
 msgstr "媒体"
 
-#: contents/config/option.qml:113
+#: contents/config/option.qml:114
+msgid "While playing:"
+msgstr "播放时："
+
+#: contents/config/option.qml:117
+msgid "Show the track title instead of the panel text"
+msgstr "用曲名替代面板文字"
+
+#: contents/config/option.qml:118
+msgid "Keep the clock and use the background color"
+msgstr "保留时钟并使用背景色"
+
+#: contents/config/option.qml:119
+msgid "Keep the clock and show a playback icon"
+msgstr "保留时钟并显示播放图标"
+
+#: contents/config/option.qml:126
 msgid "Background:"
 msgstr "背景："
 
-#: contents/config/option.qml:115
+#: contents/config/option.qml:129
 msgid "Use the theme highlight color as background while playing"
 msgstr "播放时使用主题高亮色作为背景"
 
-#: contents/config/option.qml:120 contents/ui/Notifications.qml:111
+#: contents/config/option.qml:136
+msgid "The playback icon style never uses a background color."
+msgstr "播放图标样式不会使用背景色。"
+
+#: contents/config/option.qml:143 contents/ui/Notifications.qml:111
 #: contents/ui/NotificationsPopup.qml:192
 msgid "Notifications"
 msgstr "通知"
 
-#: contents/config/option.qml:126
+#: contents/config/option.qml:149
 msgid "Notifications:"
 msgstr "通知："
 
-#: contents/config/option.qml:128
+#: contents/config/option.qml:151
 msgid "Replace the clock or calendar area with the notification list"
 msgstr "用通知列表替换时钟或日历区域"
 
-#: contents/config/option.qml:134
+#: contents/config/option.qml:157
 msgid "Banners:"
 msgstr "横幅："
 
-#: contents/config/option.qml:137
+#: contents/config/option.qml:160
 msgid "Show notifications as banners next to this widget"
 msgstr "在此小组件旁以横幅显示通知"
 
-#: contents/config/option.qml:143
+#: contents/config/option.qml:166
 msgid "Banner duration:"
 msgstr "横幅显示时长："
 
-#: contents/config/option.qml:147
+#: contents/config/option.qml:170
 msgid "%1 second"
 msgid_plural "%1 seconds"
 msgstr[0] "%1 秒"
 
-#: contents/config/option.qml:158
+#: contents/config/option.qml:181
 msgid ""
 "Remove the Plasma Notifications widget from the panel, otherwise every "
 "notification is shown twice."
 msgstr "请从面板移除 Plasma 通知小组件，否则每条通知都会显示两次。"
 
-#: contents/config/option.qml:166
+#: contents/config/option.qml:189
 msgid "Maximum shown:"
 msgstr "最多显示："
 
-#: contents/config/option.qml:170
+#: contents/config/option.qml:193
 msgid "No limit"
 msgstr "不限"
 
-#: contents/config/option.qml:170
+#: contents/config/option.qml:193
 msgid "%1 notification"
 msgid_plural "%1 notifications"
 msgstr[0] "%1 条通知"
 
-#: contents/config/option.qml:181
+#: contents/config/option.qml:204
 msgid "Keep notifications that timed out or were dismissed"
 msgstr "保留已超时或已关闭的通知"
 
-#: contents/config/option.qml:189
+#: contents/config/option.qml:212
 msgid "Show the do not disturb button"
 msgstr "显示勿扰按钮"
 
-#: contents/config/option.qml:197
+#: contents/config/option.qml:220
 msgid "Show the clear all button"
 msgstr "显示全部清除按钮"
 
-#: contents/config/option.qml:202
+#: contents/config/option.qml:225
 msgid "Time and date"
 msgstr "时间与日期"
 
-#: contents/config/option.qml:208
+#: contents/config/option.qml:231
 msgid "Clock:"
 msgstr "时钟："
 
-#: contents/config/option.qml:210
+#: contents/config/option.qml:233
 msgid "12-hour"
 msgstr "12 小时制"
 
-#: contents/config/option.qml:210
+#: contents/config/option.qml:233
 msgid "24-hour"
 msgstr "24 小时制"
 
-#: contents/config/option.qml:214
+#: contents/config/option.qml:237
 msgid "Custom time format:"
 msgstr "自定义时间格式："
 
-#: contents/config/option.qml:215
+#: contents/config/option.qml:238
 msgid "Use the setting above"
 msgstr "使用上方设置"
 
-#: contents/config/option.qml:223
+#: contents/config/option.qml:246
 msgid "Date:"
 msgstr "日期："
 
-#: contents/config/option.qml:225
+#: contents/config/option.qml:248
 msgid "Show the date under the time"
 msgstr "在时间下显示日期"
 
-#: contents/config/option.qml:229
+#: contents/config/option.qml:252
 msgid "Date format:"
 msgstr "日期格式："
 

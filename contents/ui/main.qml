@@ -31,6 +31,12 @@ PlasmoidItem {
 	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, root.configNumber(plasmoid.configuration.maximumPanelWidth, 240))
 	readonly property int panelAverageWidth: Math.round((root.panelMinimumWidth + root.panelMaximumWidth) / 2)
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
+	// Compact panel style while media is playing: 0 = track title, 1 = clock with background, 2 = clock with playback icon
+	// 媒体播放时紧凑面板样式：0 = 曲名，1 = 时钟加背景，2 = 时钟加播放图标
+	readonly property int mediaCompactStyle: {
+		const style = root.configNumber(plasmoid.configuration.mediaCompactStyle, 0);
+		return (style >= 0 && style <= 2) ? Math.round(style) : 0;
+	}
 	// Notifications default to enabled; disabling them restores the original layout
 	// 通知默认开启，关闭后恢复原布局
 	readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
@@ -212,7 +218,9 @@ PlasmoidItem {
 
 	// Use the accent as the media background and shift it when paused
 	// 媒体背景使用强调色，暂停时按主题明暗调整以作区分
-	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
+	// The playback icon style never draws the background
+	// 播放图标样式不绘制背景
+	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground && root.mediaCompactStyle !== 2
 	readonly property color mediaBackgroundColor: {
 		const base = root.theme.accentColor;
 		// Shift away from the palette text color so the paused state keeps contrast
@@ -225,7 +233,11 @@ PlasmoidItem {
 	property date requestedDate
 
 	readonly property bool hasMedia: root.trackTitle.length > 0
-	readonly property bool panelShowsMedia: root.hasMedia && !root.expanded
+	// Track title replaces the clock only in style 0; the clock styles keep it visible
+	// 仅样式 0 用曲名替代时钟，其余样式保留时钟
+	readonly property bool compactShowsMediaTitle: root.hasMedia && root.mediaCompactStyle === 0
+	readonly property bool compactShowsMediaIcon: root.hasMedia && root.mediaCompactStyle === 2
+	readonly property bool panelShowsMedia: root.compactShowsMediaTitle && !root.expanded
 
 	Plasmoid.title: root.appTitle
 	Plasmoid.icon: root.isPlaying ? "media-playback-start" : root.appIconName
@@ -359,7 +371,9 @@ PlasmoidItem {
 	compactRepresentation: Item {
 		id: compactItem
 
-		readonly property int contentWidth: root.safeMax(clockItem.implicitWidth, mediaItem.implicitWidth)
+		readonly property int contentWidth: root.compactShowsMediaTitle
+			? root.safeMax(clockItem.implicitWidth, mediaItem.implicitWidth)
+			: clockItem.implicitWidth + compactItem.sideSpace
 
 		readonly property font primaryFont: root.autoCompactFontSize
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate))
@@ -371,13 +385,19 @@ PlasmoidItem {
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, false))
 			: root.panelFont
 
+		// Clock+icon style always reserves equal side space for the playback icon and the badge, even while either is hidden
+		// 时钟+图标样式下左右始终预留相同空间，供播放图标与通知角标使用（即使暂时隐藏）
+		readonly property int sideSpace: root.mediaCompactStyle === 2
+			? Math.max(mediaPlaybackIcon.width + 6, notificationBadge.width + 3)
+			: 0
+
 		// Reserve space for the badge so it does not cover the time or track title
 		// 为角标预留空间，避免遮挡时间或曲名
-		readonly property int badgeSpace: notificationBadge.visible ? notificationBadge.width + 4 : 0
+		readonly property int badgeSpace: root.mediaCompactStyle === 2 ? sideSpace : (notificationBadge.visible ? notificationBadge.width + 4 : 0)
 
 		// Media uses average or maximum width; clock width follows content within configured limits
 		// 媒体模式取平均或最大宽度；时钟模式按内容宽度限制在配置范围内
-		readonly property int preferredWidth: (root.hasMedia
+		readonly property int preferredWidth: (root.compactShowsMediaTitle
 			? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
 			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))) + badgeSpace
 
@@ -413,10 +433,28 @@ PlasmoidItem {
 			visible: root.panelShowsMedia
 		}
 
+		// Music note tinted with the accent, placed left of the clock in the icon style
+		// 图标样式下位于时钟左侧的强调色音符
+		Kirigami.Icon {
+			id: mediaPlaybackIcon
+
+			readonly property int iconSize: Math.round(Math.max(10, root.panelPixelSize(compactItem.height, false) * 0.9))
+
+			anchors.left: parent.left
+			anchors.leftMargin: 6
+			anchors.verticalCenter: parent.verticalCenter
+			color: root.theme.accentColor
+			height: iconSize
+			source: "music-note-16th"
+			visible: root.compactShowsMediaIcon
+			width: iconSize
+		}
+
 		Clock {
 			id: clockItem
 
 			anchors.fill: parent
+			anchors.leftMargin: compactItem.sideSpace
 			anchors.rightMargin: compactItem.badgeSpace
 			dateFont: compactItem.secondaryFont
 			dateFormat: root.dateFormat

@@ -23,6 +23,7 @@ KCM.SimpleKCM {
     property alias cfg_fontPointSize: fontPointSizeSpin.value
 
     property alias cfg_mediaUseThemeBackground: mediaBackgroundCheck.checked
+    property alias cfg_mediaCompactStyle: mediaCompactStyleCombo.currentIndex
 
     property alias cfg_notificationsEnabled: notificationsEnabledCheck.checked
     property alias cfg_notificationsIncludeExpired: notificationsIncludeExpiredCheck.checked
@@ -107,12 +108,34 @@ KCM.SimpleKCM {
             text: i18n("Media")
         }
 
+        QQC2.ComboBox {
+            id: mediaCompactStyleCombo
+
+            Kirigami.FormData.label: i18n("While playing:")
+            currentIndex: Plasmoid.configuration.mediaCompactStyle
+            model: [
+                i18n("Show the track title instead of the panel text"),
+                i18n("Keep the clock and use the background color"),
+                i18n("Keep the clock and show a playback icon")
+            ]
+        }
+
         QQC2.CheckBox {
             id: mediaBackgroundCheck
 
             Kirigami.FormData.label: i18n("Background:")
             checked: Plasmoid.configuration.mediaUseThemeBackground
+            enabled: mediaCompactStyleCombo.currentIndex !== 2
             text: i18n("Use the theme highlight color as background while playing")
+        }
+
+        QQC2.Label {
+            Layout.fillWidth: true
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
+            text: i18n("The playback icon style never uses a background color.")
+            visible: mediaCompactStyleCombo.currentIndex === 2
+            wrapMode: Text.WordWrap
         }
 
         QQC2.Label {
