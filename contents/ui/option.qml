@@ -166,7 +166,7 @@ KCM.SimpleKCM {
             enabled: notificationsEnabledCheck.checked
             from: 0
             textFromValue: function(value) {
-                return value === 0 ? i18n("No limit") : i18n("%1 notifications", value);
+                return value === 0 ? i18n("No limit") : i18np("%1 notification", "%1 notifications", value);
             }
             to: 50
             value: Plasmoid.configuration.notificationsMaxVisible

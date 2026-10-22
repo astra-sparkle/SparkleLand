@@ -1,0 +1,226 @@
+# Sparkle Land translation template
+# Copyright (C) 2026 Astra Sparkle
+# This file is distributed under the same license as the PACKAGE package.
+# Astra Sparkle <astra.sparkle17@gmail.com>, 2026
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_com.astrasparkle.sparkleland\n"
+"Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
+"POT-Creation-Date: 2026-10-22 19:01+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: contents/config/config.qml:11
+msgctxt "@title:group for configuration dialog page"
+msgid "General"
+msgstr ""
+
+#: contents/ui/Calender.qml:33
+msgctxt "Format: month year"
+msgid "%1 %2"
+msgstr ""
+
+#: contents/ui/Calender.qml:295
+msgid "Today"
+msgstr ""
+
+#: contents/ui/Notifications.qml:60
+msgid "Just now"
+msgstr ""
+
+#: contents/ui/Notifications.qml:65
+msgid "%1 min ago"
+msgid_plural "%1 min ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/Notifications.qml:70
+msgid "%1 hour ago"
+msgid_plural "%1 hours ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/Notifications.qml:73
+msgid "%1 day ago"
+msgid_plural "%1 days ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/Notifications.qml:111 contents/ui/NotificationsPopup.qml:192
+#: contents/ui/option.qml:119
+msgid "Notifications"
+msgstr ""
+
+#: contents/ui/Notifications.qml:188
+msgid "Do not disturb is active"
+msgstr ""
+
+#: contents/ui/Notifications.qml:367
+msgid "No unread notifications"
+msgstr ""
+
+#: contents/ui/Notifications.qml:367
+msgid "Notification service is not available"
+msgstr ""
+
+#: contents/ui/main.qml:12
+msgid "Sparkle Land"
+msgstr ""
+
+#: contents/ui/option.qml:43
+msgid "Panel"
+msgstr ""
+
+#: contents/ui/option.qml:49
+msgid "Minimum width:"
+msgstr ""
+
+#: contents/ui/option.qml:58
+msgid "Maximum width:"
+msgstr ""
+
+#: contents/ui/option.qml:66
+msgid "Font"
+msgstr ""
+
+#: contents/ui/option.qml:72
+msgid "Family:"
+msgstr ""
+
+#: contents/ui/option.qml:74 contents/ui/option.qml:84
+#: contents/ui/option.qml:209
+msgid "Follow system"
+msgstr ""
+
+#: contents/ui/option.qml:81
+msgid "Size:"
+msgstr ""
+
+#: contents/ui/option.qml:84
+msgid "%1 pt"
+msgstr ""
+
+#: contents/ui/option.qml:94
+msgid "Bold"
+msgstr ""
+
+#: contents/ui/option.qml:101
+msgid "Italic"
+msgstr ""
+
+#: contents/ui/option.qml:106
+msgid "Media"
+msgstr ""
+
+#: contents/ui/option.qml:112
+msgid "Background:"
+msgstr ""
+
+#: contents/ui/option.qml:114
+msgid "Use the theme highlight color as background while playing"
+msgstr ""
+
+#: contents/ui/option.qml:125
+msgid "Notifications:"
+msgstr ""
+
+#: contents/ui/option.qml:127
+msgid "Replace the clock or calendar area with the notification list"
+msgstr ""
+
+#: contents/ui/option.qml:133
+msgid "Banners:"
+msgstr ""
+
+#: contents/ui/option.qml:136
+msgid "Show notifications as banners next to this widget"
+msgstr ""
+
+#: contents/ui/option.qml:142
+msgid "Banner duration:"
+msgstr ""
+
+#: contents/ui/option.qml:146
+msgid "%1 second"
+msgid_plural "%1 seconds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/option.qml:157
+msgid ""
+"Remove the Plasma Notifications widget from the panel, otherwise every "
+"notification is shown twice."
+msgstr ""
+
+#: contents/ui/option.qml:165
+msgid "Maximum shown:"
+msgstr ""
+
+#: contents/ui/option.qml:169
+msgid "No limit"
+msgstr ""
+
+#: contents/ui/option.qml:169
+msgid "%1 notification"
+msgid_plural "%1 notifications"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/option.qml:180
+msgid "Keep notifications that timed out or were dismissed"
+msgstr ""
+
+#: contents/ui/option.qml:188
+msgid "Show the do not disturb button"
+msgstr ""
+
+#: contents/ui/option.qml:196
+msgid "Show the clear all button"
+msgstr ""
+
+#: contents/ui/option.qml:201
+msgid "Time and date"
+msgstr ""
+
+#: contents/ui/option.qml:207
+msgid "Clock:"
+msgstr ""
+
+#: contents/ui/option.qml:209
+msgid "12-hour"
+msgstr ""
+
+#: contents/ui/option.qml:209
+msgid "24-hour"
+msgstr ""
+
+#: contents/ui/option.qml:213
+msgid "Custom time format:"
+msgstr ""
+
+#: contents/ui/option.qml:214
+msgid "Empty: use the setting above"
+msgstr ""
+
+#: contents/ui/option.qml:222
+msgid "Date:"
+msgstr ""
+
+#: contents/ui/option.qml:224
+msgid "Show the date next to the time"
+msgstr ""
+
+#: contents/ui/option.qml:228
+msgid "Date format:"
+msgstr ""
+
+#: contents/ui/option.qml:229
+msgid "Empty: follow system"
+msgstr ""
