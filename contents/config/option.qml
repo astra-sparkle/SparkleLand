@@ -18,7 +18,7 @@ KCM.SimpleKCM {
     property alias cfg_minimumPanelWidth: minimumWidthSpin.value
 
     property alias cfg_fontBold: fontBoldCheck.checked
-    property string cfg_fontFamily: Plasmoid.configuration.fontFamily
+    property alias cfg_fontFamily: fontFamilyField.text
     property alias cfg_fontItalic: fontItalicCheck.checked
     property alias cfg_fontPointSize: fontPointSizeSpin.value
 
@@ -66,13 +66,14 @@ KCM.SimpleKCM {
             text: i18n("Font")
         }
 
-        QQC2.ComboBox {
-            id: fontFamilyCombo
+        QQC2.TextField {
+            id: fontFamilyField
 
-            Kirigami.FormData.label: i18n("Family:")
-            currentIndex: Math.max(0, model.indexOf(page.cfg_fontFamily))
-            model: [i18n("Follow system")].concat(Qt.fontFamilies())
-            onActivated: page.cfg_fontFamily = currentIndex === 0 ? "" : currentText
+            Layout.fillWidth: true
+            placeholderText: i18n("Empty: follow system")
+            // Trim stray whitespace
+            // 去除多余空白
+            onEditingFinished: text = text.trim()
         }
 
         QQC2.SpinBox {
