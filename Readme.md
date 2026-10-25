@@ -15,3 +15,4 @@ Sparkle Land 是一个面向 KDE Plasma 的桌面小组件（Plasma Applet），
 ## QA
 - 为什么不使用kirigami而是qpalette：kirigami默认从配色方案取色，而部分旧的主题（如Orchis）并没有依照最新标准允许动态的accent color。这导致HighlightColor会取色到默认的Plasma蓝色。
 - 通知功能不稳定：暂不考虑优化。由于KDE官方通知功能绑定自身组件，为了不破坏桌面环境，故不考虑强行接管。但未来会考虑提供通知管理器接口。
+- 纯QML实现：考虑过使用基于python的后端，但考虑到安装难度，以及目前的功能使用后端不符合个人审美，所以暂时不使用后端。
