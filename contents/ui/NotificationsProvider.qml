@@ -66,6 +66,9 @@ QtObject {
     // 显式更新计数值，避免绑定循环
     property int count: 0
     property int unreadCount: 0
+    // Timestamp of the last time the user looked at the list, defines what counts as unread
+    // 上次查看列表的时间戳，用于界定未读范围
+    property double lastReadMs: 0
 
 
 
@@ -121,6 +124,9 @@ QtObject {
     // 配置就绪后执行一次初始化
     function activate() {
         root.criticalUrgency = NotificationManager.Notifications.CriticalUrgency;
+        // Treat restored history as read so a restart does not raise the badge
+        // 将重启后恢复的历史视为已读，避免重启后出现角标
+        root.lastReadMs = Date.now();
         root.refreshInhibition();
         root.refreshCounts();
         root.bannerReady = true;
@@ -131,7 +137,39 @@ QtObject {
 
     function refreshCounts() {
         root.count = root.available ? root.listModel.count : 0;
-        root.unreadCount = root.available ? root.listModel.unreadNotificationsCount : 0;
+        root.unreadCount = root.available ? root.countUnread() : 0;
+    }
+
+    // Count notifications that arrived after the last read marker; the model's own
+    // unreadNotificationsCount stays at zero on this Plasma build
+    // 统计上次已读标记之后到达的通知；此版本 Plasma 自带的未读计数恒为 0
+    function countUnread() {
+        const model = root.listModel;
+        const N = NotificationManager.Notifications;
+        let unread = 0;
+
+        for (let row = 0; row < model.count; ++row) {
+            const index = model.index(row, 0);
+            // Expired and dismissed entries belong to history, not to the badge
+            // 过期和已关闭的条目属于历史记录，不计入角标
+            if (model.data(index, N.ExpiredRole) === true || model.data(index, N.DismissedRole) === true) {
+                continue;
+            }
+
+            let date = model.data(index, N.UpdatedRole);
+            if (!(date instanceof Date) || isNaN(date.getTime())) {
+                date = model.data(index, N.CreatedRole);
+            }
+            if (!(date instanceof Date) || isNaN(date.getTime())) {
+                continue;
+            }
+
+            if (date.getTime() > root.lastReadMs) {
+                unread += 1;
+            }
+        }
+
+        return unread;
     }
 
     // Keep critical alerts eligible during do-not-disturb when configured
@@ -348,10 +386,14 @@ QtObject {
             return;
         }
 
-        model.lastRead = new Date();
+        const now = Date.now();
+        model.lastRead = new Date(now);
 
         for (let row = 0; row < model.count; ++row) {
             model.setData(model.index(row, 0), true, NotificationManager.Notifications.ReadRole);
         }
+
+        root.lastReadMs = now;
+        root.refreshCounts();
     }
 }

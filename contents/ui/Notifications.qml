@@ -21,10 +21,13 @@ Item {
     // 用于刷新相对时间文本的计数器
     property int timeTick
 
-    // Activate only when the page is visible and selected
-    // 仅当页面可见且处于选中状态时才激活
+    // Activate only when the applet is open and this page is selected
+    // 仅当小组件展开且当前页为通知页时才激活
     property bool pageActive: true
-    readonly property bool effectiveActive: root.visible && root.pageActive
+    // The full representation stays instantiated while collapsed, so visibility alone is not enough
+    // 折叠时展开面板仍然存在，因此仅凭可见性不足以判断用户是否在查看
+    property bool appletExpanded: false
+    readonly property bool effectiveActive: root.visible && root.pageActive && root.appletExpanded
 
     readonly property bool available: root.provider !== null && root.provider.available
     readonly property bool inhibited: root.provider !== null && root.provider.inhibited
@@ -381,7 +384,7 @@ Item {
 
         interval: 60000
         repeat: true
-        running: root.visible
+        running: root.effectiveActive
         triggeredOnStart: true
 
         onTriggered: {

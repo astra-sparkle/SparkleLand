@@ -22,6 +22,9 @@ Item {
     property bool hasNotifications: false
     property bool notificationsShowDoNotDisturb: true
     property bool notificationsShowClearAll: true
+    // Whether the applet popup is open; the panel item also exists while collapsed
+    // 小组件弹出面板是否已展开；面板项在折叠时也存在
+    property bool appletExpanded: false
     property date requestedDate
     readonly property string currentTrackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
 
@@ -144,6 +147,7 @@ Item {
                     enabled: isCurrent
                     pageActive: isCurrent
                     provider: root.notificationsProvider
+                    appletExpanded: root.appletExpanded
                     showClearAll: root.notificationsShowClearAll
                     showDoNotDisturb: root.notificationsShowDoNotDisturb
                     theme: root.theme
@@ -259,6 +263,7 @@ Item {
             anchors.margins: Math.round(root.height * 0.05)
             enabled: visible
             provider: root.notificationsProvider
+            appletExpanded: root.appletExpanded
             showClearAll: root.notificationsShowClearAll
             showDoNotDisturb: root.notificationsShowDoNotDisturb
             theme: root.theme

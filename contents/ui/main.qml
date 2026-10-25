@@ -152,8 +152,6 @@ PlasmoidItem {
 			? root.palette.active.accent
 			: root.palette.active.highlight
 
-		// Palette pairs HighlightedText with the accent, so no manual black/white choice is needed
-		// 调色板为强调色成对提供 HighlightedText，无需再手工挑选黑白
 		readonly property color accentTextColor: root.palette.active.highlightedText
 
 		// WCAG sRGB luminance requires gamma correction to classify midtones correctly
@@ -520,6 +518,7 @@ PlasmoidItem {
 	fullRepresentation: Panel {
 		hasMedia: root.hasMedia
 		hasNotifications: root.hasNotifications
+		appletExpanded: root.expanded
 		mediaControlsEnabled: root.mediaState === 1
 		mediaProvider: root.mediaProvider
 		notificationsProvider: root.notificationsProvider
