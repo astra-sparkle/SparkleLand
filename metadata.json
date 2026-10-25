@@ -9,10 +9,11 @@
         ],
         "Category": "System",
         "Description": "Provide a Gnome-like view for clock, calendar and media player in panel.",
+        "Description[zh_cn]": "在统一的面板中提供时间、日历与媒体信息。",
         "Icon": "preferences-desktop",
         "Id": "com.astrasparkle.sparkleland",
         "Name": "Sparkle Land",
-        "Version": "1.2.4",
+        "Version": "1.2.5",
         "Website": ""
     },
     "Keywords": "Media;Clock;Calendar;Notifications;System;",

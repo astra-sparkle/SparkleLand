@@ -156,10 +156,10 @@ PlasmoidItem {
 
 		// WCAG sRGB luminance requires gamma correction to classify midtones correctly
 		// WCAG sRGB 相对亮度需先伽马校正，避免中间调被误判
-		function relativeLuminance(c) {
-			const r = c.r <= 0.03928 ? c.r / 12.92 : Math.pow((c.r + 0.055) / 1.055, 2.4);
-			const g = c.g <= 0.03928 ? c.g / 12.92 : Math.pow((c.g + 0.055) / 1.055, 2.4);
-			const b = c.b <= 0.03928 ? c.b / 12.92 : Math.pow((c.b + 0.055) / 1.055, 2.4);
+		function relativeLuminance(colorValue) {
+			const r = colorValue.r <= 0.03928 ? colorValue.r / 12.92 : Math.pow((colorValue.r + 0.055) / 1.055, 2.4);
+			const g = colorValue.g <= 0.03928 ? colorValue.g / 12.92 : Math.pow((colorValue.g + 0.055) / 1.055, 2.4);
+			const b = colorValue.b <= 0.03928 ? colorValue.b / 12.92 : Math.pow((colorValue.b + 0.055) / 1.055, 2.4);
 			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 		}
 
@@ -181,8 +181,8 @@ PlasmoidItem {
 		// Return the accent color with the requested alpha
 		// 返回指定透明度的强调色
 		function accentAlpha(alpha) {
-			const c = themeAdapter.accentColor;
-			return Qt.rgba(c.r, c.g, c.b, alpha);
+			const accent = themeAdapter.accentColor;
+			return Qt.rgba(accent.r, accent.g, accent.b, alpha);
 		}
 	}
 

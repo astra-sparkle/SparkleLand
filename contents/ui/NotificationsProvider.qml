@@ -69,6 +69,13 @@ QtObject {
     // Timestamp of the last time the user looked at the list, defines what counts as unread
     // 上次查看列表的时间戳，用于界定未读范围
     property double lastReadMs: 0
+    // Delay banners until the provider is fully initialized
+    // 数据源完成初始化后再显示横幅
+    property bool bannerReady: false
+    // Keep critical alerts eligible during do-not-disturb when configured
+    // 按设置在勿扰期间保留紧急横幅
+    property int bannerUrgencies: 0
+    property int criticalUrgency: -1
 
 
 
@@ -93,10 +100,6 @@ QtObject {
             root.refreshCounts();
         }
     }
-
-    // Delay banners until the provider is fully initialized
-    // 数据源完成初始化后再显示横幅
-    property bool bannerReady: false
 
     // Watch for newly inserted notifications
     // 监听新插入的通知
@@ -145,20 +148,21 @@ QtObject {
     // 统计上次已读标记之后到达的通知；此版本 Plasma 自带的未读计数恒为 0
     function countUnread() {
         const model = root.listModel;
-        const N = NotificationManager.Notifications;
+        const notificationType = NotificationManager.Notifications;
         let unread = 0;
 
         for (let row = 0; row < model.count; ++row) {
             const index = model.index(row, 0);
             // Expired and dismissed entries belong to history, not to the badge
             // 过期和已关闭的条目属于历史记录，不计入角标
-            if (model.data(index, N.ExpiredRole) === true || model.data(index, N.DismissedRole) === true) {
+            if (model.data(index, notificationType.ExpiredRole) === true
+                    || model.data(index, notificationType.DismissedRole) === true) {
                 continue;
             }
 
-            let date = model.data(index, N.UpdatedRole);
+            let date = model.data(index, notificationType.UpdatedRole);
             if (!(date instanceof Date) || isNaN(date.getTime())) {
-                date = model.data(index, N.CreatedRole);
+                date = model.data(index, notificationType.CreatedRole);
             }
             if (!(date instanceof Date) || isNaN(date.getTime())) {
                 continue;
@@ -172,11 +176,6 @@ QtObject {
         return unread;
     }
 
-    // Keep critical alerts eligible during do-not-disturb when configured
-    // 按设置在勿扰期间保留紧急横幅
-    property int bannerUrgencies: 0
-    property int criticalUrgency: -1
-
     function refreshAvailability() {
         const server = NotificationManager.Server;
         root.available = server.valid
@@ -186,16 +185,16 @@ QtObject {
     // Update eligible banner urgencies from do-not-disturb state
     // 根据勿扰状态更新可显示的横幅级别
     function refreshBannerUrgencies() {
-        const N = NotificationManager.Notifications;
+        const notificationType = NotificationManager.Notifications;
         let urgencies = 0;
 
         if (!root.inhibited || root.settings.criticalPopupsInDoNotDisturbMode) {
-            urgencies |= N.CriticalUrgency;
+            urgencies |= notificationType.CriticalUrgency;
         }
         if (!root.inhibited) {
-            urgencies |= N.NormalUrgency;
+            urgencies |= notificationType.NormalUrgency;
             if (root.settings.lowPriorityPopups) {
-                urgencies |= N.LowUrgency;
+                urgencies |= notificationType.LowUrgency;
             }
         }
 
@@ -216,15 +215,16 @@ QtObject {
             return null;
         }
 
-        const N = NotificationManager.Notifications;
+        const notificationType = NotificationManager.Notifications;
         const index = model.index(row, 0);
         return {
-            "applicationName": String(model.data(index, N.ApplicationNameRole) || ""),
-            "body": String(model.data(index, N.BodyRole) || ""),
-            "created": model.data(index, N.CreatedRole),
-            "icon": model.data(index, N.IconNameRole) || model.data(index, N.ApplicationIconNameRole),
-            "id": model.data(index, N.IdRole),
-            "summary": String(model.data(index, N.SummaryRole) || "")
+            "applicationName": String(model.data(index, notificationType.ApplicationNameRole) || ""),
+            "body": String(model.data(index, notificationType.BodyRole) || ""),
+            "created": model.data(index, notificationType.CreatedRole),
+            "icon": model.data(index, notificationType.IconNameRole)
+                || model.data(index, notificationType.ApplicationIconNameRole),
+            "id": model.data(index, notificationType.IdRole),
+            "summary": String(model.data(index, notificationType.SummaryRole) || "")
         };
     }
 
@@ -246,9 +246,9 @@ QtObject {
     // 按通知 ID 查找列表行
     function rowForId(notificationId) {
         const model = root.listModel;
-        const N = NotificationManager.Notifications;
+        const notificationType = NotificationManager.Notifications;
         for (let row = 0; row < model.count; ++row) {
-            if (model.data(model.index(row, 0), N.IdRole) === notificationId) {
+            if (model.data(model.index(row, 0), notificationType.IdRole) === notificationId) {
                 return row;
             }
         }

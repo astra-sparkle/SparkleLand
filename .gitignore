@@ -5,3 +5,4 @@ _probe_*.qml
 Messages.sh
 update-translations.sh
 README.md
+Release.md

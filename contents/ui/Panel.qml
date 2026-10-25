@@ -181,6 +181,7 @@ Item {
                 model: leftPane.pageCount
 
                 delegate: Item {
+                    id: indicatorDelegate
                     required property int index
 
                     readonly property bool current: leftPane.currentPage === index
@@ -191,11 +192,11 @@ Item {
 
                     Rectangle {
                         anchors.centerIn: parent
-                        color: current ? root.theme.accentColor : root.theme.accentMutedColor
+                        color: indicatorDelegate.current ? root.theme.accentColor : root.theme.accentMutedColor
                         height: pageIndicator.dotSize
                         opacity: pageMouse.containsMouse ? 1 : 0.85
                         radius: height / 2
-                        width: current ? currentWidth : pageIndicator.dotSize
+                        width: indicatorDelegate.current ? indicatorDelegate.currentWidth : pageIndicator.dotSize
 
                         Behavior on color {
                             ColorAnimation {
@@ -216,7 +217,7 @@ Item {
 
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: leftPane.showPage(index)
+                        onClicked: leftPane.showPage(indicatorDelegate.index)
                     }
                 }
             }
@@ -295,7 +296,7 @@ Item {
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     source: mediaController.visible && root.mediaProvider !== null ? root.mediaProvider.artUrl : ""
-                    visible: source != "" && status === Image.Ready
+                    visible: source !== "" && status === Image.Ready
 
                     layer.enabled: visible
                     layer.textureSize: Qt.size(width * Screen.devicePixelRatio, height * Screen.devicePixelRatio)
