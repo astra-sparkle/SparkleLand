@@ -159,36 +159,24 @@ Item {
                 text: root.monthTitle
             }
 
-            Text {
+            Media.MediaControlButton {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                color: previousMouse.containsMouse ? root.theme.accentColor : root.theme.textColor
-                font: root.headerFont
-                text: "\u2039"
-
-                MouseArea {
-                    id: previousMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: root.previousMonth()
-                }
+                height: Math.round(root.theme.gridUnit * 1.6)
+                source: "go-previous"
+                theme: root.theme
+                width: height
+                onClicked: root.previousMonth()
             }
 
-            Text {
+            Media.MediaControlButton {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                color: nextMouse.containsMouse ? root.theme.accentColor : root.theme.textColor
-                font: root.headerFont
-                text: "\u203A"
-
-                MouseArea {
-                    id: nextMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: root.nextMonth()
-                }
+                height: Math.round(root.theme.gridUnit * 1.6)
+                source: "go-next"
+                theme: root.theme
+                width: height
+                onClicked: root.nextMonth()
             }
         }
 

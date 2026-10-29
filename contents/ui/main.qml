@@ -61,16 +61,16 @@ PlasmoidItem {
 
 
 
-	// Keep compact text sizes consistent and convert point size using screen density when needed
-	// 保持紧凑文本字号一致，必要时按屏幕密度换算 pointSize
-	readonly property int themeDefaultPixelSize: {
-		const defaultFont = root.theme.defaultFont;
-		if (defaultFont.pixelSize > 0) {
-			return defaultFont.pixelSize;
-		}
-		const density = Screen.pixelDensity > 0 ? Screen.pixelDensity : 3.937;
-		return Math.max(8, Math.round(defaultFont.pointSize / 72 * (density * 25.4)));
+	// Measure the Kirigami theme font in the same logical pixels used by the panel
+	// 使用 TextMetrics 将 Kirigami 主题字体测量为面板使用的逻辑像素
+	TextMetrics {
+		id: themeFontMetrics
+
+		font: root.theme.defaultFont
+		text: "M"
 	}
+
+	readonly property int themeDefaultPixelSize: Math.max(8, Math.round(themeFontMetrics.height))
 
 	// Calculate one- or two-line text size from the panel item height
 	// 根据面板条目高度计算单行或双行字号
