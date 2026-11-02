@@ -1,0 +1,269 @@
+# Sparkle Land translation template
+# Copyright (C) 2026 Astra Sparkle
+# This file is distributed under the same license as the PACKAGE package.
+# Astra Sparkle <astra.sparkle17@gmail.com>, 2026
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_com.astrasparkle.sparkleland\n"
+"Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/"
+"issues\n"
+"POT-Creation-Date: 2026-11-02 22:18+0800\n"
+"PO-Revision-Date: 2026-11-02 19:20+0100\n"
+"Last-Translator: Heimen Stoffels <vistausss@fastmail.com>\n"
+"Language-Team: \n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.10\n"
+
+#: contents/config/config.qml:11
+msgctxt "@title:group for configuration dialog page"
+msgid "General"
+msgstr "Algemeen"
+
+#: contents/config/option.qml:54
+msgid "Select Playback Icon"
+msgstr "Kies een afspeelpictogram"
+
+#: contents/config/option.qml:63
+msgid "Panel"
+msgstr "Paneel"
+
+#: contents/config/option.qml:69
+msgid "Minimum width:"
+msgstr "Minimumbreedte:"
+
+#: contents/config/option.qml:78
+msgid "Maximum width:"
+msgstr "Maximumbreedte:"
+
+#: contents/config/option.qml:86
+msgid "Font"
+msgstr "Lettertype"
+
+#: contents/config/option.qml:93 contents/config/option.qml:105
+#: contents/config/option.qml:276 contents/config/option.qml:296
+msgid "Follow system"
+msgstr "Van systeem"
+
+#: contents/config/option.qml:102
+msgid "Size:"
+msgstr "Tekstgrootte:"
+
+#: contents/config/option.qml:105
+msgid "%1 pt"
+msgstr "%1 pt"
+
+#: contents/config/option.qml:115
+msgid "Bold"
+msgstr "Vetgedrukt"
+
+#: contents/config/option.qml:122
+msgid "Italic"
+msgstr "Cursief"
+
+#: contents/config/option.qml:127
+msgid "Media"
+msgstr "Media"
+
+#: contents/config/option.qml:133
+msgid "While playing:"
+msgstr "Tijdens afspelen:"
+
+#: contents/config/option.qml:136
+msgid "Show the track title instead of the panel text"
+msgstr "Titel tonen op plaats van paneeltekst"
+
+#: contents/config/option.qml:137
+msgid "Keep the clock and use the background color"
+msgstr "Klok tonen en achtergrondkleur gebruiken"
+
+#: contents/config/option.qml:138
+msgid "Keep the clock and show a playback icon"
+msgstr "Klok en afspeelpictogram tonen"
+
+#: contents/config/option.qml:145
+msgid "Background:"
+msgstr "Achtergrond:"
+
+#: contents/config/option.qml:147
+msgid "Use the theme highlight color as background while playing"
+msgstr ""
+"Markeerkleur van thema als achtergrond gebruiken tijdens afspelen"
+
+#: contents/config/option.qml:153
+msgid "Playback icon:"
+msgstr "Afspeelpictogram:"
+
+#: contents/config/option.qml:160
+msgid "Packaged default"
+msgstr "Meegeleverd pictogram"
+
+#: contents/config/option.qml:168
+msgid "Restore the packaged default icon"
+msgstr "Herstel het meegeleverde pictogram"
+
+#: contents/config/option.qml:178 contents/ui/Notifications.qml:114
+#: contents/ui/NotificationsPopup.qml:192
+msgid "Notifications"
+msgstr "Meldingen"
+
+#: contents/config/option.qml:184
+msgid "Notifications:"
+msgstr "Meldingen:"
+
+#: contents/config/option.qml:186
+msgid "Replace the clock or calendar area with the notification list"
+msgstr "Klok of kalender vervangen door meldingslijst"
+
+#: contents/config/option.qml:192
+msgid "Banners:"
+msgstr "Banieren:"
+
+#: contents/config/option.qml:195
+msgid "Show notifications as banners next to this widget"
+msgstr "Meldingen als banieren tonen naast deze widget"
+
+#: contents/config/option.qml:201
+msgid "Banner duration:"
+msgstr "Banieren tonen gedurende:"
+
+#: contents/config/option.qml:205
+msgid "%1 second"
+msgid_plural "%1 seconds"
+msgstr[0] "%1 seconde"
+msgstr[1] "%1 seconden"
+
+#: contents/config/option.qml:216
+msgid ""
+"Remove the Plasma Notifications widget from the panel, otherwise every "
+"notification is shown twice."
+msgstr ""
+"Verwijder de Plasma-meldingswidget van het paneel, anders ontvang je "
+"dubbele meldingen."
+
+#: contents/config/option.qml:224
+msgid "Maximum shown:"
+msgstr "Maximumaantal:"
+
+#: contents/config/option.qml:228
+msgid "No limit"
+msgstr "Onbeperkt"
+
+#: contents/config/option.qml:228
+msgid "%1 notification"
+msgid_plural "%1 notifications"
+msgstr[0] "%1 melding"
+msgstr[1] "%1 meldingen"
+
+#: contents/config/option.qml:239
+msgid "Keep notifications that timed out or were dismissed"
+msgstr "Meldingen bewaren die verlopen of genegeerd zijn"
+
+#: contents/config/option.qml:247
+msgid "Show the do not disturb button"
+msgstr "Niet-storenknop tonen"
+
+#: contents/config/option.qml:255
+msgid "Show the clear all button"
+msgstr "Knop om alle meldingen te wissen tonen"
+
+#: contents/config/option.qml:263
+msgid "Show the unread count in the notification dot"
+msgstr "Ongelezen aantal op meldingsembleem tonen"
+
+#: contents/config/option.qml:268
+msgid "Time and date"
+msgstr "Datum en tijd"
+
+#: contents/config/option.qml:274
+msgid "Clock:"
+msgstr "Klok:"
+
+#: contents/config/option.qml:276
+msgid "12-hour"
+msgstr "12-uursnotatie"
+
+#: contents/config/option.qml:276
+msgid "24-hour"
+msgstr "24-uursnotatie"
+
+#: contents/config/option.qml:280
+msgid "Custom time format:"
+msgstr "Zelfgekozen tijdsopmaak:"
+
+#: contents/config/option.qml:281
+msgid "Use the setting above"
+msgstr "Bovenstaande instelling gebruiken"
+
+#: contents/config/option.qml:289
+msgid "Date:"
+msgstr "Datum:"
+
+#: contents/config/option.qml:291
+msgid "Show the date under the time"
+msgstr "Datum onder tijd tonen"
+
+#: contents/config/option.qml:295
+msgid "Date format:"
+msgstr "Datumopmaak:"
+
+#: contents/ui/Calender.qml:33
+msgctxt "Format: month year"
+msgid "%1 %2"
+msgstr "%1 %2"
+
+#: contents/ui/Calender.qml:283
+msgid "Today"
+msgstr "Vandaag"
+
+#: contents/ui/Notifications.qml:63
+msgid "Just now"
+msgstr "Zojuist"
+
+#: contents/ui/Notifications.qml:68
+msgid "%1 min ago"
+msgid_plural "%1 min ago"
+msgstr[0] "%1 min. geleden"
+msgstr[1] "%1 min. geleden"
+
+#: contents/ui/Notifications.qml:73
+msgid "%1 hour ago"
+msgid_plural "%1 hours ago"
+msgstr[0] "%1 uur geleden"
+msgstr[1] "%1 uur geleden"
+
+#: contents/ui/Notifications.qml:76
+msgid "%1 day ago"
+msgid_plural "%1 days ago"
+msgstr[0] "%1 dag geleden"
+msgstr[1] "%1 dagen geleden"
+
+#: contents/ui/Notifications.qml:191
+msgid "Do not disturb is active"
+msgstr "De niet-storenmodus is ingeschakeld"
+
+#: contents/ui/Notifications.qml:370 contents/ui/main.qml:87
+msgid "No unread notifications"
+msgstr "Er zijn geen ongelezen meldingen"
+
+#: contents/ui/Notifications.qml:370
+msgid "Notification service is not available"
+msgstr "De meldingsdienst is niet beschikbaar"
+
+#: contents/ui/main.qml:12
+msgid "Sparkle Land"
+msgstr "Sparkle Land"
+
+#: contents/ui/main.qml:86
+msgid "%1 unread notification"
+msgid_plural "%1 unread notifications"
+msgstr[0] "Er is %1 ongelezen melding"
+msgstr[1] "Er zijn %1 ongelezen meldingen"
+
+#: contents/ui/main.qml:90
+msgid "Now playing: %1"
+msgstr "Je luistert naar: %1"
