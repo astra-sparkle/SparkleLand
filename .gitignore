@@ -2,6 +2,9 @@
 *.jsc
 _probe_*.qml
 
+# Translation sources are maintained on l10n_main by Crowdin
+/po/*.po
+
 Messages.sh
 update-translations.sh
 README.md
