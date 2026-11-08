@@ -1,0 +1,152 @@
+# Compile po catalogs into the package locale directory
+# 把 po 翻译编译成包内的 locale 目录
+#
+# po/*.po 与编译出的 contents/locale 都在同一分支（main）上，Crowdin 直接提交到 main
+# po/*.po and the compiled contents/locale live on the same branch (main), Crowdin commits straight to main
+name: 编译翻译
+
+on:
+  push:
+    paths:
+      - 'po/**'
+      - '.github/workflows/compile-translations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compile-translations
+  cancel-in-progress: true
+
+env:
+  DOMAIN: plasma_applet_com.astrasparkle.sparkleland
+
+jobs:
+  compile:
+    name: 编译 .mo
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 gettext
+        run: |
+          command -v msgfmt >/dev/null && exit 0
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gettext
+
+      - name: 编译 po 到 .mo
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          stage="$RUNNER_TEMP/catalogs"
+          rm -rf "$stage"
+          mkdir -p "$stage"
+
+          pos=(po/*.po)
+          if [ ${#pos[@]} -eq 0 ]; then
+            echo "::notice::没有 po 源文件，跳过编译"
+            exit 0
+          fi
+
+          failed=0
+          compiled=0
+          skipped=0
+          : > "$RUNNER_TEMP/langs.txt"
+
+          for po in "${pos[@]}"; do
+            # Language 头是权威的语言名（zh-CN.po 里写的是 zh_CN）
+            # The Language header is authoritative (zh-CN.po declares zh_CN)
+            lang=$(sed -n 's/^"Language: *\([^"\\]*\).*/\1/p' "$po" | head -n1)
+            [ -n "$lang" ] || lang=$(basename "$po" .po)
+            lang=${lang//-/_}
+            echo "$lang" >> "$RUNNER_TEMP/langs.txt"
+
+            # 先校验格式占位符，避免坏翻译进包；LC_ALL=C 让统计输出保持英文便于解析
+            # Validate placeholders first so broken translations stay out; LC_ALL=C keeps the stats text parseable
+            if ! stats=$(LC_ALL=C msgfmt --check --statistics -o /dev/null "$po" 2>&1); then
+              echo "::error file=$po::$lang 校验失败：$(echo "$stats" | tr '\n' ' ')"
+              failed=$((failed + 1))
+              continue
+            fi
+
+            translated=$(echo "$stats" | sed -n 's/^\([0-9]\+\) translated message.*/\1/p')
+            if [ "${translated:-0}" -eq 0 ]; then
+              echo "跳过 $lang：没有已翻译的条目"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            mkdir -p "$stage/$lang/LC_MESSAGES"
+            LC_ALL=C msgfmt --check -o "$stage/$lang/LC_MESSAGES/$DOMAIN.mo" "$po"
+            echo "编译 $lang：$translated 条"
+            compiled=$((compiled + 1))
+          done
+
+          echo "共 $compiled 个语言，跳过 $skipped 个，失败 $failed 个"
+
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::$failed 个语言编译失败，见上面的日志"
+            exit 1
+          fi
+
+      - name: 提交回触发分支
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          stage="$RUNNER_TEMP/catalogs"
+          target_branch="${GITHUB_REF_NAME}"
+
+          # 只覆盖本次编译出的目录，其余保持分支上的状态
+          # Only overwrite catalogs built here, leave the rest of the branch untouched
+          apply_catalogs() {
+            for mo in "$stage"/*/LC_MESSAGES/"$DOMAIN.mo"; do
+              lang=$(basename "$(dirname "$(dirname "$mo")")")
+              install -D -m 644 "$mo" "contents/locale/$lang/LC_MESSAGES/$DOMAIN.mo"
+            done
+
+            # 源语言已被删除时清掉遗留的目录
+            # Drop catalogs whose po source no longer exists
+            if [ -s "$RUNNER_TEMP/langs.txt" ]; then
+              for mo in contents/locale/*/LC_MESSAGES/"$DOMAIN.mo"; do
+                lang=$(basename "$(dirname "$(dirname "$mo")")")
+                if ! grep -qx "$lang" "$RUNNER_TEMP/langs.txt"; then
+                  echo "移除 $lang：没有对应的 po 源文件"
+                  rm -rf "contents/locale/$lang"
+                fi
+              done
+            fi
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Crowdin 可能在本次运行期间又推进了分支，因此每次尝试前重新同步
+          # Crowdin may advance the branch mid-run, so resync before every attempt
+          for attempt in 1 2 3; do
+            git fetch -q --no-tags origin "$target_branch"
+            git checkout -q -f -B compile-translations-bot FETCH_HEAD
+            apply_catalogs
+
+            git add -A contents/locale
+            if git diff --cached --quiet; then
+              echo "目录已经是最新的，无需提交"
+              exit 0
+            fi
+
+            git commit -m "翻译：重新编译 .mo 目录" -m "来源：$GITHUB_REF_NAME @ ${GITHUB_SHA:0:7}"
+            if git push origin "HEAD:$target_branch"; then
+              exit 0
+            fi
+
+            echo "::warning::第 $attempt 次推送失败，重新同步后重试"
+            sleep 5
+          done
+
+          echo "::error::推送 $target_branch 失败，请手动重跑"
+          exit 1
