@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
 "POT-Creation-Date: 2026-11-02 22:18+0800\n"
-"PO-Revision-Date: 2026-11-08 15:14\n"
+"PO-Revision-Date: 2026-11-08 16:31\n"
 "Last-Translator: \n"
 "Language-Team: Chinese Simplified\n"
 "Language: zh_CN\n"
@@ -134,9 +134,7 @@ msgid_plural "%1 seconds"
 msgstr[0] "%1 秒"
 
 #: contents/config/option.qml:216
-msgid ""
-"Remove the Plasma Notifications widget from the panel, otherwise every "
-"notification is shown twice."
+msgid "Remove the Plasma Notifications widget from the panel, otherwise every notification is shown twice."
 msgstr "请从面板移除 Plasma 通知小组件，否则每条通知都会显示两次。"
 
 #: contents/config/option.qml:224
@@ -256,3 +254,4 @@ msgstr[0] "有 %1 条未读通知"
 #: contents/ui/main.qml:90
 msgid "Now playing: %1"
 msgstr "正在播放：%1"
+
