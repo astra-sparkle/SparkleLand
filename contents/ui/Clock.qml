@@ -1,7 +1,7 @@
 import QtQuick
 
-// Clock view
-// 时钟视图
+// Clock widget with optional date display.
+// 带可选日期显示的时钟组件。
 Item {
     id: root
 
@@ -14,8 +14,8 @@ Item {
 
     property int tick
 
-    // Refresh every second when shown; otherwise align to the next minute
-    // 显示秒时按秒刷新，否则对齐到下一分钟
+    // Refresh every second while seconds are visible; otherwise align to the next minute.
+    // 当时间格式包含秒时按秒刷新，否则对齐到下一分钟。
     readonly property bool hasSeconds: root.timeFormat.indexOf("s") >= 0
 
     function nextTickInterval() {

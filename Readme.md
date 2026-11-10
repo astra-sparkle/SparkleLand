@@ -2,19 +2,32 @@
 
 [![Crowdin](https://badges.crowdin.net/sparkleland/localized.svg)](https://crowdin.com/project/sparkleland)
 
-Sparkle Land 是一个面向 KDE Plasma 的桌面小组件（Plasma Applet），旨在为面板提供更接近 GNOME 风格的时间、日期、媒体信息和通知展示体验。
+Sparkle Land is a KDE Plasma applet designed to bring a GNOME-inspired panel experience to the desktop, covering time, date, media playback, and notifications in a compact layout.
 
-由于开发者正在使用滚动更新的Linux，故Sparkle Land会始终基于更新的Qt与Plasma开发。 
+This project is built around the latest Qt and Plasma APIs and keeps a lightweight, pure QML implementation.
 
-100%QML!
+## Overview
 
-## 功能
-- 正在播放
-- 时钟
-- 通知（不稳定）
-- 月历
+- Clock and date display
+- Calendar navigation
+- Media playback metadata
+- Notification overview and banner support
+- Compact panel layout with theme-aware colors
 
-## QA
-- 为什么不使用kirigami而是qpalette：kirigami默认从配色方案取色，而部分旧的主题（如Orchis）并没有依照最新标准允许动态的accent color。这导致HighlightColor会取色到默认的Plasma蓝色。
-- 通知功能不稳定：暂不考虑优化。由于KDE官方通知功能绑定自身组件，为了不破坏桌面环境，故不考虑强行接管。但未来会考虑提供通知管理器接口。
-- 纯QML实现：考虑过使用基于python的后端，但考虑到安装难度，以及目前的功能使用后端不符合个人审美，所以暂时不使用后端。
+## Current state
+
+- The applet is intentionally implemented in QML only.
+- Notification behavior is treated as a best-effort integration because KDE's notification stack is tightly coupled to the desktop environment.
+- The project focuses on a clean Plasma panel experience without introducing custom backend services.
+
+## Design notes
+
+- The app uses QPalette rather than Kirigami defaults for accent colors because some older themes do not expose a dynamic accent color consistently.
+- This avoids falling back to the default Plasma blue in themes such as Orchid when the palette is incomplete.
+- The panel keeps a compact and highly theme-aware appearance while preserving compatibility with modern KDE releases.
+
+## Project status
+
+- 100% QML
+- Built for current Qt / Plasma development builds
+- Planned for continued refinement as the KDE notification APIs evolve

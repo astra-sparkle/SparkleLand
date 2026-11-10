@@ -1,11 +1,11 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 
-// Reusable indicator styles
-// 可复用指示器样式
+// Reusable indicator components.
+// 可复用指示器组件。
 Item {
-    // Accent count badge
-    // 强调色计数角标
+    // Accent badge for unread counts.
+    // 未读计数的强调色角标。
     component Badge: Rectangle {
         id: badge
 

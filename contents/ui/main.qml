@@ -5,17 +5,17 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-// Applet entry point
-// 小组件入口
+// Plasma applet entry point.
+// Plasma 小组件入口。
 PlasmoidItem {
-	id: root
+    id: root
 
-	readonly property string appTitle: i18n("Sparkle Land")
-	readonly property string appIconName: "preferences-desktop"
+    readonly property string appTitle: i18n("Sparkle Land")
+    readonly property string appIconName: "preferences-desktop"
 
-	// Config guard
-	// 配置保护
-	function configNumber(value, fallback) {
+    // Guard configuration values so invalid or missing settings fall back safely.
+    // 保护配置值，避免无效或缺失设置造成异常回退。
+    function configNumber(value, fallback) {
 		const number = Number(value);
 		return isNaN(number) ? fallback : number;
 	}

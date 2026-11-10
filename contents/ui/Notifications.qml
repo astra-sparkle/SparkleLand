@@ -3,8 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// Notification list
-// 通知列表
+// Notification list view and controls.
+// 通知列表视图与控制项。
 Item {
     id: root
 
@@ -13,15 +13,15 @@ Item {
     property bool showDoNotDisturb: true
     property bool showClearAll: true
 
-    // Counter used to refresh relative-time labels
-    // 用于刷新相对时间文本的计数器
+    // Counter used to refresh relative-time labels.
+    // 用于刷新相对时间文本的计数器。
     property int timeTick
 
-    // Only active when the applet is open on this page
-    // 仅当小组件在当前页展开时生效
+    // Only active when the applet is open on this page.
+    // 仅当小组件在当前页展开时生效。
     property bool pageActive: true
-    // The expanded view remains instantiated while collapsed
-    // 折叠时展开视图仍会保留实例
+    // The expanded view remains instantiated even while collapsed.
+    // 折叠时展开视图仍保留实例，以支持快速切换。
     property bool appletExpanded: false
     readonly property bool effectiveActive: root.visible && root.pageActive && root.appletExpanded
 

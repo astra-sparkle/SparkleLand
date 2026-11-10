@@ -1,13 +1,13 @@
 import QtQuick
 import org.kde.kirigami.primitives as Primitives
 
-// Rounded cover image
-// 圆角封面图
+// Rounded cover image component.
+// 圆角封面图组件。
 Primitives.ShadowedImage {
     id: root
 
-    // Soft placeholder tint
-    // 柔和占位色
+    // Soft placeholder tint for unloaded artwork.
+    // 未加载专辑图时的柔和占位色。
     property color placeholderColor: "transparent"
 
     readonly property bool loaded: root.status === Image.Ready

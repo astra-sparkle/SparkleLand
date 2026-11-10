@@ -3,13 +3,13 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// Expanded panel: calendar on the left, context-aware content on the right
-// 展开面板：左侧为日历，右侧为随状态变化的内容
+// Expanded panel layout: calendar on the left, context-aware content on the right.
+// 展开面板布局：左侧为日历，右侧为随状态变化的内容。
 Item {
     id: root
 
-    // Properties injected by main.qml
-    // 由 main.qml 注入的属性
+    // Properties injected by the applet shell.
+    // 由小组件外壳注入的属性。
     property var theme
     property font textFont
     property string timeFormat

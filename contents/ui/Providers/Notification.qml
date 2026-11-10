@@ -1,19 +1,20 @@
 import QtQuick
 import org.kde.notificationmanager as NotificationManager
 
-// Notification data source
-// 通知数据源
+// Notification provider: keeps the Plasma model, unread badge logic,
+// inhibition state, and banner dispatch in one place.
+// 通知提供器：把 Plasma 通知模型、未读角标逻辑、勿扰状态与横幅派发集中管理。
 QtObject {
     id: root
 
-    // Configuration forwarded by Providers
-    // 由 Providers 转发的配置
+    // Configuration forwarded by the provider host.
+    // 由上层 provider 转发的配置项。
     property bool enabled: true
     property int maxVisible: 5
     property bool includeExpired: true
 
-    // Global settings and service state
-    // 全局设置与服务状态
+    // Runtime state shared with the Plasma notification service.
+    // 与 Plasma 通知服务共享的运行时状态。
     readonly property NotificationManager.Settings settings: NotificationManager.Settings {
         onInhibitNotificationsWhenFullscreenChanged: root.refreshInhibition()
         onInhibitNotificationsWhenScreensMirroredChanged: root.refreshInhibition()
@@ -157,17 +158,24 @@ QtObject {
         Qt.callLater(root.applyCounts);
     }
 
-    // Recompute counters after the model settled, never during a signal emission
-    // 模型稳定后再计算计数，避免在信号发射过程中读取
+    // Short helper to keep the enablement checks readable and consistent.
+    // 统一可用性判断，减少重复条件判断。
+    function isNotificationActive() {
+        return root.enabled && root.available;
+    }
+
+    // Recompute counters after the model has settled, never while a model signal is still firing.
+    // 在模型稳定后再计算计数，避免在信号发射过程中读取模型状态。
     function applyCounts() {
-        const active = root.enabled && root.available;
+        const active = root.isNotificationActive();
         root.count = active ? root.listModel.count : 0;
         root.unreadCount = active ? root.countUnreadNotifications() : 0;
     }
 
-    // Count notifications that arrived after the last read marker; the model's own
-    // unreadNotificationsCount stays at zero on this Plasma build
-    // 统计上次已读标记之后到达的通知；此版本 Plasma 自带的未读计数恒为 0
+    // Count notifications that arrived after the last read marker.
+    // This Plasma build keeps the model's unread count at zero, so we compute it explicitly.
+    // 统计上次已读标记之后到达的通知。
+    // 当前 Plasma 构建版本中模型自带的未读计数会保持为 0，因此需要显式计算。
     function countUnreadNotifications() {
         const model = root.listModel;
         const notificationType = NotificationManager.Notifications;
