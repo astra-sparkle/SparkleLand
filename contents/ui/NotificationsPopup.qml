@@ -20,7 +20,9 @@ PlasmaCore.ToolTipArea {
     // Pending and active notification IDs
     // 待展示与当前通知 ID
     property var pending: []
-    property int currentId: -1
+    // var keeps synthetic history ids from being truncated
+    // 使用 var 避免历史合成 ID 被截断
+    property var currentId: -1
 
     readonly property bool bannerEnabled: root.showPopups && root.provider !== null && root.provider.available
 
@@ -57,7 +59,13 @@ PlasmaCore.ToolTipArea {
         if (!root.bannerEnabled || root.appletExpanded || notificationId <= 0) {
             return;
         }
-        if (root.currentId === notificationId || root.pending.includes(notificationId)) {
+        // Refresh the visible banner in place so updates are not lost
+        // 横幅正在显示这条通知时原地刷新，避免丢失更新
+        if (root.currentId === notificationId) {
+            root.refreshCurrent(notificationId);
+            return;
+        }
+        if (root.pending.includes(notificationId)) {
             return;
         }
 
@@ -67,6 +75,20 @@ PlasmaCore.ToolTipArea {
         if (root.currentId < 0) {
             root.showNext();
         }
+    }
+
+    // Reload the content of the notification currently on screen
+    // 重新加载当前屏幕上这条通知的内容
+    function refreshCurrent(notificationId) {
+        const banner = root.provider !== null ? root.provider.bannerDataForId(notificationId) : null;
+        if (banner === null) {
+            return;
+        }
+
+        root.bannerApplicationName = banner.applicationName;
+        root.bannerSummary = banner.summary;
+        root.bannerBody = banner.body;
+        root.bannerIcon = banner.icon;
     }
 
     // Show the next valid banner and skip stale requests

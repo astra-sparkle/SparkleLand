@@ -44,7 +44,12 @@ QtObject {
 
     // Banner requests are handled by the popup component
     // 横幅请求由弹窗组件处理
-    signal bannerRequested(int notificationId)
+    signal bannerRequested(var notificationId)
+
+    // Notifications restored from history use synthetic ids at or above this value;
+    // QML int is 32-bit signed, so the marker itself has to be a double
+    // 从历史记录恢复的通知使用大于等于该值的合成 ID；QML 的 int 为 32 位有符号，标记值本身须用 double
+    readonly property double restoredIdBit: 2147483648
 
     // Popup model keeps only banner-eligible notifications
     // 弹窗模型只保留符合条件的通知
@@ -75,6 +80,9 @@ QtObject {
     // 按设置在勿扰期间保留紧急横幅
     property int bannerUrgencies: 0
     property int criticalUrgency: -1
+    // Revision timestamp of the last banner accepted per notification id
+    // 每个通知 ID 上次成功请求横幅时的修订时间戳
+    property var bannerStamps: ({})
     // Refresh counters when the list changes
     // 列表变化时刷新计数
     readonly property Connections listWatcher: Connections {
@@ -95,10 +103,15 @@ QtObject {
         function onUnreadNotificationsCountChanged() {
             root.refreshCounts();
         }
+        // In-place updates such as replaces_id keep the row count unchanged
+        // replaces_id 之类的原地更新不会改变行数
+        function onDataChanged() {
+            root.refreshCounts();
+        }
     }
 
-    // Watch for newly inserted notifications
-    // 监听新插入的通知
+    // Watch for inserted or updated notifications
+    // 监听新插入与内容更新的通知
     readonly property Connections bannerWatcher: Connections {
         target: root.popupModel
 
@@ -108,10 +121,18 @@ QtObject {
             }
 
             for (let row = first; row <= last; ++row) {
-                const banner = root.bannerDataForRow(row);
-                if (banner !== null && root.isRecentNotification(banner.created)) {
-                    root.bannerRequested(banner.id);
-                }
+                root.requestBanner(root.bannerDataForRow(row));
+            }
+        }
+        // Updated notifications never emit rowsInserted
+        // 内容更新的通知不会再触发 rowsInserted
+        function onDataChanged() {
+            if (!root.bannerReady) {
+                return;
+            }
+
+            for (let row = 0; row < root.popupModel.count; ++row) {
+                root.requestBanner(root.bannerDataForRow(row));
             }
         }
     }
@@ -133,6 +154,12 @@ QtObject {
     }
 
     function refreshCounts() {
+        Qt.callLater(root.applyCounts);
+    }
+
+    // Recompute counters after the model settled, never during a signal emission
+    // 模型稳定后再计算计数，避免在信号发射过程中读取
+    function applyCounts() {
         const active = root.enabled && root.available;
         root.count = active ? root.listModel.count : 0;
         root.unreadCount = active ? root.countUnreadNotifications() : 0;
@@ -203,6 +230,36 @@ QtObject {
             && (Date.now() - createdAt.getTime() < 15000);
     }
 
+    // Restored notifications reuse the startup time, so they would pass the recency
+    // check; the synthetic id range is the only reliable marker
+    // 恢复的通知会沿用启动时间而通过“近期”判定，合成 ID 区间是唯一可靠的标记
+    function isRestoredNotification(notificationId) {
+        return notificationId >= root.restoredIdBit;
+    }
+
+    // Request one banner per notification revision
+    // 同一条通知的每次内容更新只请求一次横幅
+    function requestBanner(banner) {
+        if (banner === null || root.isRestoredNotification(banner.id)) {
+            return;
+        }
+
+        // Prefer the update timestamp so replaced notifications count as new content
+        // 优先使用更新时间，使被替换的通知也算作新内容
+        const revision = root.isValidDate(banner.updated) ? banner.updated : banner.created;
+        if (!root.isRecentNotification(revision)) {
+            return;
+        }
+
+        const stamp = revision.getTime();
+        if (root.bannerStamps[banner.id] === stamp) {
+            return;
+        }
+
+        root.bannerStamps[banner.id] = stamp;
+        root.bannerRequested(banner.id);
+    }
+
     // Return banner data for a row, or null if invalid
     // 返回指定行的横幅数据，无效时返回 null
     function bannerDataForRow(row) {
@@ -217,6 +274,7 @@ QtObject {
             "applicationName": String(model.data(index, notificationType.ApplicationNameRole) || ""),
             "body": String(model.data(index, notificationType.BodyRole) || ""),
             "created": model.data(index, notificationType.CreatedRole),
+            "updated": model.data(index, notificationType.UpdatedRole),
             "icon": model.data(index, notificationType.IconNameRole)
                 || model.data(index, notificationType.ApplicationIconNameRole),
             "id": model.data(index, notificationType.IdRole),
