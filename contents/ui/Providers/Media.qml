@@ -1,8 +1,8 @@
 import QtQuick
 import org.kde.plasma.private.mpris as Mpris
 
-// MPRIS data source, the only user of the private MPRIS module
-// MPRIS 数据源，私有 MPRIS 模块的唯一使用处
+// MPRIS data source
+// MPRIS 数据源
 QtObject {
     id: root
 

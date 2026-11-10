@@ -5,16 +5,16 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-// Applet entry point coordinating the clock, media, calendar, and settings
-// 小组件入口，协调时钟、媒体、日历与配置
+// Applet entry point
+// 小组件入口
 PlasmoidItem {
 	id: root
 
 	readonly property string appTitle: i18n("Sparkle Land")
 	readonly property string appIconName: "preferences-desktop"
 
-	// Normalize config values to prevent NaN in size calculations
-	// 归一化配置值，避免尺寸计算产生 NaN
+	// Config guard
+	// 配置保护
 	function configNumber(value, fallback) {
 		const number = Number(value);
 		return isNaN(number) ? fallback : number;
@@ -28,41 +28,41 @@ PlasmoidItem {
 	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, root.configNumber(plasmoid.configuration.maximumPanelWidth, 240))
 	readonly property int panelAverageWidth: Math.round((root.panelMinimumWidth + root.panelMaximumWidth) / 2)
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
-	// Compact panel style while media is playing: 0 = track title, 1 = clock with background, 2 = clock with playback icon
-	// 媒体播放时紧凑面板样式：0 = 曲名，1 = 时钟加背景，2 = 时钟加播放图标
+	// Compact media style: 0 = title, 1 = clock with background, 2 = clock with icon
+	// 紧凑媒体样式：0 = 标题，1 = 带背景时钟，2 = 带图标时钟
 	readonly property int mediaCompactStyle: {
 		const style = root.configNumber(plasmoid.configuration.mediaCompactStyle, 0);
 		return (style >= 0 && style <= 2) ? Math.round(style) : 0;
 	}
-	// Icon shown in the compact clock style; an empty value keeps the packaged default
-	// 时钟+图标样式使用的图标；为空时回退到内置默认图标
+	// Compact clock icon; empty keeps the packaged default
+	// 紧凑时钟图标；为空时使用内置默认值
 	readonly property string mediaPlaybackIcon: {
 		const icon = root.configString(plasmoid.configuration.mediaPlaybackIcon);
 		return icon.length > 0 ? icon : "music-note-16th";
 	}
-	// Notifications default to enabled; disabling them restores the original layout
-	// 通知默认开启，关闭后恢复原布局
+	// Notifications are enabled by default
+	// 通知默认开启
 	readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
 	readonly property int notificationsMaxVisible: Math.max(0, root.configNumber(plasmoid.configuration.notificationsMaxVisible, 5))
 	readonly property bool notificationsIncludeExpired: plasmoid.configuration.notificationsIncludeExpired === true
 	readonly property bool notificationsShowDoNotDisturb: plasmoid.configuration.notificationsShowDoNotDisturb !== false
 	readonly property bool notificationsShowClearAll: plasmoid.configuration.notificationsShowClearAll !== false
-	// Unread count inside the compact dot; when off the dot stays as a plain indicator
-	// 紧凑圆点是否显示未读数量；关闭后圆点仅作为提示
+	// Compact badge count toggle
+	// 紧凑角标计数开关
 	readonly property bool notificationsShowUnreadCount: plasmoid.configuration.notificationsShowUnreadCount !== false
-	// Banner visibility and duration; plasmashell positions banners beside the applet
-	// 横幅开关与时长；位置由 plasmashell 锚定在小组件旁
+	// Popup visibility and timeout
+	// 弹窗显示与超时
 	readonly property bool notificationsShowPopups: plasmoid.configuration.notificationsShowPopups !== false
 	readonly property int notificationsBannerTimeout: Math.max(1, root.configNumber(plasmoid.configuration.notificationsBannerTimeout, 5))
-	// Screen edge used to position banners (Plasma::Types::Location)
-	// 面板所在屏幕边缘，供横幅定位（Plasma::Types::Location）
+	// Screen edge for popup placement
+	// 弹窗所在的屏幕边缘
 	readonly property int panelLocation: plasmoid.location
 	readonly property bool showDate: plasmoid.configuration.showDate === true
 	// Tooltip clock ticks every second
-	// 提示中的时钟每秒刷新
+	// 提示时钟每秒更新
 	property date hoverTooltipNow: new Date()
-	// Follow the configured 12/24-hour mode but always include seconds
-	// 跟随已配置的 12/24 小时制，并始终包含秒
+	// Keep seconds in the tooltip time format
+	// 提示时间格式保留秒
 	readonly property string hoverTooltipTimeFormat: {
 		const mode = root.configNumber(plasmoid.configuration.timeFormatMode, 0);
 		if (mode === 1) {
@@ -73,8 +73,8 @@ PlasmoidItem {
 		}
 		return Qt.locale().timeFormat(Locale.ShortFormat).indexOf("AP") >= 0 ? "h:mm:ss AP" : "HH:mm:ss";
 	}
-	// Unread summary plus the current track when media is playing
-	// 未读通知概要，播放媒体时追加当前曲目
+	// Tooltip summary and current track
+	// 提示摘要和当前播放曲目
 	readonly property string hoverTooltipSubText: {
 		const parts = [];
 		if (root.notificationsEnabled) {
@@ -88,17 +88,17 @@ PlasmoidItem {
 		}
 		return parts.join(" · ");
 	}
-	// Time is the title and the status line replaces the packaged description
-	// 标题为时间，状态行替换内置描述
+	// Hover text replaces the packaged tooltip text
+	// 悬停文本替换内置提示文本
 	toolTipMainText: Qt.formatTime(root.hoverTooltipNow, root.hoverTooltipTimeFormat)
 	toolTipSubText: root.hoverTooltipSubText
 
-	// Scale compact text with panel height when no font size is configured
-	// 未配置字号时，紧凑文本随面板高度缩放
+	// Compact text scales with panel height when no explicit size is set
+	// 未设置显式字号时，紧凑文本随面板高度缩放
 	readonly property bool autoCompactFontSize: root.configNumber(plasmoid.configuration.fontPointSize, 0) <= 0
 
-	// Measure the Kirigami theme font in the same logical pixels used by the panel
-	// 使用 TextMetrics 将 Kirigami 主题字体测量为面板使用的逻辑像素
+	// Measure the theme font in logical panel pixels
+	// 用逻辑像素测量主题字体
 	TextMetrics {
 		id: themeFontMetrics
 
@@ -108,8 +108,8 @@ PlasmoidItem {
 
 	readonly property int themeDefaultPixelSize: Math.max(8, Math.round(themeFontMetrics.height))
 
-	// Calculate one- or two-line text size from the panel item height
-	// 根据面板条目高度计算单行或双行字号
+	// Compute a comfortable text size from the panel height
+	// 根据面板高度计算合适字号
 	function panelPixelSize(height, twoLines) {
 		const available = height > 0 ? height : 32;
 		const fitted = Math.round(available * (twoLines ? 0.56 : 0.71));
@@ -125,8 +125,8 @@ PlasmoidItem {
 		});
 	}
 
-	// Scale a font while preserving its pixel or point size unit
-	// 按比例缩放字体，并保留像素或磅值单位
+	// Copy a font and scale it by a factor
+	// 按比例复制并缩放字体
 	function fontScaled(sourceFont, factor) {
 		if (sourceFont.pixelSize > 0) {
 			return root.fontWithPixelSize(sourceFont, sourceFont.pixelSize * factor);
@@ -139,8 +139,8 @@ PlasmoidItem {
 		});
 	}
 
-	// Prefer a custom time format, then 12/24-hour mode, then the system locale
-	// 时间格式依次采用自定义值、12/24 小时制和系统设置
+	// Time format priority: custom, user mode, locale fallback
+	// 时间格式优先级：自定义、用户模式、系统回退
 	readonly property string timeFormat: {
 		const custom = root.configString(plasmoid.configuration.customTimeFormat);
 		if (custom.length > 0) {
@@ -165,13 +165,13 @@ PlasmoidItem {
 		return custom.length > 0 ? custom : Qt.locale().dateFormat(Locale.ShortFormat);
 	}
 
-	// Share theme colors, fonts, and spacing with child components; derive accent variants here
-	// 向子组件提供主题颜色、字体和间距，并在此计算强调色变体
+	// Shared theme colors and accent variants
+	// 共享主题颜色和强调色变体
 	QtObject {
 		id: themeAdapter
 
-		// Font colors follow the active palette
-		// 字体颜色遵循当前调色板
+		// Palette-driven text colors
+		// 调色板驱动的文本颜色
 		readonly property color textColor: root.palette.active.windowText
 		readonly property color disabledTextColor: root.palette.disabled.windowText
 		// QPalette has no semantic error role; use Breeze negative red
@@ -180,16 +180,16 @@ PlasmoidItem {
 		readonly property font defaultFont: Kirigami.Theme.defaultFont
 		readonly property int gridUnit: Kirigami.Units.gridUnit
 
-		// QPalette::Accent is available since Qt 6.6; fall back to Highlight on older Qt
-		// QPalette::Accent 从 Qt 6.6 起可用；旧版 Qt 回退到 Highlight
+		// Accent follows the active palette
+		// 强调色遵循当前调色板
 		readonly property color accentColor: root.palette.active.accent !== undefined
 			? root.palette.active.accent
 			: root.palette.active.highlight
 
 		readonly property color accentTextColor: root.palette.active.highlightedText
 
-		// WCAG sRGB luminance requires gamma correction to classify midtones correctly
-		// WCAG sRGB 相对亮度需先伽马校正，避免中间调被误判
+		// WCAG luminance with gamma correction
+		// 采用伽马修正的 WCAG 亮度计算
 		function relativeLuminance(colorValue) {
 			const r = colorValue.r <= 0.03928 ? colorValue.r / 12.92 : Math.pow((colorValue.r + 0.055) / 1.055, 2.4);
 			const g = colorValue.g <= 0.03928 ? colorValue.g / 12.92 : Math.pow((colorValue.g + 0.055) / 1.055, 2.4);
@@ -197,23 +197,23 @@ PlasmoidItem {
 			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 		}
 
-		// Text luminance determines the hover-color direction
-		// 根据文字明度决定悬停色的变化方向
+		// Use text luminance to pick a hover direction
+		// 根据文本亮度选择悬停方向
 		readonly property bool accentTextIsLight: themeAdapter.relativeLuminance(themeAdapter.accentTextColor) > 0.5
 
-		// Move hover color away from the text color to preserve contrast
-		// 悬停色向文字色反方向变化，以保持对比度
+		// Keep hover contrast high
+		// 保持悬停时的对比度
 		readonly property color accentHoverColor: themeAdapter.accentTextIsLight
 			? Qt.darker(themeAdapter.accentColor, 1.12)
 			: Qt.lighter(themeAdapter.accentColor, 1.2)
 
-		// Alpha variants blend with the panel without requiring its background color
-		// 半透明变体由渲染层与面板背景合成，无需读取底色
+		// Soft alpha variants for subtle fills
+		// 用于柔和填充的透明度变体
 		readonly property color accentSubtleColor: themeAdapter.accentAlpha(0.18)
 		readonly property color accentMutedColor: themeAdapter.accentAlpha(0.4)
 
-		// Return the accent color with the requested alpha
-		// 返回指定透明度的强调色
+		// Return the accent color with alpha
+		// 返回带透明度的强调色
 		function accentAlpha(alpha) {
 			const accent = themeAdapter.accentColor;
 			return Qt.rgba(accent.r, accent.g, accent.b, alpha);
@@ -233,8 +233,8 @@ PlasmoidItem {
 		});
 	}
 
-	// Each external feature has an isolated provider
-	// 每个外部功能都使用独立的数据源
+	// Each feature keeps its own provider
+	// 每个功能保留自己的数据源
 	Providers {
 		id: providers
 
@@ -249,8 +249,8 @@ PlasmoidItem {
 	readonly property bool hasNotifications: providers.notifications.hasNotifications
 	readonly property int unreadNotificationCount: providers.notifications.unreadCount
 
-	// Use the accent as the media background and shift it when paused
-	// 媒体背景使用强调色，暂停时按主题明暗调整以作区分
+	// Media background uses the accent color
+	// 媒体背景使用强调色
 	readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
 	readonly property color mediaBackgroundColor: {
 		const base = root.theme.accentColor;

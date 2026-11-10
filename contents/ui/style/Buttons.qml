@@ -2,16 +2,14 @@ import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.ksvg as KSvg
 
-// Reusable button styles, used as Buttons.IconButton and Buttons.ToolButton
-// 可复用的按钮样式，分别以 Buttons.IconButton 和 Buttons.ToolButton 使用
+// Reusable button styles
+// 可复用按钮样式
 Item {
-    // Icon button with a lightweight accent hover highlight
-    // 带轻量强调色悬停高亮的图标按钮
+    // Accent hover icon button
+    // 强调色悬停图标按钮
     component IconButton: Item {
         id: button
 
-        // Properties injected by the using view
-        // 由使用方视图注入的属性
         property var theme
         property string source: ""
 
@@ -62,16 +60,14 @@ Item {
         }
     }
 
-    // Icon button framed by the desktop theme's tool button elements
-    // 使用桌面主题工具按钮元素的图标按钮
+    // Theme-framed tool button
+    // 主题框架工具按钮
     component ToolButton: Item {
         id: button
 
-        // Properties injected by the using view
-        // 由使用方视图注入的属性
         property string source: ""
-        // Latched state keeps the pressed frame and full icon opacity
-        // 常按状态固定使用按下边框与不透明图标
+        // Pressed state keeps the active frame
+        // 按下态保留激活框架
         property bool pressed: false
         property color iconColor: "transparent"
         property real iconOpacity: 0.7

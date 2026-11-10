@@ -4,32 +4,32 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 
-// Notification banner shown in a Plasma tooltip area beside the widget
-// 在小组件旁的 Plasma 工具提示区域中显示通知横幅
+// Notification banner
+// 通知横幅
 PlasmaCore.ToolTipArea {
     id: root
 
-    // Injected banner provider and display options
-    // 注入的横幅数据源与显示选项
+    // Banner provider and popup options
+    // 横幅数据源与弹窗选项
     property var provider
     property bool showPopups: true
     property int displayTime: 5000
     property bool appletExpanded: false
     property int panelLocation: 0
 
-    // Queued notification IDs and the active ID
-    // 待展示通知 ID 与当前 ID
+    // Pending and active notification IDs
+    // 待展示与当前通知 ID
     property var pending: []
     property int currentId: -1
 
     readonly property bool bannerEnabled: root.showPopups && root.provider !== null && root.provider.available
 
-    // Gap between banners to prevent overlapping transitions
-    // 横幅间隔，避免动画重叠
+    // Gap between banners
+    // 横幅间距
     readonly property int gap: 250
 
-    // Current banner content, populated by showNext()
-    // 当前横幅内容由 showNext() 填充
+    // Current banner content
+    // 当前横幅内容
     property string bannerApplicationName: ""
     property string bannerSummary: ""
     property string bannerBody: ""
@@ -41,12 +41,12 @@ PlasmaCore.ToolTipArea {
         "pointSize": Kirigami.Theme.defaultFont.pointSize
     })
 
-    // Set the edge explicitly instead of relying on parent-chain inference
-    // 显式设置边缘，避免依赖父链推断
+    // Set the edge explicitly
+    // 显式设置边缘
     location: root.panelLocation
     active: root.bannerEnabled
-    // Hover pauses the timeout and enables the close button
-    // 悬停时暂停计时，并允许点击关闭按钮
+    // Hover pauses the timeout and keeps the close button active
+    // 悬停时暂停计时，并保留关闭按钮
     mainItem: root.bannerContent
     interactive: true
     timeout: root.displayTime

@@ -3,13 +3,11 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// Notification list with do-not-disturb and clear actions
-// 通知列表，包含勿扰和清除操作
+// Notification list
+// 通知列表
 Item {
     id: root
 
-    // Properties injected by main.qml
-    // 由 main.qml 注入的属性
     property var theme
     property var provider
     property bool showDoNotDisturb: true
@@ -19,11 +17,11 @@ Item {
     // 用于刷新相对时间文本的计数器
     property int timeTick
 
-    // Activate only when the applet is open and this page is selected
-    // 仅当小组件展开且当前页为通知页时才激活
+    // Only active when the applet is open on this page
+    // 仅当小组件在当前页展开时生效
     property bool pageActive: true
-    // The full representation stays instantiated while collapsed, so visibility alone is not enough
-    // 折叠时展开面板仍然存在，因此仅凭可见性不足以判断用户是否在查看
+    // The expanded view remains instantiated while collapsed
+    // 折叠时展开视图仍会保留实例
     property bool appletExpanded: false
     readonly property bool effectiveActive: root.visible && root.pageActive && root.appletExpanded
 

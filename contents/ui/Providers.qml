@@ -1,18 +1,18 @@
 import QtQuick
 
-// Sole entry point to the external system services, one runtime-loaded source per feature
-// 外部系统服务的唯一入口，每个功能一条运行时加载的数据源
+// External feature entry point
+// 外部功能入口
 QtObject {
     id: root
 
-    // Configuration forwarded to the feature sources
-    // 转发给各功能数据源的配置
+    // Forwarded feature config
+    // 转发的功能配置
     property bool notificationsEnabled: true
     property int notificationsMaxVisible: 5
     property bool notificationsIncludeExpired: true
 
-    // A missing MPRIS module only disables media, the clock and calendar keep working
-    // MPRIS 模块缺失时只失去媒体功能，时钟与日历仍可用
+    // Missing MPRIS only disables media
+    // 缺失 MPRIS 仅禁用媒体功能
     readonly property var media: QtObject {
         id: mediaSource
 
@@ -67,13 +67,13 @@ QtObject {
         }
     }
 
-    // A missing notification module only disables notifications, the other features keep working
-    // 通知模块缺失时只失去通知功能，其他功能仍可用
+    // Missing notifications only disables the notifications feature
+    // 缺失通知模块仅禁用通知功能
     readonly property var notifications: QtObject {
         id: notificationSource
 
-        // Configuration injected by Providers
-        // 由 Providers 注入的配置
+        // Configuration forwarded by Providers
+        // 由 Providers 转发的配置
         property bool enabled: root.notificationsEnabled
         property int maxVisible: root.notificationsMaxVisible
         property bool includeExpired: root.notificationsIncludeExpired

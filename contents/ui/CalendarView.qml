@@ -4,13 +4,11 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// Simple month calendar with month switching and date selection
-// 简单月历，支持切换月份和日期选择
+// Calendar view
+// 日历视图
 Item {
     id: root
 
-    // Properties injected by main.qml
-    // 由 main.qml 注入的属性
     property var theme
 
     property date displayedMonth: new Date()

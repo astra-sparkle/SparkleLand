@@ -1,7 +1,7 @@
 import QtQuick
 
-// Compact media title; controls are rendered in the expanded panel
-// 紧凑条目中的曲目名，播放控制位于展开面板
+// Compact media title
+// 紧凑媒体标题
 Item {
     id: root
 

@@ -1,7 +1,7 @@
 import QtQuick
 
-// Display time and an optional date, styled by the caller
-// 显示时间和可选日期，样式由调用方提供
+// Clock view
+// 时钟视图
 Item {
     id: root
 

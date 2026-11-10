@@ -1,19 +1,19 @@
 import QtQuick
 import org.kde.notificationmanager as NotificationManager
 
-// Notification data source, the only user of the Plasma notification module
-// 通知数据源，Plasma 通知模块的唯一使用处
+// Notification data source
+// 通知数据源
 QtObject {
     id: root
 
-    // Configuration injected by Providers
-    // 由 Providers 注入的配置
+    // Configuration forwarded by Providers
+    // 由 Providers 转发的配置
     property bool enabled: true
     property int maxVisible: 5
     property bool includeExpired: true
 
-    // Global notification settings and server state
-    // 全局通知设置与服务状态
+    // Global settings and service state
+    // 全局设置与服务状态
     readonly property NotificationManager.Settings settings: NotificationManager.Settings {
         onInhibitNotificationsWhenFullscreenChanged: root.refreshInhibition()
         onInhibitNotificationsWhenScreensMirroredChanged: root.refreshInhibition()
@@ -43,11 +43,11 @@ QtObject {
     }
 
     // Banner requests are handled by the popup component
-    // 横幅请求由弹出组件处理
+    // 横幅请求由弹窗组件处理
     signal bannerRequested(int notificationId)
 
-    // Popup model contains only banner-eligible notifications
-    // 弹出模型仅包含符合展示条件的通知
+    // Popup model keeps only banner-eligible notifications
+    // 弹窗模型只保留符合条件的通知
     readonly property NotificationManager.Notifications popupModel: NotificationManager.Notifications {
         expandUnread: false
         groupMode: NotificationManager.Notifications.GroupDisabled
@@ -61,8 +61,8 @@ QtObject {
         urgencies: root.bannerUrgencies
     }
 
-    // Update count values explicitly to avoid binding loops
-    // 显式更新计数值，避免绑定循环
+    // Count values are refreshed explicitly
+    // 计数值由显式刷新更新
     property int count: 0
     property int unreadCount: 0
     // Timestamp of the last time the user looked at the list, defines what counts as unread
@@ -75,8 +75,8 @@ QtObject {
     // 按设置在勿扰期间保留紧急横幅
     property int bannerUrgencies: 0
     property int criticalUrgency: -1
-    // Refresh counters when the list content changes
-    // 列表内容变化时刷新计数
+    // Refresh counters when the list changes
+    // 列表变化时刷新计数
     readonly property Connections listWatcher: Connections {
         target: root.listModel
 

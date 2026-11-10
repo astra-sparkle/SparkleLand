@@ -1,13 +1,13 @@
 import QtQuick
 import org.kde.kirigami.primitives as Primitives
 
-// Rounded image with a placeholder fill while it is empty or loading
-// 圆角图片，为空或加载中时显示占位底色
+// Rounded cover image
+// 圆角封面图
 Primitives.ShadowedImage {
     id: root
 
-    // Injected placeholder tint; keeps a low alpha so the panel shows through
-    // 注入的占位色，保持低透明度使面板背景透出
+    // Soft placeholder tint
+    // 柔和占位色
     property color placeholderColor: "transparent"
 
     readonly property bool loaded: root.status === Image.Ready

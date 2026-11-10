@@ -1,16 +1,14 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 
-// Reusable indicator styles, used as Indicators.Badge and Indicators.PageIndicator
-// 可复用的指示器样式，分别以 Indicators.Badge 和 Indicators.PageIndicator 使用
+// Reusable indicator styles
+// 可复用指示器样式
 Item {
-    // Accent pill showing a count; a plain dot when the count is hidden
-    // 显示计数的强调色胶囊，隐藏计数时仅显示圆点
+    // Accent count badge
+    // 强调色计数角标
     component Badge: Rectangle {
         id: badge
 
-        // Properties injected by the using view
-        // 由使用方视图注入的属性
         property var theme
         property int count: 0
         property bool showCount: true
@@ -37,13 +35,11 @@ Item {
         }
     }
 
-    // One dot per page, the current page drawn as a wider accent pill
-    // 每页一个圆点，当前页绘制为更宽的强调色胶囊
+    // Pager dots
+    // 页面指示器圆点
     component PageIndicator: Row {
         id: indicator
 
-        // Properties injected by the using view
-        // 由使用方视图注入的属性
         property var theme
         property int count: 0
         property int currentIndex: 0
