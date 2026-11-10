@@ -1,3 +1,4 @@
+import "style"
 import QtQml
 import QtQuick
 import QtQuick.Layouts
@@ -155,7 +156,7 @@ Item {
                 text: root.monthTitle
             }
 
-            Media.MediaControlButton {
+            Button {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 height: Math.round(root.theme.gridUnit * 1.6)
@@ -165,7 +166,7 @@ Item {
                 onClicked: root.previousMonth()
             }
 
-            Media.MediaControlButton {
+            Button {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 height: Math.round(root.theme.gridUnit * 1.6)

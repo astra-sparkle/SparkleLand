@@ -1,3 +1,4 @@
+import "style"
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
@@ -344,7 +345,7 @@ Item {
                 spacing: Math.round(width * gapRatio)
                 width: Math.round(mediaController.width * 0.6)
 
-                Media.MediaControlButton {
+                Button {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     source: "media-skip-backward"
@@ -354,7 +355,7 @@ Item {
                     }
                 }
 
-                Media.MediaControlButton {
+                Button {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     source: root.playing ? "media-playback-pause" : "media-playback-start"
@@ -364,7 +365,7 @@ Item {
                     }
                 }
 
-                Media.MediaControlButton {
+                Button {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     source: "media-skip-forward"
