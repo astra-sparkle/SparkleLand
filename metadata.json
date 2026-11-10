@@ -9,7 +9,6 @@
         ],
         "BugReportUrl": "https://github.com/astra-sparkle/SparkleLand/issues",
         "Category": "System",
-        "Copyright": "© 2026 Astra Sparkle",
         "Description": "Provide a Gnome-like view for clock, calendar and media player in panel.",
         "Description[zh_CN]": "在统一的面板中提供时间、日历与媒体信息。",
         "Icon": "preferences-desktop",
