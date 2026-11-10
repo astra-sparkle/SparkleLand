@@ -1,3 +1,4 @@
+import "style"
 import QtQml
 import QtQuick
 import QtQuick.Layouts
@@ -396,33 +397,22 @@ PlasmoidItem {
 			visible: !root.panelShowsMedia
 		}
 
-		Rectangle {
+		Indicators.Badge {
 			id: notificationBadge
-
-			readonly property int displayCount: Math.min(99, root.unreadNotificationCount)
 
 			anchors.right: parent.right
 			anchors.rightMargin: 3
 			anchors.verticalCenter: parent.verticalCenter
+			count: root.unreadNotificationCount
 			// Over the media background the dot turns into the text color and the count takes the background color
 			// 媒体背景显示时圆点改用文字色，计数文字改用背景色
-			color: root.mediaBackgroundVisible ? root.theme.textColor : root.theme.accentColor
+			fillColor: root.mediaBackgroundVisible ? root.theme.textColor : root.theme.accentColor
 			height: Math.round(Math.max(16, parent.height * 0.55))
-			radius: height / 2
+			labelColor: root.mediaBackgroundVisible ? root.mediaBackgroundColor : root.theme.accentTextColor
+			labelFont: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.6)))
+			showCount: root.notificationsShowUnreadCount
+			theme: root.theme
 			visible: root.notificationsEnabled && root.unreadNotificationCount > 0
-			width: root.notificationsShowUnreadCount
-				? Math.max(height, badgeLabel.implicitWidth + Math.round(height * 0.5))
-				: height
-
-			Text {
-				id: badgeLabel
-
-				anchors.centerIn: parent
-				color: root.mediaBackgroundVisible ? root.mediaBackgroundColor : root.theme.accentTextColor
-				font: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.6)))
-				text: notificationBadge.displayCount >= 99 ? "99+" : String(notificationBadge.displayCount)
-				visible: root.notificationsShowUnreadCount
-			}
 		}
 
 		// Plasma positions this banner beside the applet; declare it before MouseArea to preserve clicks

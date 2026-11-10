@@ -1,7 +1,7 @@
+import "style"
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.ksvg as KSvg
 import org.kde.plasma.core as PlasmaCore
 
 // Notification banner shown in a Plasma tooltip area beside the widget
@@ -212,34 +212,14 @@ PlasmaCore.ToolTipArea {
                 }
             }
 
-            Item {
+            Buttons.ToolButton {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-
-                KSvg.FrameSvgItem {
-                    anchors.fill: parent
-                    imagePath: "widgets/button"
-                    prefix: "toolbutton-hover"
-                    visible: closeMouse.containsMouse
-                }
-
-                Kirigami.Icon {
-                    anchors.centerIn: parent
-                    color: root.palette.active.toolTipText
-                    height: Math.round(parent.height * 0.7)
-                    opacity: closeMouse.containsMouse ? 1 : 0.7
-                    source: "window-close"
-                    width: height
-                }
-
-                MouseArea {
-                    id: closeMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: root.closeCurrent()
-                }
+                iconColor: root.palette.active.toolTipText
+                iconSizeRatio: 0.7
+                source: "window-close"
+                onClicked: root.closeCurrent()
             }
         }
     }

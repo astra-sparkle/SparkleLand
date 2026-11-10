@@ -1,7 +1,6 @@
 import "style"
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 import org.kde.kirigami as Kirigami
 
 // Expanded panel with a calendar on the left and context-dependent content on the right
@@ -162,61 +161,21 @@ Item {
             }
         }
 
-        Row {
+        Indicators.PageIndicator {
             id: pageIndicator
-
-            readonly property int dotSize: Math.round(root.height * 0.03)
-            readonly property int hitPadding: Math.round(pageIndicator.dotSize * 0.6)
 
             anchors.bottom: parent.bottom
             anchors.bottomMargin: Math.round(root.height * 0.015)
             anchors.horizontalCenter: parent.horizontalCenter
+            count: leftPane.pageCount
+            currentIndex: leftPane.currentPage
+            dotSize: Math.round(root.height * 0.03)
             spacing: Math.round(root.height * 0.01)
+            theme: root.theme
             visible: leftPane.paged
 
-            Repeater {
-                model: leftPane.pageCount
-
-                delegate: Item {
-                    id: indicatorDelegate
-                    required property int index
-
-                    readonly property bool current: leftPane.currentPage === index
-                    readonly property int currentWidth: Math.round(pageIndicator.dotSize * 2.6)
-
-                    height: pageIndicator.dotSize + pageIndicator.hitPadding * 2
-                    width: (current ? currentWidth : pageIndicator.dotSize) + pageIndicator.hitPadding * 2
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        color: indicatorDelegate.current ? root.theme.accentColor : root.theme.accentMutedColor
-                        height: pageIndicator.dotSize
-                        opacity: pageMouse.containsMouse ? 1 : 0.85
-                        radius: height / 2
-                        width: indicatorDelegate.current ? indicatorDelegate.currentWidth : pageIndicator.dotSize
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Kirigami.Units.shortDuration
-                            }
-                        }
-
-                        Behavior on width {
-                            NumberAnimation {
-                                duration: Kirigami.Units.shortDuration
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        id: pageMouse
-
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: leftPane.showPage(indicatorDelegate.index)
-                    }
-                }
+            onActivated: function(index) {
+                leftPane.showPage(index);
             }
         }
     }
@@ -282,35 +241,11 @@ Item {
 
                 readonly property int cornerRadius: Math.round(root.height * 0.06)
 
-                Image {
-                    id: coverImage
-
+                CoverImage {
                     anchors.fill: parent
-                    fillMode: Image.PreserveAspectCrop
-                    source: mediaController.visible && root.mediaProvider !== null ? root.mediaProvider.artUrl : ""
-                    visible: source !== "" && status === Image.Ready
-
-                    layer.enabled: visible
-                    layer.textureSize: Qt.size(width * Screen.devicePixelRatio, height * Screen.devicePixelRatio)
-                    layer.effect: OpacityMask {
-                        maskSource: Item {
-                            width: coverImage.width
-                            height: coverImage.height
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: coverBox.cornerRadius
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: root.theme.disabledTextColor
-                    opacity: 0.25
+                    placeholderColor: root.theme.disabledTextColor
                     radius: coverBox.cornerRadius
-                    visible: !coverImage.visible
+                    source: mediaController.visible && root.mediaProvider !== null ? root.mediaProvider.artUrl : ""
                 }
             }
 
@@ -345,7 +280,7 @@ Item {
                 spacing: Math.round(width * gapRatio)
                 width: Math.round(mediaController.width * 0.6)
 
-                Button {
+                Buttons.IconButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     source: "media-skip-backward"
@@ -355,7 +290,7 @@ Item {
                     }
                 }
 
-                Button {
+                Buttons.IconButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     source: root.playing ? "media-playback-pause" : "media-playback-start"
@@ -365,7 +300,7 @@ Item {
                     }
                 }
 
-                Button {
+                Buttons.IconButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     source: "media-skip-forward"

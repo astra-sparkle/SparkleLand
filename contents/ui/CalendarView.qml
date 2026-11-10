@@ -156,7 +156,7 @@ Item {
                 text: root.monthTitle
             }
 
-            Button {
+            Buttons.IconButton {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 height: Math.round(root.theme.gridUnit * 1.6)
@@ -166,7 +166,7 @@ Item {
                 onClicked: root.previousMonth()
             }
 
-            Button {
+            Buttons.IconButton {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 height: Math.round(root.theme.gridUnit * 1.6)

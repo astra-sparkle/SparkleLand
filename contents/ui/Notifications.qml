@@ -1,7 +1,7 @@
+import "style"
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.ksvg as KSvg
 
 // Notification list with do-not-disturb and clear actions
 // 通知列表，包含勿扰和清除操作
@@ -111,69 +111,24 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Item {
-                id: doNotDisturbButton
-
+            Buttons.ToolButton {
                 Layout.preferredHeight: root.buttonSize
                 Layout.preferredWidth: root.buttonSize
+                pressed: root.inhibited
+                source: "notifications-disabled"
                 visible: root.showDoNotDisturb && root.available
-
-                KSvg.FrameSvgItem {
-                    anchors.fill: parent
-                    imagePath: "widgets/button"
-                    prefix: root.inhibited ? "toolbutton-pressed" : "toolbutton-hover"
-                    visible: root.inhibited || doNotDisturbMouse.containsMouse
-                }
-
-                Kirigami.Icon {
-                    anchors.centerIn: parent
-                    height: Math.round(parent.height * 0.8)
-                    opacity: root.inhibited ? 1 : 0.7
-                    source: "notifications-disabled"
-                    width: height
-                }
-
-                MouseArea {
-                    id: doNotDisturbMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: if (root.provider !== null) {
-                        root.provider.toggleInhibition();
-                    }
+                onClicked: if (root.provider !== null) {
+                    root.provider.toggleInhibition();
                 }
             }
 
-            Item {
-                id: clearAllButton
-
+            Buttons.ToolButton {
                 Layout.preferredHeight: root.buttonSize
                 Layout.preferredWidth: root.buttonSize
+                source: "edit-clear-history"
                 visible: root.showClearAll && notificationList.count > 0
-
-                KSvg.FrameSvgItem {
-                    anchors.fill: parent
-                    imagePath: "widgets/button"
-                    prefix: "toolbutton-hover"
-                    visible: clearAllMouse.containsMouse
-                }
-
-                Kirigami.Icon {
-                    anchors.centerIn: parent
-                    height: Math.round(parent.height * 0.8)
-                    opacity: clearAllMouse.containsMouse ? 1 : 0.7
-                    source: "edit-clear-history"
-                    width: height
-                }
-
-                MouseArea {
-                    id: clearAllMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: if (root.provider !== null) {
-                        root.provider.clearAll();
-                    }
+                onClicked: if (root.provider !== null) {
+                    root.provider.clearAll();
                 }
             }
         }
@@ -218,11 +173,9 @@ Item {
                     height: entryRow.implicitHeight + root.gap * 2
                     width: ListView.view ? ListView.view.width : 0
 
-                    KSvg.FrameSvgItem {
+                    ListItemBackground {
                         anchors.fill: parent
-                        imagePath: "widgets/listitem"
-                        prefix: "hover"
-                        visible: entryMouse.containsMouse
+                        hovered: entryMouse.containsMouse
                     }
 
                     // Handle row clicks before content so later buttons receive input first
@@ -309,35 +262,16 @@ Item {
                             }
                         }
 
-                        Item {
+                        Buttons.ToolButton {
                             Layout.alignment: Qt.AlignTop
                             Layout.preferredHeight: root.buttonSize
                             Layout.preferredWidth: root.buttonSize
+                            iconOpacity: 0.6
+                            iconSizeRatio: 0.7
+                            source: "window-close"
                             visible: entry.closable
-
-                            KSvg.FrameSvgItem {
-                                anchors.fill: parent
-                                imagePath: "widgets/button"
-                                prefix: "toolbutton-hover"
-                                visible: closeMouse.containsMouse
-                            }
-
-                            Kirigami.Icon {
-                                anchors.centerIn: parent
-                                height: Math.round(parent.height * 0.7)
-                                opacity: closeMouse.containsMouse ? 1 : 0.6
-                                source: "window-close"
-                                width: height
-                            }
-
-                            MouseArea {
-                                id: closeMouse
-
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: if (root.provider !== null) {
-                                    root.provider.close(entry.index);
-                                }
+                            onClicked: if (root.provider !== null) {
+                                root.provider.close(entry.index);
                             }
                         }
                     }
