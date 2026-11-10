@@ -151,7 +151,7 @@ Item {
                     visible: leftPane.paged
                 }
 
-                Calender {
+                CalendarView {
                     height: pageViewport.height
                     width: pageViewport.width
 
