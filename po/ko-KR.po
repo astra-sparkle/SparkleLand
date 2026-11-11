@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
 "POT-Creation-Date: 2026-11-11 16:07+0800\n"
-"PO-Revision-Date: 2026-11-08 16:31\n"
+"PO-Revision-Date: 2026-11-11 11:38\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "Language: ko_KR\n"
@@ -138,9 +138,7 @@ msgid_plural "%1 seconds"
 msgstr[0] ""
 
 #: contents/config/option.qml:216
-msgid ""
-"Remove the Plasma Notifications widget from the panel, otherwise every "
-"notification is shown twice."
+msgid "Remove the Plasma Notifications widget from the panel, otherwise every notification is shown twice."
 msgstr ""
 
 #: contents/config/option.qml:224
@@ -260,3 +258,4 @@ msgstr[0] ""
 #: contents/ui/main.qml:87
 msgid "Now playing: %1"
 msgstr ""
+
