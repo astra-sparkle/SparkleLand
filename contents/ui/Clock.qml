@@ -11,6 +11,9 @@ Item {
     property string timeFormat: "hh:mm"
     property bool showDate: false
     property string dateFormat: ""
+    // Horizontal padding around the labels; compact layouts can drop it to sit flush with the reserved margins
+    // 标签左右的水平内边距；紧凑布局可设为 0，使其与预留边距紧贴
+    property int horizontalPadding: 12
 
     property int tick
 
@@ -43,7 +46,7 @@ Item {
     }
 
     implicitHeight: contentColumn.implicitHeight
-    implicitWidth: Math.max(timeLabel.implicitWidth, root.showDate ? dateLabel.implicitWidth : 0) + 24
+    implicitWidth: Math.max(timeLabel.implicitWidth, root.showDate ? dateLabel.implicitWidth : 0) + root.horizontalPadding * 2
 
     Column {
         id: contentColumn

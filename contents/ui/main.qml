@@ -306,9 +306,13 @@ PlasmoidItem {
 	compactRepresentation: Item {
 		id: compactItem
 
+		// Round the measured clock width up so pixel rounding cannot elide the widest label
+		// 向上取整时钟测得的宽度，避免像素取整把最宽的标签省略
+		readonly property int clockWidth: Math.ceil(clockItem.implicitWidth)
+
 		readonly property int contentWidth: root.compactShowsMediaTitle
 			? Math.max(clockItem.implicitWidth, mediaItem.implicitWidth)
-			: clockItem.implicitWidth + compactItem.sideSpace
+			: compactItem.clockWidth + compactItem.sideSpace
 
 		readonly property font primaryFont: root.autoCompactFontSize
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate))
@@ -324,10 +328,22 @@ PlasmoidItem {
 		// 封面样式下的专辑封面尺寸，随面板高度适配
 		readonly property int coverSize: Math.max(16, Math.round(compactItem.height * 0.75))
 
+		// Inset the left decoration by the same amount the vertical center leaves above and below, so left, top and bottom margins match
+		// 左侧装饰的水平内边距取与上下留白相同的值，使左、上、下边距等宽
+		readonly property int decorationMargin: Math.max(1, Math.round((compactItem.height - compactItem.coverSize) / 2))
+
+		// Small extra breathing room around the labels; keeps a visible gap even when the panel squeezes the applet
+		// 文字两侧额外留一点空隙，面板挤压组件时仍能看到可见间距
+		readonly property int compactTextPadding: 2
+
+		// Footprint of the left decoration including its symmetric insets
+		// 左侧装饰连同两侧内边距占用的总宽度
+		readonly property int decorationSpace: (root.mediaCompactStyle === 3 ? compactItem.coverSize : mediaPlaybackIcon.width) + compactItem.decorationMargin * 2
+
 		// Clock+icon and clock+cover styles always reserve equal side space for the left accent and the badge, even while either is hidden
 		// 时钟+图标与时钟+封面样式下左右始终预留相同空间，供左侧装饰与通知角标使用（即使暂时隐藏）
 		readonly property int sideSpace: root.mediaCompactStyle === 2 || root.mediaCompactStyle === 3
-			? Math.max(root.mediaCompactStyle === 3 ? compactItem.coverSize + 6 : mediaPlaybackIcon.width + 6, notificationBadge.width + 3)
+			? Math.max(compactItem.decorationSpace, notificationBadge.width + compactItem.decorationMargin)
 			: 0
 
 		// Reserve space for the badge so it does not cover the time or track title
@@ -340,9 +356,15 @@ PlasmoidItem {
 			? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
 			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))) + badgeSpace
 
+		// Claim the width the labels actually need, so the panel takes space from stretchable neighbours first
+		// 申明文字实际需要的宽度，让面板先从可伸缩的邻居那里回收空间
+		readonly property int layoutMinimumWidth: root.compactShowsMediaTitle
+			? root.panelMinimumWidth
+			: Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, compactItem.preferredWidth))
+
 		Layout.fillHeight: true
 		Layout.minimumHeight: 32
-		Layout.minimumWidth: root.panelMinimumWidth
+		Layout.minimumWidth: compactItem.layoutMinimumWidth
 		Layout.preferredHeight: 32
 		Layout.preferredWidth: preferredWidth
 
@@ -378,7 +400,7 @@ PlasmoidItem {
 			id: mediaCover
 
 			anchors.left: parent.left
-			anchors.leftMargin: 3
+			anchors.leftMargin: compactItem.decorationMargin
 			anchors.verticalCenter: parent.verticalCenter
 			height: compactItem.coverSize
 			placeholderColor: root.theme.disabledTextColor
@@ -398,7 +420,7 @@ PlasmoidItem {
 			readonly property int iconSize: Math.round(Math.max(10, root.panelPixelSize(compactItem.height, false) * 0.9))
 
 			anchors.left: parent.left
-			anchors.leftMargin: 6
+			anchors.leftMargin: compactItem.decorationMargin
 			anchors.verticalCenter: parent.verticalCenter
 			color: root.mediaBackgroundVisible ? root.theme.textColor : root.theme.accentColor
 			height: iconSize
@@ -416,6 +438,9 @@ PlasmoidItem {
 			dateFont: compactItem.secondaryFont
 			dateFormat: root.dateFormat
 			enabled: visible
+			// The cover style already reserves the full margin, so drop the built-in label padding and keep only a small gap
+			// 封面样式已预留完整边距，因此去掉标签自带的内边距，仅保留少量间距
+			horizontalPadding: root.mediaCompactStyle === 3 ? compactItem.compactTextPadding : 12
 			showDate: root.showDate
 			theme: root.theme
 			timeFont: compactItem.primaryFont
@@ -427,7 +452,9 @@ PlasmoidItem {
 			id: notificationBadge
 
 			anchors.right: parent.right
-			anchors.rightMargin: 3
+			// Mirror the cover inset so both decorations keep the same distance to the panel edges
+			// 内侧与封面保持一致，使两端装饰到面板边缘的距离相同
+			anchors.rightMargin: root.mediaCompactStyle === 2 || root.mediaCompactStyle === 3 ? compactItem.decorationMargin : 3
 			anchors.verticalCenter: parent.verticalCenter
 			count: root.unreadNotificationCount
 			// Over the media background the dot turns into the text color and the count takes the background color
