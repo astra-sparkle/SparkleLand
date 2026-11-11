@@ -50,7 +50,7 @@ QtObject {
         function installProvider(providerComponent) {
             if (providerComponent.status === Component.Error) {
                 mediaSource.state = -1;
-                console.info("Sparkle Land: MPRIS 不可用，面板只显示时钟：", providerComponent.errorString());
+                console.info("[Sparkle Land] MPRIS 不可用，面板只显示时钟：", providerComponent.errorString());
                 return;
             }
             if (providerComponent.status !== Component.Ready) {
@@ -60,13 +60,13 @@ QtObject {
             const providerInstance = providerComponent.createObject(mediaSource);
             if (!providerInstance) {
                 mediaSource.state = -1;
-                console.warn("Sparkle Land: MPRIS 组件实例化失败：", providerComponent.errorString());
+                console.warn("[Sparkle Land] MPRIS 组件实例化失败：", providerComponent.errorString());
                 return;
             }
 
             mediaSource.provider = providerInstance;
             mediaSource.state = 1;
-            console.info("Sparkle Land: 私有 MPRIS 实现已生效");
+            console.info("[Sparkle Land] 私有 MPRIS 实现已生效");
         }
     }
 
@@ -146,7 +146,7 @@ QtObject {
         function installProvider(providerComponent) {
             if (providerComponent.status === Component.Error) {
                 notificationSource.state = -1;
-                console.info("Sparkle Land: 通知服务不可用：", providerComponent.errorString());
+                console.info("[Sparkle Land] 通知服务不可用：", providerComponent.errorString());
                 return;
             }
             if (providerComponent.status !== Component.Ready) {
@@ -159,7 +159,7 @@ QtObject {
             });
             if (!providerInstance) {
                 notificationSource.state = -1;
-                console.warn("Sparkle Land: 通知组件实例化失败：", providerComponent.errorString());
+                console.warn("[Sparkle Land] 通知组件实例化失败：", providerComponent.errorString());
                 return;
             }
 
@@ -179,7 +179,7 @@ QtObject {
             notificationSource.provider = providerInstance;
             notificationSource.state = 1;
             notificationSource.refreshCounts();
-            console.info("Sparkle Land: 私有通知实现已生效");
+            console.info("[Sparkle Land] 私有通知实现已生效");
         }
     }
 }
