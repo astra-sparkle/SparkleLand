@@ -60,6 +60,22 @@ QtObject {
         urgencies: root.bannerUrgencies
     }
 
+    // Unbounded view covering the whole history; clearing must not be capped by the display limit
+    // 覆盖全部历史的无限制视图，清空操作不受显示条数限制
+    readonly property NotificationManager.Notifications clearModel: NotificationManager.Notifications {
+        expandUnread: false
+        groupMode: NotificationManager.Notifications.GroupDisabled
+        // 0 means no limit
+        // 0 表示不限制条数
+        limit: 0
+        showAddedDuringInhibition: true
+        showDismissed: true
+        showExpired: true
+        showJobs: false
+        sortMode: NotificationManager.Notifications.SortByDate
+        sortOrder: Qt.DescendingOrder
+    }
+
     // Count values are refreshed explicitly
     // 计数值由显式刷新更新
     property int count: 0
@@ -391,16 +407,16 @@ QtObject {
         Qt.openUrlExternally(url);
     }
 
-    // Close rows from the end to avoid shifting indexes during removal
-    // 从后往前逐行关闭，避免删除过程中行号偏移
+    // Close the whole history from the end to avoid shifting indexes during removal
+    // 从后往前关闭整个历史，避免删除过程中行号偏移
     function clearAll() {
-        const model = root.listModel;
-        if (!root.available || model === null) {
+        if (!root.available) {
             return;
         }
 
+        const model = root.clearModel;
         for (let row = model.count - 1; row >= 0; --row) {
-            root.close(row);
+            model.close(model.index(row, 0));
         }
     }
 
