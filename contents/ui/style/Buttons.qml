@@ -2,11 +2,7 @@ import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.ksvg as KSvg
 
-// Reusable button components for the applet UI.
-// 小组件界面的可复用按钮组件。
 Item {
-    // Accent hover icon button.
-    // 强调色悬停图标按钮。
     component IconButton: Item {
         id: button
 
@@ -60,8 +56,6 @@ Item {
         }
     }
 
-    // Theme-framed tool button
-    // 主题框架工具按钮
     component ToolButton: Item {
         id: button
 

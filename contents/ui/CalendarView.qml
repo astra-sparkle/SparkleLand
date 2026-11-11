@@ -4,8 +4,6 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// Calendar view
-// 日历视图
 Item {
     id: root
 

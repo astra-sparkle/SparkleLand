@@ -38,7 +38,8 @@
             <max>3</max>
         </entry>
         <entry name="mediaPlaybackIcon" type="String">
-            <!-- Empty keeps the icon hardcoded in the compact representation -->
+            <!-- Empty falls back to the packaged default icon -->
+            <!-- 留空时使用内置默认图标 -->
             <default></default>
         </entry>
         <entry name="notificationsEnabled" type="Bool">

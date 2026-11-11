@@ -1,7 +1,5 @@
 import QtQuick
 
-// Compact media title label.
-// 紧凑媒体标题标签。
 Item {
     id: root
 
@@ -11,8 +9,8 @@ Item {
     property bool useThemeBackground: true
     property string title: ""
 
-    // Use accent text only when media is playing and the theme background is enabled.
-    // 仅在播放且启用主题背景时使用强调色文字。
+    // Use accent text only when media is playing and the theme background is enabled
+    // 仅在播放且启用主题背景时使用强调色文字
     readonly property bool highlighted: root.playing && root.useThemeBackground
 
     implicitHeight: 32

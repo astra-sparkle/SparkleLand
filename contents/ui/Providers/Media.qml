@@ -1,13 +1,10 @@
 import QtQuick
 import org.kde.plasma.private.mpris as Mpris
 
-// MPRIS data source
-// MPRIS 数据源
 QtObject {
     id: root
 
-    readonly property Mpris.Mpris2Model mpris2Model: Mpris.Mpris2Model {
-    }
+    readonly property Mpris.Mpris2Model mpris2Model: Mpris.Mpris2Model {}
     readonly property var currentPlayer: root.mpris2Model.currentPlayer
 
     // Return an empty string when no player or title is available
@@ -23,8 +20,8 @@ QtObject {
         return !!player && player.playbackStatus === Mpris.PlaybackStatus.Playing;
     }
 
-    // Album artwork used by the expanded panel
-    // 展开面板使用的专辑封面
+    // Album artwork shared by the compact cover and the expanded panel
+    // 紧凑封面与展开面板共用的专辑封面
     readonly property string artUrl: {
         const player = root.currentPlayer;
         const url = player ? player.artUrl : undefined;

@@ -3,33 +3,34 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// Expanded panel layout: calendar on the left, context-aware content on the right.
-// 展开面板布局：左侧为日历，右侧为随状态变化的内容。
+// Expanded panel layout: calendar on the left, context-aware content on the right
+// 展开面板布局：左侧为日历，右侧为随状态变化的内容
 Item {
     id: root
 
-    // Properties injected by the applet shell.
-    // 由小组件外壳注入的属性。
+    // Properties injected by the applet shell
+    // 由小组件外壳注入的属性
     property var theme
     property font textFont
     property string timeFormat
+    property date requestedDate
+
     property var mediaProvider
     property bool hasMedia: false
     property bool mediaControlsEnabled: true
+
     property var notificationsProvider
     property bool hasNotifications: false
     property bool notificationsShowDoNotDisturb: true
     property bool notificationsShowClearAll: true
+
     property bool appletExpanded: false
-    property date requestedDate
 
     readonly property string currentTrackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
     readonly property real plasmaDefaultWidth: Kirigami.Units.iconSizes.sizeForLabels * 35
     readonly property real coverSize: Math.round(0.5 * Math.min(root.width, root.height))
     readonly property bool playing: root.mediaProvider !== null && root.mediaProvider.playing
     readonly property int indicatorHeight: Math.round(root.height * 0.08)
-
-    implicitWidth: Math.round(root.plasmaDefaultWidth)
 
     // Scale the expanded clock font with panel height
     // 展开状态下的时钟字号随面板高度缩放
@@ -38,6 +39,8 @@ Item {
         "family": root.textFont.family,
         "pixelSize": Math.max(16, Math.round(root.height * 0.22))
     })
+
+    implicitWidth: Math.round(root.plasmaDefaultWidth)
 
     Item {
         id: leftPane

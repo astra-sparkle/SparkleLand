@@ -4,34 +4,30 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 
-// Notification popup queue and toast content.
-// 通知弹窗队列与 Toast 内容。
+// Banner queue and toast content for the applet
+// 小组件的横幅队列与提示内容
 PlasmaCore.ToolTipArea {
     id: root
 
-    // Banner provider and popup settings.
-    // 横幅数据源与弹窗设置。
     property var provider
     property bool showPopups: true
     property int displayTime: 5000
     property bool appletExpanded: false
     property int panelLocation: 0
 
-    // Pending notification queue and active notification ID.
-    // 待展示通知队列与当前通知 ID。
+    // Queue of pending notification IDs and the one currently shown
+    // 待显示的通知 ID 队列与当前显示项
     property var pending: []
-    // Use var to avoid truncating synthetic history IDs.
-    // 使用 var，避免历史合成 ID 被截断。
+    // Use var to avoid truncating synthetic history IDs
+    // 使用 var，避免历史合成 ID 被截断
     property var currentId: -1
 
     readonly property bool bannerEnabled: root.showPopups && root.provider !== null && root.provider.available
 
-    // Gap between banners
-    // 横幅间距
+    // Delay between consecutive banners in milliseconds
+    // 相邻横幅之间的间隔（毫秒）
     readonly property int gap: 250
 
-    // Current banner content
-    // 当前横幅内容
     property string bannerApplicationName: ""
     property string bannerSummary: ""
     property string bannerBody: ""

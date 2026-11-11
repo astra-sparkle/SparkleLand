@@ -1,7 +1,6 @@
 import QtQuick
 import org.kde.plasma.configuration
 
-
 // Applet settings page; Plasma handles loading and saving
 // 小组件设置页，由 Plasma 负责加载与保存
 ConfigModel {

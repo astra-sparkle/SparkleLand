@@ -6,7 +6,6 @@ import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-
 // Bind cfg_ entries on the configuration page to KConfig values
 // 将配置页中的 cfg_ 条目绑定到 KConfig 值
 KCM.SimpleKCM {
@@ -14,13 +13,13 @@ KCM.SimpleKCM {
 
     // Keep this page in sync with the XML configuration entries
     // 保持此页面与 XML 配置项同步
-    property alias cfg_maximumPanelWidth: maximumWidthSpin.value
     property alias cfg_minimumPanelWidth: minimumWidthSpin.value
+    property alias cfg_maximumPanelWidth: maximumWidthSpin.value
 
-    property alias cfg_fontBold: fontBoldCheck.checked
     property alias cfg_fontFamily: fontFamilyField.text
-    property alias cfg_fontItalic: fontItalicCheck.checked
     property alias cfg_fontPointSize: fontPointSizeSpin.value
+    property alias cfg_fontBold: fontBoldCheck.checked
+    property alias cfg_fontItalic: fontItalicCheck.checked
 
     property alias cfg_mediaUseThemeBackground: mediaBackgroundCheck.checked
     property alias cfg_mediaCompactStyle: mediaCompactStyleCombo.currentIndex
@@ -32,18 +31,18 @@ KCM.SimpleKCM {
     readonly property string defaultMediaPlaybackIcon: "music-note-16th"
 
     property alias cfg_notificationsEnabled: notificationsEnabledCheck.checked
-    property alias cfg_notificationsIncludeExpired: notificationsIncludeExpiredCheck.checked
-    property alias cfg_notificationsBannerTimeout: notificationsBannerTimeoutSpin.value
     property alias cfg_notificationsMaxVisible: notificationsMaxVisibleSpin.value
-    property alias cfg_notificationsShowPopups: notificationsShowPopupsCheck.checked
-    property alias cfg_notificationsShowClearAll: notificationsClearAllCheck.checked
+    property alias cfg_notificationsIncludeExpired: notificationsIncludeExpiredCheck.checked
     property alias cfg_notificationsShowDoNotDisturb: notificationsDoNotDisturbCheck.checked
+    property alias cfg_notificationsShowClearAll: notificationsClearAllCheck.checked
     property alias cfg_notificationsShowUnreadCount: notificationsUnreadCountCheck.checked
+    property alias cfg_notificationsShowPopups: notificationsShowPopupsCheck.checked
+    property alias cfg_notificationsBannerTimeout: notificationsBannerTimeoutSpin.value
 
-    property string cfg_customDateFormat: Plasmoid.configuration.customDateFormat
-    property string cfg_customTimeFormat: Plasmoid.configuration.customTimeFormat
-    property alias cfg_showDate: showDateCheck.checked
     property alias cfg_timeFormatMode: timeFormatModeCombo.currentIndex
+    property string cfg_customTimeFormat: Plasmoid.configuration.customTimeFormat
+    property string cfg_customDateFormat: Plasmoid.configuration.customDateFormat
+    property alias cfg_showDate: showDateCheck.checked
 
     // KDE icon chooser shared by the media icon controls
     // 媒体图标控件共用的 KDE 图标选择器

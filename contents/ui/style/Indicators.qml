@@ -1,11 +1,7 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 
-// Reusable indicator components.
-// 可复用指示器组件。
 Item {
-    // Accent badge for unread counts.
-    // 未读计数的强调色角标。
     component Badge: Rectangle {
         id: badge
 
@@ -35,8 +31,6 @@ Item {
         }
     }
 
-    // Pager dots
-    // 页面指示器圆点
     component PageIndicator: Row {
         id: indicator
 

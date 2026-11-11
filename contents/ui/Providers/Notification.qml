@@ -1,20 +1,16 @@
 import QtQuick
 import org.kde.notificationmanager as NotificationManager
 
-// Notification provider: keeps the Plasma model, unread badge logic,
-// inhibition state, and banner dispatch in one place.
-// 通知提供器：把 Plasma 通知模型、未读角标逻辑、勿扰状态与横幅派发集中管理。
+// Notification provider: Plasma model, unread badge logic, do-not-disturb state and banner dispatch
+// 通知提供器：Plasma 通知模型、未读角标逻辑、勿扰状态与横幅派发
 QtObject {
     id: root
 
-    // Configuration forwarded by the provider host.
-    // 由上层 provider 转发的配置项。
-    property bool enabled: true
     property int maxVisible: 5
     property bool includeExpired: true
 
-    // Runtime state shared with the Plasma notification service.
-    // 与 Plasma 通知服务共享的运行时状态。
+    // Runtime state shared with the Plasma notification service
+    // 与 Plasma 通知服务共享的运行时状态
     readonly property NotificationManager.Settings settings: NotificationManager.Settings {
         onInhibitNotificationsWhenFullscreenChanged: root.refreshInhibition()
         onInhibitNotificationsWhenScreensMirroredChanged: root.refreshInhibition()
@@ -30,8 +26,6 @@ QtObject {
     // 当前是否处于勿扰状态
     property bool inhibited: false
 
-    // Notification list model used by the UI
-    // UI 使用的通知列表模型
     readonly property NotificationManager.Notifications listModel: NotificationManager.Notifications {
         expandUnread: false
         groupMode: NotificationManager.Notifications.GroupDisabled
@@ -47,9 +41,8 @@ QtObject {
     // 横幅请求由弹窗组件处理
     signal bannerRequested(var notificationId)
 
-    // Notifications restored from history use synthetic ids at or above this value;
-    // QML int is 32-bit signed, so the marker itself has to be a double
-    // 从历史记录恢复的通知使用大于等于该值的合成 ID；QML 的 int 为 32 位有符号，标记值本身须用 double
+    // Restored history uses synthetic IDs at or above this value; QML int is 32-bit signed, so the marker must be a double
+    // 从历史记录恢复的通知使用大于或等于该值的合成 ID；QML 的 int 为 32 位有符号，标记值须用 double
     readonly property double restoredIdBit: 2147483648
 
     // Popup model keeps only banner-eligible notifications
@@ -138,10 +131,6 @@ QtObject {
         }
     }
 
-    // Hide notification data while the feature is switched off
-    // 功能关闭时隐藏通知数据
-    onEnabledChanged: root.refreshCounts()
-
     // Initialize once after the data source is created
     // 数据源创建后执行一次初始化
     function initialize() {
@@ -158,24 +147,16 @@ QtObject {
         Qt.callLater(root.applyCounts);
     }
 
-    // Short helper to keep the enablement checks readable and consistent.
-    // 统一可用性判断，减少重复条件判断。
-    function isNotificationActive() {
-        return root.enabled && root.available;
-    }
-
-    // Recompute counters after the model has settled, never while a model signal is still firing.
-    // 在模型稳定后再计算计数，避免在信号发射过程中读取模型状态。
+    // Recompute counters after the model has settled, never while a model signal is still firing
+    // 在模型稳定后再计算计数，避免在信号发射过程中读取模型状态
     function applyCounts() {
-        const active = root.isNotificationActive();
+        const active = root.available;
         root.count = active ? root.listModel.count : 0;
         root.unreadCount = active ? root.countUnreadNotifications() : 0;
     }
 
-    // Count notifications that arrived after the last read marker.
-    // This Plasma build keeps the model's unread count at zero, so we compute it explicitly.
-    // 统计上次已读标记之后到达的通知。
-    // 当前 Plasma 构建版本中模型自带的未读计数会保持为 0，因此需要显式计算。
+    // The model's unread count stays at zero in this Plasma build, so rows are counted here
+    // 当前 Plasma 版本的模型未读计数恒为 0，因此在此逐行统计
     function countUnreadNotifications() {
         const model = root.listModel;
         const notificationType = NotificationManager.Notifications;
@@ -290,8 +271,6 @@ QtObject {
         };
     }
 
-    // Find banner data by notification ID
-    // 按通知 ID 查找横幅数据
     function bannerDataForId(notificationId) {
         const model = root.popupModel;
         for (let row = 0; row < model.count; ++row) {
@@ -304,8 +283,6 @@ QtObject {
         return null;
     }
 
-    // Find a notification row by ID
-    // 按通知 ID 查找列表行
     function rowForNotificationId(notificationId) {
         const model = root.listModel;
         const notificationType = NotificationManager.Notifications;
@@ -318,8 +295,6 @@ QtObject {
         return -1;
     }
 
-    // Close a notification by ID
-    // 按 ID 关闭通知
     function closeNotificationById(notificationId) {
         const row = root.rowForNotificationId(notificationId);
         if (row >= 0) {
@@ -327,8 +302,6 @@ QtObject {
         }
     }
 
-    // Trigger a notification's default action by ID
-    // 按 ID 触发通知的默认操作
     function triggerNotificationById(notificationId) {
         const row = root.rowForNotificationId(notificationId);
         return row >= 0 ? root.trigger(row) : false;

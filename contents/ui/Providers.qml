@@ -1,18 +1,18 @@
 import QtQuick
 
-// Feature provider registry.
-// 功能提供器注册中心。
+// Feature provider registry
+// 功能提供器注册中心
 QtObject {
     id: root
 
-    // Feature settings forwarded from the applet shell.
-    // 由小组件外壳转发的功能配置。
+    // Feature settings forwarded from the applet shell
+    // 由小组件外壳转发的功能配置
     property bool notificationsEnabled: true
     property int notificationsMaxVisible: 5
     property bool notificationsIncludeExpired: true
 
-    // Missing MPRIS only disables the media provider.
-    // 缺失 MPRIS 仅禁用媒体功能。
+    // Missing MPRIS only disables the media provider
+    // 缺失 MPRIS 仅禁用媒体功能
     readonly property var media: QtObject {
         id: mediaSource
 
