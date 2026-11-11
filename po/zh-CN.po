@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
-"POT-Creation-Date: 2026-11-02 22:18+0800\n"
+"POT-Creation-Date: 2026-11-11 16:07+0800\n"
 "PO-Revision-Date: 2026-11-08 16:31\n"
 "Last-Translator: \n"
 "Language-Team: Chinese Simplified\n"
@@ -17,71 +17,75 @@ msgstr ""
 "X-Crowdin-File: /main/po/plasma_applet_com.astrasparkle.sparkleland.pot\n"
 "X-Crowdin-File-ID: 6\n"
 
-#: contents/config/config.qml:11
+#: contents/config/config.qml:10
 msgctxt "@title:group for configuration dialog page"
 msgid "General"
 msgstr "常规"
 
-#: contents/config/option.qml:54
+#: contents/config/option.qml:53
 msgid "Select Playback Icon"
 msgstr "选择播放图标"
 
-#: contents/config/option.qml:63
+#: contents/config/option.qml:62
 msgid "Panel"
 msgstr "面板"
 
-#: contents/config/option.qml:69
+#: contents/config/option.qml:68
 msgid "Minimum width:"
 msgstr "最小宽度："
 
-#: contents/config/option.qml:78
+#: contents/config/option.qml:77
 msgid "Maximum width:"
 msgstr "最大宽度："
 
-#: contents/config/option.qml:86
+#: contents/config/option.qml:85
 msgid "Font"
 msgstr "字体"
 
-#: contents/config/option.qml:93 contents/config/option.qml:105
+#: contents/config/option.qml:92 contents/config/option.qml:104
 #: contents/config/option.qml:276 contents/config/option.qml:296
 msgid "Follow system"
 msgstr "跟随系统"
 
-#: contents/config/option.qml:102
+#: contents/config/option.qml:101
 msgid "Size:"
 msgstr "字号："
 
-#: contents/config/option.qml:105
+#: contents/config/option.qml:104
 msgid "%1 pt"
 msgstr "%1 pt"
 
-#: contents/config/option.qml:115
+#: contents/config/option.qml:114
 msgid "Bold"
 msgstr "粗体"
 
-#: contents/config/option.qml:122
+#: contents/config/option.qml:121
 msgid "Italic"
 msgstr "斜体"
 
-#: contents/config/option.qml:127
+#: contents/config/option.qml:126
 msgid "Media"
 msgstr "媒体"
 
-#: contents/config/option.qml:133
+#: contents/config/option.qml:132
 msgid "While playing:"
 msgstr "播放时："
 
+#: contents/config/option.qml:135
+msgid "Show the track title"
+msgstr "显示曲名"
+
 #: contents/config/option.qml:136
-msgid "Show the track title instead of the panel text"
-msgstr "用曲名替代面板文字"
+msgid "Show the clock"
+msgstr "显示时钟"
 
 #: contents/config/option.qml:137
-msgid "Keep the clock and use the background color"
-msgstr "保留时钟并使用背景色"
+msgid "Show the clock and playback icon"
+msgstr "显示时钟和播放图标"
 
 #: contents/config/option.qml:138
-msgid "Keep the clock and show a playback icon"
-msgstr "保留时钟并显示播放图标"
+msgid "Show the clock and album cover"
+msgstr "显示时钟和专辑封面"
 
 #: contents/config/option.qml:145
 msgid "Background:"
@@ -103,8 +107,8 @@ msgstr "内置默认"
 msgid "Restore the packaged default icon"
 msgstr "恢复内置默认图标"
 
-#: contents/config/option.qml:178 contents/ui/Notifications.qml:114
-#: contents/ui/NotificationsPopup.qml:192
+#: contents/config/option.qml:178 contents/ui/Notifications.qml:108
+#: contents/ui/NotificationsPopup.qml:214
 msgid "Notifications"
 msgstr "通知"
 
@@ -134,7 +138,9 @@ msgid_plural "%1 seconds"
 msgstr[0] "%1 秒"
 
 #: contents/config/option.qml:216
-msgid "Remove the Plasma Notifications widget from the panel, otherwise every notification is shown twice."
+msgid ""
+"Remove the Plasma Notifications widget from the panel, otherwise every "
+"notification is shown twice."
 msgstr "请从面板移除 Plasma 通知小组件，否则每条通知都会显示两次。"
 
 #: contents/config/option.qml:224
@@ -202,56 +208,61 @@ msgstr "在时间下显示日期"
 msgid "Date format:"
 msgstr "日期格式："
 
-#: contents/ui/Calender.qml:33
+#: contents/ui/CalendarView.qml:30
 msgctxt "Format: month year"
 msgid "%1 %2"
 msgstr "%1 %2"
 
-#: contents/ui/Calender.qml:283
+#: contents/ui/CalendarView.qml:278
 msgid "Today"
 msgstr "今天"
 
-#: contents/ui/Notifications.qml:63
+#: contents/ui/Notifications.qml:59
 msgid "Just now"
 msgstr "刚刚"
 
-#: contents/ui/Notifications.qml:68
+#: contents/ui/Notifications.qml:64
 msgid "%1 min ago"
 msgid_plural "%1 min ago"
 msgstr[0] "%1 分钟前"
 
-#: contents/ui/Notifications.qml:73
+#: contents/ui/Notifications.qml:69
 msgid "%1 hour ago"
 msgid_plural "%1 hours ago"
 msgstr[0] "%1 小时前"
 
-#: contents/ui/Notifications.qml:76
+#: contents/ui/Notifications.qml:72
 msgid "%1 day ago"
 msgid_plural "%1 days ago"
 msgstr[0] "%1 天前"
 
-#: contents/ui/Notifications.qml:191
+#: contents/ui/Notifications.qml:140
 msgid "Do not disturb is active"
 msgstr "勿扰模式已开启"
 
-#: contents/ui/Notifications.qml:370 contents/ui/main.qml:87
+#: contents/ui/Notifications.qml:298 contents/ui/main.qml:84
 msgid "No unread notifications"
 msgstr "没有未读通知"
 
-#: contents/ui/Notifications.qml:370
+#: contents/ui/Notifications.qml:298
 msgid "Notification service is not available"
 msgstr "通知服务不可用"
 
-#: contents/ui/main.qml:12
+#: contents/ui/main.qml:13
 msgid "Sparkle Land"
 msgstr "Sparkle Land"
 
-#: contents/ui/main.qml:86
+#: contents/ui/main.qml:83
 msgid "%1 unread notification"
 msgid_plural "%1 unread notifications"
 msgstr[0] "有 %1 条未读通知"
 
-#: contents/ui/main.qml:90
+#: contents/ui/main.qml:87
 msgid "Now playing: %1"
 msgstr "正在播放：%1"
 
+#~ msgid "Show the track title instead of the panel text"
+#~ msgstr "用曲名替代面板文字"
+
+#~ msgid "Keep the clock and use the background color"
+#~ msgstr "保留时钟并使用背景色"

@@ -132,9 +132,10 @@ KCM.SimpleKCM {
             Kirigami.FormData.label: i18n("While playing:")
             currentIndex: Plasmoid.configuration.mediaCompactStyle
             model: [
-                i18n("Show the track title instead of the panel text"),
-                i18n("Keep the clock and use the background color"),
-                i18n("Keep the clock and show a playback icon")
+                i18n("Show the track title"),
+                i18n("Show the clock"),
+                i18n("Show the clock and playback icon"),
+                i18n("Show the clock and album cover")
             ]
         }
 

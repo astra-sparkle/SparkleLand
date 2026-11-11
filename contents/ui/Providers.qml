@@ -23,6 +23,9 @@ QtObject {
 
         readonly property bool available: mediaSource.state === 1
         readonly property string trackTitle: mediaSource.provider !== null ? mediaSource.provider.trackTitle : ""
+        // Album artwork exposed for both the compact cover and the expanded panel
+        // 专辑封面同时供紧凑封面与展开面板使用
+        readonly property string artUrl: mediaSource.provider !== null ? mediaSource.provider.artUrl : ""
         readonly property bool playing: mediaSource.provider !== null && mediaSource.provider.playing
 
         Component.onCompleted: mediaSource.loadProvider()

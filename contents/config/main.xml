@@ -35,7 +35,7 @@
         <entry name="mediaCompactStyle" type="Int">
             <default>0</default>
             <min>0</min>
-            <max>2</max>
+            <max>3</max>
         </entry>
         <entry name="mediaPlaybackIcon" type="String">
             <!-- Empty keeps the icon hardcoded in the compact representation -->

@@ -28,11 +28,11 @@ PlasmoidItem {
 	readonly property int panelMaximumWidth: Math.max(root.panelMinimumWidth, root.configNumber(plasmoid.configuration.maximumPanelWidth, 240))
 	readonly property int panelAverageWidth: Math.round((root.panelMinimumWidth + root.panelMaximumWidth) / 2)
 	readonly property bool mediaUseThemeBackground: plasmoid.configuration.mediaUseThemeBackground !== false
-	// Compact media style: 0 = title, 1 = clock with background, 2 = clock with icon
-	// 紧凑媒体样式：0 = 标题，1 = 带背景时钟，2 = 带图标时钟
+	// Compact media style: 0 = title, 1 = clock with background, 2 = clock with icon, 3 = clock with album cover
+	// 紧凑媒体样式：0 = 标题，1 = 带背景时钟，2 = 带图标时钟，3 = 带专辑封面时钟
 	readonly property int mediaCompactStyle: {
 		const style = root.configNumber(plasmoid.configuration.mediaCompactStyle, 0);
-		return (style >= 0 && style <= 2) ? Math.round(style) : 0;
+		return (style >= 0 && style <= 3) ? Math.round(style) : 0;
 	}
 	// Compact clock icon; empty keeps the packaged default
 	// 紧凑时钟图标；为空时使用内置默认值
@@ -244,6 +244,9 @@ PlasmoidItem {
 	}
 
 	readonly property string trackTitle: providers.media.trackTitle
+	// Album cover shared with the expanded panel
+	// 与展开面板共用的专辑封面
+	readonly property string trackArtUrl: providers.media.artUrl
 	readonly property bool isPlaying: providers.media.playing
 
 	readonly property bool hasNotifications: providers.notifications.hasNotifications
@@ -268,6 +271,9 @@ PlasmoidItem {
 	// 仅样式 0 用曲名替代时钟，其余样式保留时钟
 	readonly property bool compactShowsMediaTitle: root.hasMedia && root.mediaCompactStyle === 0
 	readonly property bool compactShowsMediaIcon: root.hasMedia && root.mediaCompactStyle === 2
+	// Style 3 swaps the playback icon for the album cover at the same spot
+	// 样式 3 在同一位置用专辑封面替代播放图标
+	readonly property bool compactShowsMediaCover: root.hasMedia && root.mediaCompactStyle === 3
 	readonly property bool panelShowsMedia: root.compactShowsMediaTitle && !root.expanded
 
 	Plasmoid.title: root.appTitle
@@ -314,15 +320,19 @@ PlasmoidItem {
 			? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, false))
 			: root.panelFont
 
-		// Clock+icon style always reserves equal side space for the playback icon and the badge, even while either is hidden
-		// 时钟+图标样式下左右始终预留相同空间，供播放图标与通知角标使用（即使暂时隐藏）
-		readonly property int sideSpace: root.mediaCompactStyle === 2
-			? Math.max(mediaPlaybackIcon.width + 6, notificationBadge.width + 3)
+		// Album cover size in the cover style, fitted to the panel height
+		// 封面样式下的专辑封面尺寸，随面板高度适配
+		readonly property int coverSize: Math.max(16, Math.round(compactItem.height * 0.75))
+
+		// Clock+icon and clock+cover styles always reserve equal side space for the left accent and the badge, even while either is hidden
+		// 时钟+图标与时钟+封面样式下左右始终预留相同空间，供左侧装饰与通知角标使用（即使暂时隐藏）
+		readonly property int sideSpace: root.mediaCompactStyle === 2 || root.mediaCompactStyle === 3
+			? Math.max(root.mediaCompactStyle === 3 ? compactItem.coverSize + 6 : mediaPlaybackIcon.width + 6, notificationBadge.width + 3)
 			: 0
 
 		// Reserve space for the badge so it does not cover the time or track title
 		// 为角标预留空间，避免遮挡时间或曲名
-		readonly property int badgeSpace: root.mediaCompactStyle === 2 ? sideSpace : (notificationBadge.visible ? notificationBadge.width + 4 : 0)
+		readonly property int badgeSpace: root.mediaCompactStyle === 2 || root.mediaCompactStyle === 3 ? sideSpace : (notificationBadge.visible ? notificationBadge.width + 4 : 0)
 
 		// Media uses average or maximum width; clock width follows content within configured limits
 		// 媒体模式取平均或最大宽度；时钟模式按内容宽度限制在配置范围内
@@ -360,6 +370,22 @@ PlasmoidItem {
 			titleFont: compactItem.mediaTitleFont
 			useThemeBackground: root.mediaUseThemeBackground
 			visible: root.panelShowsMedia
+		}
+
+		// Album cover left of the clock in the cover style, rendered by the shared cover component
+		// 封面样式下位于时钟左侧的专辑封面，由共享封面组件绘制
+		CoverImage {
+			id: mediaCover
+
+			anchors.left: parent.left
+			anchors.leftMargin: 3
+			anchors.verticalCenter: parent.verticalCenter
+			height: compactItem.coverSize
+			placeholderColor: root.theme.disabledTextColor
+			radius: Math.max(2, Math.round(compactItem.coverSize * 0.15))
+			source: root.compactShowsMediaCover ? root.trackArtUrl : ""
+			visible: root.compactShowsMediaCover
+			width: compactItem.coverSize
 		}
 
 		// Music note left of the clock in the icon style, accent colored without a background
