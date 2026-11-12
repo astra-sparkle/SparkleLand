@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
 "POT-Creation-Date: 2026-11-11 16:07+0800\n"
-"PO-Revision-Date: 2026-11-08 16:31\n"
+"PO-Revision-Date: 2026-11-11 11:38\n"
 "Last-Translator: \n"
 "Language-Team: Chinese Simplified\n"
 "Language: zh_CN\n"
@@ -73,19 +73,19 @@ msgstr "播放时："
 
 #: contents/config/option.qml:135
 msgid "Show the track title"
-msgstr "显示曲名"
+msgstr ""
 
 #: contents/config/option.qml:136
 msgid "Show the clock"
-msgstr "显示时钟"
+msgstr ""
 
 #: contents/config/option.qml:137
 msgid "Show the clock and playback icon"
-msgstr "显示时钟和播放图标"
+msgstr ""
 
 #: contents/config/option.qml:138
 msgid "Show the clock and album cover"
-msgstr "显示时钟和专辑封面"
+msgstr ""
 
 #: contents/config/option.qml:145
 msgid "Background:"
@@ -138,9 +138,7 @@ msgid_plural "%1 seconds"
 msgstr[0] "%1 秒"
 
 #: contents/config/option.qml:216
-msgid ""
-"Remove the Plasma Notifications widget from the panel, otherwise every "
-"notification is shown twice."
+msgid "Remove the Plasma Notifications widget from the panel, otherwise every notification is shown twice."
 msgstr "请从面板移除 Plasma 通知小组件，否则每条通知都会显示两次。"
 
 #: contents/config/option.qml:224
@@ -261,8 +259,3 @@ msgstr[0] "有 %1 条未读通知"
 msgid "Now playing: %1"
 msgstr "正在播放：%1"
 
-#~ msgid "Show the track title instead of the panel text"
-#~ msgstr "用曲名替代面板文字"
-
-#~ msgid "Keep the clock and use the background color"
-#~ msgstr "保留时钟并使用背景色"
