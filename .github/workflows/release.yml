@@ -229,6 +229,7 @@ jobs:
       - name: 移出产物
         run: |
           set -euo pipefail
+          rm aqtinstall.log
           mv "$PKG" "$RUNNER_TEMP/$PKG"
           if compgen -G '*.plasmoid' >/dev/null; then
             echo "::error::仓库根目录仍有 .plasmoid 产物"
