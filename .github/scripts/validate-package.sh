@@ -49,7 +49,7 @@ echo "回退 $fallback_image + kpackage + libplasma"
 docker run --rm --entrypoint sh \
     -v "$workdir:/src:ro" -w /src "$fallback_image" -c '
     set -eu
-    pacman -Sy --noconfirm --needed --quiet kpackage libplasma >/dev/null
+    pacman -Syu --noconfirm --needed --quiet kpackage libplasma >/dev/null
     kpackagetool6 --type Plasma/Applet --packageroot /tmp/pkgcheck --install /src/*.plasmoid
 '
 echo "安装校验通过（$fallback_image）"
