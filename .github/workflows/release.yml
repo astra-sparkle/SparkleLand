@@ -1,0 +1,293 @@
+# 发布流程，手动触发；步骤定义见 .copilot/Release.md
+# Manual release pipeline, the authoritative procedure lives in .copilot/Release.md
+#
+# 与本地流程的差异，全部因为 GitHub Actions 的执行环境
+# Deviations from the local procedure, all caused by the GitHub Actions environment
+# * 产物不再保存到 ~/下载：改为创建 GitHub Release v<ver> 并附加 .plasmoid
+#   The artifact is no longer saved to ~/下载: a GitHub Release v<ver> carries the .plasmoid
+# * archive/release-<ver> 是本地存档标签，runner 上的仓库随任务销毁，因此只推送远端约定的轻量标签 v<ver>
+#   archive/release-<ver> is a local archive tag; runners are ephemeral, so only the lightweight v<ver> is pushed
+# * release 分支同样只存在于 runner 内，任务结束即销毁，不再推送
+#   The release branch is runner-local as well, it disappears with the job and is never pushed
+# * ubuntu-latest 没有 KF6 的 kpackagetool6，安装校验在一次性容器里完成：首选 kdeneon/plasma，回退 Arch + kpackage
+#   ubuntu-latest ships no KF6 kpackagetool6, so the check runs in a throwaway container: kdeneon/plasma first, Arch fallback
+# * 产物名不带版本号，版本信息由 Release 的 v<ver> 标签承担
+#   The artifact name carries no version, the Release tag v<ver> does
+# * QML 语法检查交给 Marketplace 的 Qt action 提供的 qmllint，并以它的退出码为准
+#   QML syntax checking uses qmllint from the Qt Marketplace action and trusts its exit code
+name: 发布
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 目标版本号，格式 X.Y.Z（例如 1.3.1）
+        required: true
+        type: string
+      publish:
+        description: 创建 GitHub Release 并推送标签 v<ver>（关闭则只构建并留作 workflow artifact）
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+# 发布不能并行，也不能中途取消
+# Releases must not run in parallel or be cancelled midway
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  PKG_ID: com.astrasparkle.sparkleland
+  DOMAIN: plasma_applet_com.astrasparkle.sparkleland
+
+jobs:
+  release:
+    name: 发布 ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 校验版本号
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          ver="$VERSION_INPUT"
+          if [[ ! "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::版本号必须形如 X.Y.Z，收到：$ver"
+            exit 1
+          fi
+          {
+            echo "VER=$ver"
+            echo "PKG=$PKG_ID.plasmoid"
+          } >> "$GITHUB_ENV"
+          echo "目标版本：$ver"
+
+      - name: 检出仓库
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 前置条件检查
+        run: |
+          set -euo pipefail
+          if [ "$(git rev-parse --abbrev-ref HEAD)" = HEAD ]; then
+            git switch -c main origin/main
+          fi
+          [ "$(git branch --show-current)" = main ] || {
+            echo "::error::发布必须在 main 分支上执行"
+            exit 1
+          }
+          if [ -n "$(git status --short)" ]; then
+            echo "::error::工作区不干净"
+            git status --short
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch -q --no-tags origin main
+          local_sha=$(git rev-parse HEAD)
+          remote_sha=$(git rev-parse origin/main)
+          if [ "$local_sha" != "$remote_sha" ]; then
+            echo "::error::main ($local_sha) 与远端 main ($remote_sha) 不同步，请先同步后再发布"
+            exit 1
+          fi
+
+      # 步骤 1：确认版本号
+      - name: 确认版本号
+        run: |
+          set -euo pipefail
+          current=$(sed -n 's/.*"Version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' metadata.json | head -n1)
+          if [ -z "$current" ]; then
+            echo "::error::无法从 metadata.json 读取 KPlugin.Version"
+            exit 1
+          fi
+          if [ "$current" = "$VER" ]; then
+            echo "版本号已是 $VER，跳过修改"
+            exit 0
+          fi
+          # 只改 Version 一行，保留 metadata.json 的原有排版
+          # Patch only the Version line so the existing layout of metadata.json survives
+          sed -i -E "s/(\"Version\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\1$VER\2/" metadata.json
+          grep -q "\"Version\": \"$VER\"" metadata.json || {
+            echo "::error::metadata.json 版本号写入失败"
+            exit 1
+          }
+          git diff --stat
+          git commit -m "提升版本号至 $VER" metadata.json
+          git push origin main
+          echo "版本号 $current -> $VER"
+
+      # 步骤 2：创建 release 分支
+      - name: 创建 release 分支
+        run: |
+          set -euo pipefail
+          git switch -c "release/$VER"
+          [ "$(git branch --show-current)" = "release/$VER" ] || {
+            echo "::error::无法创建 release/$VER"
+            exit 1
+          }
+
+      # 步骤 3：清除注释，仅处理 contents/ 下的 .qml，绝不处理 contents/config/main.xml
+      - name: 清除注释
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(find contents -name '*.qml' -print0 | sort -z)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::未找到 QML 文件"
+            exit 1
+          fi
+          python3 .github/scripts/strip_qml_comments.py "${files[@]}"
+          python3 .github/scripts/strip_qml_comments.py --check "${files[@]}"
+
+      # 步骤 3 的校验：qmllint 由 Marketplace 的 Qt action 提供，不自行 apt 安装，也不靠 grep 猜错误
+      # Verification of step 3: qmllint comes from the Qt Marketplace action, no apt install and no grep guessing
+      - name: 安装 Qt 工具
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          cache: true
+          # 只取 qmllint 需要的档案，避免下载整个 Qt
+          # Only the archives qmllint needs, instead of the whole of Qt
+          archives: 'qtbase icu qtdeclarative'
+
+      - name: 校验 QML 语法
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(find contents -name '*.qml' -print0 | sort -z)
+          log="$RUNNER_TEMP/qmllint.log"
+          # 缺失 KDE QML 模块只产生 warning 且退出码为 0，语法错误才返回非零，因此直接以退出码为准
+          # Missing KDE QML modules only warn and exit 0, while syntax errors exit non-zero, so trust the exit code
+          if ! qmllint "${files[@]}" >"$log" 2>&1; then
+            cat "$log"
+            echo "::error::qmllint 报告错误，停止发布"
+            exit 1
+          fi
+          echo "qmllint 通过，warning $(grep -c 'Warning:' "$log" || true) 条"
+
+      - name: 提交清除结果
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "::notice::没有可清除的注释"
+            exit 0
+          fi
+          git diff --stat
+          git add -A contents
+          git commit -m "清除所有注释"
+
+      # 步骤 4：打包，只允许 metadata.json 与 contents/
+      - name: 打包
+        run: |
+          set -euo pipefail
+          rm -f "$PKG"
+          zip -r -X "$PKG" metadata.json contents
+          unzip -Z1 "$PKG" > "$RUNNER_TEMP/pkg.list"
+          echo "条目数：$(wc -l < "$RUNNER_TEMP/pkg.list")"
+
+      - name: 校验包内容
+        run: |
+          set -euo pipefail
+          list="$RUNNER_TEMP/pkg.list"
+          failed=0
+          require() {
+            grep -qxF "$1" "$list" || { echo "::error::包内缺少 $1"; failed=1; }
+          }
+          require metadata.json
+          require contents/ui/main.qml
+          require contents/config/main.xml
+          if ! grep -qE "^contents/locale/[^/]+/LC_MESSAGES/$DOMAIN\.mo$" "$list"; then
+            echo "::error::包内缺少 contents/locale/**/LC_MESSAGES/$DOMAIN.mo"
+            failed=1
+          fi
+          if grep -E '^(po/|\.git/|\.github/|\.copilot/|Messages\.sh$|Readme\.md$|Release\.md$|LICENSE$|crowdin\.yml$)' "$list"; then
+            echo "::error::包内包含不应打包的路径"
+            failed=1
+          fi
+          count=$(wc -l < "$list")
+          if [ "$count" -lt 15 ]; then
+            echo "::error::条目数异常：$count"
+            failed=1
+          fi
+          unzip -p "$PKG" metadata.json > "$RUNNER_TEMP/metadata.pkg.json"
+          if ! grep -q "\"Version\": \"$VER\"" "$RUNNER_TEMP/metadata.pkg.json"; then
+            echo "::error::包内版本号不是 $VER"
+            failed=1
+          fi
+          [ "$failed" -eq 0 ]
+
+      # 步骤 5：校验安装。runner 是 Ubuntu，没有 KF6 的 kpackagetool6，
+      # 因此在一次性容器里真正安装一次：先用自带 Plasma 6 的 kdeneon 镜像，失败/缺失时回退 Arch
+      # Step 5: no KF6 kpackagetool6 on the runner, so a throwaway container performs a real install
+      - name: 校验安装
+        run: sh .github/scripts/validate-package.sh
+
+      # 步骤 6 的替代（其一）：本地流程把产物移进 ~/下载，这里先移出仓库根目录等待发布
+      # Replacement for step 6, part one: the local flow moves the artifact into ~/下载, here it leaves the repo root
+      - name: 移出产物
+        run: |
+          set -euo pipefail
+          mv "$PKG" "$RUNNER_TEMP/$PKG"
+          if compgen -G '*.plasmoid' >/dev/null; then
+            echo "::error::仓库根目录仍有 .plasmoid 产物"
+            exit 1
+          fi
+          ls -l "$RUNNER_TEMP/$PKG"
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PKG_ID }}
+          path: ${{ runner.temp }}/${{ env.PKG_ID }}.plasmoid
+          if-no-files-found: error
+
+      # 步骤 7：存档并清理分支，release 分支不合并回 main，删除必须用 -D
+      - name: 存档并清理分支
+        run: |
+          set -euo pipefail
+          git tag -a "archive/release-$VER" -m "release $VER"
+          git switch main
+          git branch -D "release/$VER"
+          [ "$(git branch --show-current)" = main ] || { echo "::error::未回到 main"; exit 1; }
+          git tag -l "archive/release-$VER"
+          [ -z "$(git status --short)" ] || { echo "::error::工作区不干净"; git status --short; exit 1; }
+          echo "main: $(git rev-parse --short HEAD) $(git log -1 --pretty=%s)"
+
+      # 步骤 6 的替代（其二）：发布到 Releases，同时推送远端约定的轻量标签 v<ver>
+      # Replacement for step 6, part two: publish to Releases and push the lightweight v<ver> tag
+      - name: 发布到 Releases
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VER" >/dev/null 2>&1; then
+            echo "::error::远端已存在标签 v$VER，请确认版本号或先删除旧标签"
+            exit 1
+          fi
+          git tag "v$VER"
+          git push origin "refs/tags/v$VER"
+          gh release create "v$VER" "$RUNNER_TEMP/$PKG" \
+            --title "v$VER" \
+            --generate-notes
+
+      - name: 汇总
+        if: always()
+        run: |
+          {
+            echo "## 发布 v$VER"
+            echo ""
+            echo "- 版本号：\`$VER\`"
+            echo "- 产物：\`$PKG\`"
+            if [ "${{ inputs.publish }}" = "true" ]; then
+              echo "- Release：v$VER（标签 + 附件）"
+            else
+              echo "- Release：未创建（publish=false，产物见 workflow artifact）"
+            fi
+            echo ""
+            echo '```'
+            git log --oneline -3 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
