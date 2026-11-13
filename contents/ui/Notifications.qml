@@ -107,21 +107,23 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Buttons.ToolButton {
+            Buttons.ToggleButton {
                 Layout.preferredHeight: root.buttonSize
                 Layout.preferredWidth: root.buttonSize
-                pressed: root.inhibited
+                checked: root.inhibited
                 source: "notifications-disabled"
+                theme: root.theme
                 visible: root.showDoNotDisturb && root.available
                 onClicked: if (root.provider !== null) {
                     root.provider.toggleInhibition();
                 }
             }
 
-            Buttons.ToolButton {
+            Buttons.IconButton {
                 Layout.preferredHeight: root.buttonSize
                 Layout.preferredWidth: root.buttonSize
                 source: "edit-clear-history"
+                theme: root.theme
                 visible: root.showClearAll && notificationList.count > 0
                 onClicked: if (root.provider !== null) {
                     root.provider.clearAll();

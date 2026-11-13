@@ -161,58 +161,9 @@ PlasmoidItem {
         return custom.length > 0 ? custom : Qt.locale().dateFormat(Locale.ShortFormat);
     }
 
-    // Shared theme colors and accent variants
-    // 共享主题颜色和强调色变体
-    QtObject {
-        id: themeAdapter
-
-        readonly property color textColor: root.palette.active.windowText
-        readonly property color disabledTextColor: root.palette.disabled.windowText
-        // QPalette has no semantic error role; use Breeze negative red
-        // QPalette 没有语义错误色，使用 Breeze 负向红
-        readonly property color negativeTextColor: "#da4453"
-        readonly property font defaultFont: Kirigami.Theme.defaultFont
-        readonly property int gridUnit: Kirigami.Units.gridUnit
-
-        // Accent follows the active palette
-        // 强调色遵循当前调色板
-        readonly property color accentColor: root.palette.active.accent !== undefined
-            ? root.palette.active.accent
-            : root.palette.active.highlight
-
-        readonly property color accentTextColor: root.palette.active.highlightedText
-
-        // WCAG luminance with gamma correction
-        // 采用伽马修正的 WCAG 亮度计算
-        function relativeLuminance(colorValue) {
-            const r = colorValue.r <= 0.03928 ? colorValue.r / 12.92 : Math.pow((colorValue.r + 0.055) / 1.055, 2.4);
-            const g = colorValue.g <= 0.03928 ? colorValue.g / 12.92 : Math.pow((colorValue.g + 0.055) / 1.055, 2.4);
-            const b = colorValue.b <= 0.03928 ? colorValue.b / 12.92 : Math.pow((colorValue.b + 0.055) / 1.055, 2.4);
-            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        }
-
-        // Use text luminance to pick a hover direction
-        // 根据文本亮度选择悬停方向
-        readonly property bool accentTextIsLight: themeAdapter.relativeLuminance(themeAdapter.accentTextColor) > 0.5
-
-        // Move away from the text color so hover keeps contrast
-        // 朝文字色反方向调整，保证悬停时仍有对比度
-        readonly property color accentHoverColor: themeAdapter.accentTextIsLight
-            ? Qt.darker(themeAdapter.accentColor, 1.12)
-            : Qt.lighter(themeAdapter.accentColor, 1.2)
-
-        // Soft alpha variants for subtle fills
-        // 用于柔和填充的透明度变体
-        readonly property color accentSubtleColor: themeAdapter.accentAlpha(0.18)
-        readonly property color accentMutedColor: themeAdapter.accentAlpha(0.4)
-
-        function accentAlpha(alpha) {
-            const accent = themeAdapter.accentColor;
-            return Qt.rgba(accent.r, accent.g, accent.b, alpha);
-        }
-    }
-
-    readonly property var theme: themeAdapter
+    // Shared theme colors and accent variants, owned by the provider registry
+    // 共享主题颜色和强调色变体，由提供器注册中心持有
+    readonly property var theme: providers.theme
 
     readonly property font panelFont: {
         const family = root.configString(plasmoid.configuration.fontFamily);
@@ -225,14 +176,16 @@ PlasmoidItem {
         });
     }
 
-    // Each feature keeps its own provider
-    // 每个功能保留自己的数据源
+    // Each feature keeps its own provider; everything in the Providers directory is
+    // reached through this registry, never imported directly
+    // 每个功能保留自己的数据源；Providers 目录下的组件均通过该注册中心访问，不直接导入
     Providers {
         id: providers
 
         notificationsEnabled: root.notificationsEnabled
         notificationsIncludeExpired: root.notificationsIncludeExpired
         notificationsMaxVisible: root.notificationsMaxVisible
+        palette: root.palette
     }
 
     readonly property string trackTitle: providers.media.trackTitle

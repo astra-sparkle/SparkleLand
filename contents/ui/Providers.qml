@@ -1,9 +1,22 @@
 import QtQuick
+import "Providers" as ProvidersDir
 
-// Feature provider registry
-// 功能提供器注册中心
+// Feature provider registry: the only entry point to the Providers directory
+// 功能提供器注册中心：Providers 目录下组件的唯一入口
 QtObject {
     id: root
+
+    // Palette forwarded from the applet shell
+    // 由小组件外壳转发的调色板
+    property var palette
+
+    // Shared theme adapter, created here so no consumer imports the Providers
+    // directory and collides with same-named visual components
+    // 共享主题适配器；在此创建，使消费者无需导入 Providers 目录，
+    // 避免与同名视觉组件发生命名冲突
+    readonly property var theme: ProvidersDir.Theme {
+        palette: root.palette
+    }
 
     // Feature settings forwarded from the applet shell
     // 由小组件外壳转发的功能配置
