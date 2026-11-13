@@ -13,7 +13,9 @@ Item {
     // 标签左右的水平内边距；紧凑布局可设为 0，使其与预留边距紧贴
     property int horizontalPadding: 12
 
-    property int tick
+    // Timestamp refreshed by the tick timer and shared by both labels
+    // 由计时器刷新的时间戳，供两个标签共用
+    property date currentTime: new Date()
 
     // Refresh every second while seconds are visible; otherwise align to the next minute
     // 当时间格式包含秒时按秒刷新，否则对齐到下一分钟
@@ -33,15 +35,9 @@ Item {
         }
     }
 
-    readonly property string timeText: {
-        root.tick;
-        return Qt.formatTime(new Date(), root.timeFormat);
-    }
+    readonly property string timeText: Qt.formatTime(root.currentTime, root.timeFormat)
 
-    readonly property string dateText: {
-        root.tick;
-        return Qt.formatDate(new Date(), root.dateFormat);
-    }
+    readonly property string dateText: Qt.formatDate(root.currentTime, root.dateFormat)
 
     implicitHeight: contentColumn.implicitHeight
     implicitWidth: Math.max(timeLabel.implicitWidth, root.showDate ? dateLabel.implicitWidth : 0) + root.horizontalPadding * 2
@@ -94,7 +90,7 @@ Item {
         triggeredOnStart: true
 
         onTriggered: {
-            root.tick++;
+            root.currentTime = new Date();
             tickTimer.interval = root.nextTickInterval();
         }
     }

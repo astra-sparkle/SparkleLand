@@ -8,6 +8,7 @@ Item {
 
         property var theme
         property string source: ""
+        property string accessibleName: ""
 
         signal clicked
 
@@ -22,6 +23,14 @@ Item {
         implicitHeight: Math.round(Kirigami.Units.iconSizes.small)
         implicitWidth: implicitHeight
 
+        Accessible.name: button.accessibleName.length > 0 ? button.accessibleName : button.source
+        Accessible.onPressAction: button.clicked()
+        Accessible.role: Accessible.Button
+        activeFocusOnTab: true
+
+        Keys.onReturnPressed: button.clicked()
+        Keys.onSpacePressed: button.clicked()
+
         Kirigami.ShadowedRectangle {
             anchors.fill: parent
 
@@ -33,7 +42,7 @@ Item {
             color: button.theme.accentSubtleColor
             opacity: button.hovered ? 1 : 0
             radius: button.cornerRadius
-            shadow.color: Qt.rgba(0, 0, 0, 0.1)
+            shadow.color: button.theme.shadowColor
             shadow.size: Kirigami.Units.smallSpacing
             shadow.xOffset: shadowOffset
             shadow.yOffset: shadowOffset
@@ -56,6 +65,7 @@ Item {
         MouseArea {
             id: mouseArea
 
+            acceptedButtons: Qt.LeftButton
             anchors.fill: parent
             hoverEnabled: true
             onClicked: button.clicked()
@@ -71,6 +81,7 @@ Item {
         property var theme
         property string source: ""
         property bool checked: false
+        property string accessibleName: ""
 
         signal clicked
 
@@ -83,6 +94,14 @@ Item {
 
         implicitHeight: Math.round(Kirigami.Units.iconSizes.small)
         implicitWidth: implicitHeight
+
+        Accessible.name: button.accessibleName.length > 0 ? button.accessibleName : button.source
+        Accessible.onPressAction: button.clicked()
+        Accessible.role: Accessible.Button
+        activeFocusOnTab: true
+
+        Keys.onReturnPressed: button.clicked()
+        Keys.onSpacePressed: button.clicked()
 
         Kirigami.ShadowedRectangle {
             anchors.fill: parent
@@ -97,7 +116,7 @@ Item {
             // 悬停时以更淡的填充预览强调色，但弱于选中态
             opacity: button.checked ? 1 : (button.hovered ? 0.5 : 0)
             radius: button.cornerRadius
-            shadow.color: Qt.rgba(0, 0, 0, 0.1)
+            shadow.color: button.theme.shadowColor
             shadow.size: Kirigami.Units.smallSpacing
             shadow.xOffset: shadowOffset
             shadow.yOffset: shadowOffset
@@ -130,6 +149,7 @@ Item {
         MouseArea {
             id: mouseArea
 
+            acceptedButtons: Qt.LeftButton
             anchors.fill: parent
             hoverEnabled: true
             onClicked: button.clicked()
@@ -146,6 +166,7 @@ Item {
         property color iconColor: "transparent"
         property real iconOpacity: 0.7
         property real iconSizeRatio: 0.8
+        property string accessibleName: ""
 
         signal clicked
 
@@ -153,6 +174,14 @@ Item {
 
         implicitHeight: Kirigami.Units.iconSizes.smallMedium
         implicitWidth: implicitHeight
+
+        Accessible.name: button.accessibleName.length > 0 ? button.accessibleName : button.source
+        Accessible.onPressAction: button.clicked()
+        Accessible.role: Accessible.Button
+        activeFocusOnTab: true
+
+        Keys.onReturnPressed: button.clicked()
+        Keys.onSpacePressed: button.clicked()
 
         KSvg.FrameSvgItem {
             anchors.fill: parent
@@ -163,7 +192,7 @@ Item {
 
         Kirigami.Icon {
             anchors.centerIn: parent
-            color: button.iconColor.a > 0 ? button.iconColor : Kirigami.Theme.textColor
+            color: button.iconColor
             height: Math.round(parent.height * button.iconSizeRatio)
             opacity: button.pressed || button.hovered ? 1 : button.iconOpacity
             source: button.source
@@ -173,6 +202,7 @@ Item {
         MouseArea {
             id: mouseArea
 
+            acceptedButtons: Qt.LeftButton
             anchors.fill: parent
             hoverEnabled: true
             onClicked: button.clicked()

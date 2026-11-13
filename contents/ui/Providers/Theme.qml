@@ -12,11 +12,20 @@ QtObject {
 
     readonly property color textColor: themeAdapter.palette.active.windowText
     readonly property color disabledTextColor: themeAdapter.palette.disabled.windowText
-    // QPalette has no semantic error role; use Breeze negative red
-    // QPalette 没有语义错误色，使用 Breeze 负向红
-    readonly property color negativeTextColor: "#da4453"
+    // Kirigami provides the semantic negative color
+    // Kirigami 提供语义化的负向颜色
+    readonly property color negativeTextColor: Kirigami.Theme.negativeTextColor
     readonly property font defaultFont: Kirigami.Theme.defaultFont
     readonly property int gridUnit: Kirigami.Units.gridUnit
+
+    // Tooltip and banner roles: the banner window uses its own palette roles
+    // 工具提示与横幅角色：横幅窗口使用独立的调色板角色
+    readonly property color tooltipTextColor: themeAdapter.palette.active.toolTipText
+    readonly property color tooltipDisabledTextColor: themeAdapter.palette.disabled.toolTipText
+
+    // Shadow shared by the framed buttons
+    // 带边框按钮共用的阴影色
+    readonly property color shadowColor: Qt.rgba(0, 0, 0, 0.1)
 
     // Shared rounding for controls, following the KDE style value when available;
     // Plasma 6.0/6.1 predate Kirigami.Units.cornerRadius, so fall back to a
@@ -63,5 +72,19 @@ QtObject {
     function accentAlpha(alpha) {
         const accent = themeAdapter.accentColor;
         return Qt.rgba(accent.r, accent.g, accent.b, alpha);
+    }
+
+    // Subtle tint shown under unloaded album art
+    // 未加载专辑图时显示的柔和底色
+    readonly property color coverPlaceholderColor: {
+        const base = themeAdapter.disabledTextColor;
+        return Qt.rgba(base.r, base.g, base.b, 0.25);
+    }
+
+    // Media background: the accent itself while playing, a shifted accent while paused
+    // 媒体背景：播放时为强调色本身，暂停时使用偏移后的强调色
+    function mediaBackgroundColor(playing) {
+        const base = themeAdapter.accentColor;
+        return playing ? base : (themeAdapter.accentTextIsLight ? Qt.darker(base, 1.4) : Qt.lighter(base, 1.4));
     }
 }

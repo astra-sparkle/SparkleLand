@@ -237,7 +237,7 @@ Item {
 
                 CoverImage {
                     anchors.fill: parent
-                    placeholderColor: root.theme.disabledTextColor
+                    placeholderColor: root.theme.coverPlaceholderColor
                     radius: coverBox.cornerRadius
                     source: mediaController.visible && root.mediaProvider !== null ? root.mediaProvider.artUrl : ""
                 }
@@ -277,6 +277,7 @@ Item {
                 Buttons.IconButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
+                    accessibleName: i18n("Previous track")
                     source: "media-skip-backward"
                     theme: root.theme
                     onClicked: if (root.mediaProvider !== null) {
@@ -287,6 +288,7 @@ Item {
                 Buttons.IconButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
+                    accessibleName: root.playing ? i18n("Pause") : i18n("Play")
                     source: root.playing ? "media-playback-pause" : "media-playback-start"
                     theme: root.theme
                     onClicked: if (root.mediaProvider !== null) {
@@ -297,6 +299,7 @@ Item {
                 Buttons.IconButton {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
+                    accessibleName: i18n("Next track")
                     source: "media-skip-forward"
                     theme: root.theme
                     onClicked: if (root.mediaProvider !== null) {

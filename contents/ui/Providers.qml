@@ -52,15 +52,25 @@ QtObject {
 
             const providerComponent = Qt.createComponent("Providers/Media.qml");
             if (providerComponent.status === Component.Loading) {
-                providerComponent.statusChanged.connect(function() {
+                // Drop the handler once loading ends so retries cannot stack callbacks
+                // 加载结束后断开回调，避免重复加载叠加监听
+                const onStatusChanged = function() {
+                    if (providerComponent.status === Component.Loading) {
+                        return;
+                    }
+                    providerComponent.statusChanged.disconnect(onStatusChanged);
                     mediaSource.installProvider(providerComponent);
-                });
+                };
+                providerComponent.statusChanged.connect(onStatusChanged);
                 return;
             }
             mediaSource.installProvider(providerComponent);
         }
 
         function installProvider(providerComponent) {
+            if (mediaSource.provider !== null) {
+                return;
+            }
             if (providerComponent.status === Component.Error) {
                 mediaSource.state = -1;
                 console.info("[Sparkle Land] MPRIS 不可用，面板只显示时钟：", providerComponent.errorString());
@@ -148,15 +158,25 @@ QtObject {
 
             const providerComponent = Qt.createComponent("Providers/Notification.qml");
             if (providerComponent.status === Component.Loading) {
-                providerComponent.statusChanged.connect(function() {
+                // Drop the handler once loading ends so retries cannot stack callbacks
+                // 加载结束后断开回调，避免重复加载叠加监听
+                const onStatusChanged = function() {
+                    if (providerComponent.status === Component.Loading) {
+                        return;
+                    }
+                    providerComponent.statusChanged.disconnect(onStatusChanged);
                     notificationSource.installProvider(providerComponent);
-                });
+                };
+                providerComponent.statusChanged.connect(onStatusChanged);
                 return;
             }
             notificationSource.installProvider(providerComponent);
         }
 
         function installProvider(providerComponent) {
+            if (notificationSource.provider !== null) {
+                return;
+            }
             if (providerComponent.status === Component.Error) {
                 notificationSource.state = -1;
                 console.info("[Sparkle Land] 通知服务不可用：", providerComponent.errorString());

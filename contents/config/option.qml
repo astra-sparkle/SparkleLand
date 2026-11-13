@@ -4,7 +4,6 @@ import QtQuick.Layouts
 import org.kde.iconthemes as KIconThemes
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.plasmoid
 
 // Bind cfg_ entries on the configuration page to KConfig values
 // 将配置页中的 cfg_ 条目绑定到 KConfig 值
@@ -25,7 +24,7 @@ KCM.SimpleKCM {
     property alias cfg_mediaCompactStyle: mediaCompactStyleCombo.currentIndex
     // Empty means the packaged default icon is used
     // 留空表示使用内置默认图标
-    property string cfg_mediaPlaybackIcon: Plasmoid.configuration.mediaPlaybackIcon
+    property string cfg_mediaPlaybackIcon
     // Mirrors the fallback in main.qml so this page previews the same icon
     // 与 main.qml 的回退值保持一致，使设置页预览同一图标
     readonly property string defaultMediaPlaybackIcon: "music-note-16th"
@@ -40,8 +39,8 @@ KCM.SimpleKCM {
     property alias cfg_notificationsBannerTimeout: notificationsBannerTimeoutSpin.value
 
     property alias cfg_timeFormatMode: timeFormatModeCombo.currentIndex
-    property string cfg_customTimeFormat: Plasmoid.configuration.customTimeFormat
-    property string cfg_customDateFormat: Plasmoid.configuration.customDateFormat
+    property string cfg_customTimeFormat
+    property string cfg_customDateFormat
     property alias cfg_showDate: showDateCheck.checked
 
     // KDE icon chooser shared by the media icon controls
@@ -67,7 +66,6 @@ KCM.SimpleKCM {
             Kirigami.FormData.label: i18n("Minimum width:")
             from: 16
             to: Math.max(16, page.cfg_maximumPanelWidth)
-            value: Plasmoid.configuration.minimumPanelWidth
         }
 
         QQC2.SpinBox {
@@ -76,7 +74,6 @@ KCM.SimpleKCM {
             Kirigami.FormData.label: i18n("Maximum width:")
             from: Math.max(16, page.cfg_minimumPanelWidth)
             to: 2048
-            value: Plasmoid.configuration.maximumPanelWidth
         }
 
         QQC2.Label {
@@ -103,20 +100,17 @@ KCM.SimpleKCM {
                 return value === 0 ? i18n("Follow system") : i18n("%1 pt", value);
             }
             to: 72
-            value: Plasmoid.configuration.fontPointSize
         }
 
         QQC2.CheckBox {
             id: fontBoldCheck
 
-            checked: Plasmoid.configuration.fontBold
             text: i18n("Bold")
         }
 
         QQC2.CheckBox {
             id: fontItalicCheck
 
-            checked: Plasmoid.configuration.fontItalic
             text: i18n("Italic")
         }
 
@@ -129,7 +123,6 @@ KCM.SimpleKCM {
             id: mediaCompactStyleCombo
 
             Kirigami.FormData.label: i18n("While playing:")
-            currentIndex: Plasmoid.configuration.mediaCompactStyle
             model: [
                 i18n("Show the track title"),
                 i18n("Show the clock"),
@@ -142,7 +135,6 @@ KCM.SimpleKCM {
             id: mediaBackgroundCheck
 
             Kirigami.FormData.label: i18n("Background:")
-            checked: Plasmoid.configuration.mediaUseThemeBackground
             text: i18n("Use the theme highlight color as background while playing")
         }
 
@@ -181,7 +173,6 @@ KCM.SimpleKCM {
             id: notificationsEnabledCheck
 
             Kirigami.FormData.label: i18n("Notifications:")
-            checked: Plasmoid.configuration.notificationsEnabled
             text: i18n("Replace the clock or calendar area with the notification list")
         }
 
@@ -189,7 +180,6 @@ KCM.SimpleKCM {
             id: notificationsShowPopupsCheck
 
             Kirigami.FormData.label: i18n("Banners:")
-            checked: Plasmoid.configuration.notificationsShowPopups
             enabled: notificationsEnabledCheck.checked
             text: i18n("Show notifications as banners next to this widget")
         }
@@ -204,7 +194,6 @@ KCM.SimpleKCM {
                 return i18np("%1 second", "%1 seconds", value);
             }
             to: 60
-            value: Plasmoid.configuration.notificationsBannerTimeout
         }
 
         QQC2.Label {
@@ -227,13 +216,11 @@ KCM.SimpleKCM {
                 return value === 0 ? i18n("No limit") : i18np("%1 notification", "%1 notifications", value);
             }
             to: 50
-            value: Plasmoid.configuration.notificationsMaxVisible
         }
 
         QQC2.CheckBox {
             id: notificationsIncludeExpiredCheck
 
-            checked: Plasmoid.configuration.notificationsIncludeExpired
             enabled: notificationsEnabledCheck.checked
             text: i18n("Keep notifications that timed out or were dismissed")
         }
@@ -241,7 +228,6 @@ KCM.SimpleKCM {
         QQC2.CheckBox {
             id: notificationsDoNotDisturbCheck
 
-            checked: Plasmoid.configuration.notificationsShowDoNotDisturb
             enabled: notificationsEnabledCheck.checked
             text: i18n("Show the do not disturb button")
         }
@@ -249,7 +235,6 @@ KCM.SimpleKCM {
         QQC2.CheckBox {
             id: notificationsClearAllCheck
 
-            checked: Plasmoid.configuration.notificationsShowClearAll
             enabled: notificationsEnabledCheck.checked
             text: i18n("Show the clear all button")
         }
@@ -257,7 +242,6 @@ KCM.SimpleKCM {
         QQC2.CheckBox {
             id: notificationsUnreadCountCheck
 
-            checked: Plasmoid.configuration.notificationsShowUnreadCount
             enabled: notificationsEnabledCheck.checked
             text: i18n("Show the unread count in the notification dot")
         }
@@ -271,7 +255,6 @@ KCM.SimpleKCM {
             id: timeFormatModeCombo
 
             Kirigami.FormData.label: i18n("Clock:")
-            currentIndex: Plasmoid.configuration.timeFormatMode
             model: [i18n("Follow system"), i18n("12-hour"), i18n("24-hour")]
         }
 
@@ -286,7 +269,6 @@ KCM.SimpleKCM {
             id: showDateCheck
 
             Kirigami.FormData.label: i18n("Date:")
-            checked: Plasmoid.configuration.showDate
             text: i18n("Show the date under the time")
         }
 

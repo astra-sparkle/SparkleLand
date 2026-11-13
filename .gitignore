@@ -2,6 +2,11 @@
 *.jsc
 _probe_*.qml
 
+# 只提交有实际翻译的 zh_CN 目录，其余语言的空 .mo 不再入库
+# Keep only the translated zh_CN catalog; empty catalogs stay untracked
+contents/locale/*
+!contents/locale/zh_CN/
+
 Messages.sh
 update-translations.sh
 README.md

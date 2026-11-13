@@ -10,7 +10,7 @@ import org.kde.plasma.plasmoid
 PlasmoidItem {
     id: root
 
-    readonly property string appTitle: i18n("Sparkle Land")
+    readonly property string appTitle: "Sparkle Land"
     readonly property string appIconName: "preferences-desktop"
 
     // Guard configuration values so invalid or missing settings fall back safely
@@ -44,7 +44,9 @@ PlasmoidItem {
     // 通知默认开启
     readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
     readonly property int notificationsMaxVisible: Math.max(0, root.configNumber(plasmoid.configuration.notificationsMaxVisible, 5))
-    readonly property bool notificationsIncludeExpired: plasmoid.configuration.notificationsIncludeExpired === true
+    // Missing keys fall back to the main.xml default (true), so only an explicit false disables history
+    // 缺失的键会回退到 main.xml 的默认值（true），只有显式 false 才关闭历史记录
+    readonly property bool notificationsIncludeExpired: plasmoid.configuration.notificationsIncludeExpired !== false
     readonly property bool notificationsShowDoNotDisturb: plasmoid.configuration.notificationsShowDoNotDisturb !== false
     readonly property bool notificationsShowClearAll: plasmoid.configuration.notificationsShowClearAll !== false
     readonly property bool notificationsShowUnreadCount: plasmoid.configuration.notificationsShowUnreadCount !== false
@@ -200,12 +202,7 @@ PlasmoidItem {
     // Media background uses the accent color
     // 媒体背景使用强调色
     readonly property bool mediaBackgroundVisible: root.hasMedia && root.mediaUseThemeBackground
-    readonly property color mediaBackgroundColor: {
-        const base = root.theme.accentColor;
-        // Shift away from the palette text color so the paused state keeps contrast
-        // 朝调色板文字色的反方向调整，保证暂停态仍有足够对比度
-        return root.isPlaying ? base : (root.theme.accentTextIsLight ? Qt.darker(base, 1.4) : Qt.lighter(base, 1.4));
-    }
+    readonly property color mediaBackgroundColor: root.theme.mediaBackgroundColor(root.isPlaying)
 
     // Date requested for the calendar
     // 日历跳转目标日期
@@ -225,11 +222,20 @@ PlasmoidItem {
     Plasmoid.icon: root.isPlaying ? "media-playback-start" : root.appIconName
 
     Timer {
-        interval: 1000
+        id: hoverTooltipTimer
+
+        // The shell hides the applet tooltip while expanded, so skip those ticks entirely
+        // 展开时外壳会隐藏小组件提示，因此完全跳过这段计时
+        running: !root.expanded
         repeat: true
-        running: true
         triggeredOnStart: true
-        onTriggered: root.hoverTooltipNow = new Date()
+
+        onTriggered: {
+            root.hoverTooltipNow = new Date();
+            // Align the next tick to the whole second
+            // 将下一次触发对齐到整秒
+            interval = 1000 - root.hoverTooltipNow.getMilliseconds();
+        }
     }
 
     // Expand the calendar and select the requested date, or today by default
@@ -348,7 +354,7 @@ PlasmoidItem {
             anchors.leftMargin: compactItem.decorationMargin
             anchors.verticalCenter: parent.verticalCenter
             height: compactItem.coverSize
-            placeholderColor: root.theme.disabledTextColor
+            placeholderColor: root.theme.coverPlaceholderColor
             radius: Math.max(2, Math.round(compactItem.coverSize * 0.15))
             source: root.compactShowsMediaCover ? root.trackArtUrl : ""
             visible: root.compactShowsMediaCover
@@ -414,15 +420,20 @@ PlasmoidItem {
         // Plasma positions this banner beside the applet; declare it before MouseArea to preserve clicks
         // 横幅由 Plasma 锚定在小组件旁；置于 MouseArea 前以保留点击操作
         NotificationsPopup {
+            accentColor: root.theme.accentColor
             appletExpanded: root.expanded
+            disabledTextColor: root.theme.tooltipDisabledTextColor
             displayTime: root.notificationsBannerTimeout * 1000
+            notificationsEnabled: root.notificationsEnabled
             panelLocation: root.panelLocation
             provider: providers.notifications.provider
             showPopups: root.notificationsShowPopups
+            textColor: root.theme.tooltipTextColor
         }
 
         MouseArea {
             anchors.fill: parent
+            acceptedButtons: Qt.LeftButton
             onClicked: root.toggleCalendar()
         }
     }

@@ -11,6 +11,14 @@ PlasmaCore.ToolTipArea {
 
     property var provider
     property bool showPopups: true
+    // Banners must stop as soon as the notifications feature is switched off
+    // 关闭通知功能后必须立即停止横幅
+    property bool notificationsEnabled: true
+    // Colors come from the shared theme adapter; this window has a different color set
+    // 颜色由共享主题适配器提供；此窗口使用另一套配色组
+    required property color accentColor
+    required property color disabledTextColor
+    required property color textColor
     property int displayTime: 5000
     property bool appletExpanded: false
     property int panelLocation: 0
@@ -22,7 +30,8 @@ PlasmaCore.ToolTipArea {
     // 使用 var，避免历史合成 ID 被截断
     property var currentId: -1
 
-    readonly property bool bannerEnabled: root.showPopups && root.provider !== null && root.provider.available
+    readonly property bool bannerEnabled: root.notificationsEnabled && root.showPopups
+        && root.provider !== null && root.provider.available
 
     // Delay between consecutive banners in milliseconds
     // 相邻横幅之间的间隔（毫秒）
@@ -42,6 +51,10 @@ PlasmaCore.ToolTipArea {
     // Set the edge explicitly
     // 显式设置边缘
     location: root.panelLocation
+    // A zero-sized area anchors the shared tooltip at its own position; sitting at the
+    // horizontal center of the compact item keeps banners centered on the applet
+    // 0 尺寸区域会让共享提示窗口以自身位置为锚点；放在紧凑条目水平中心可让横幅与组件对齐
+    x: root.parent !== null ? root.parent.width / 2 : 0
     active: root.bannerEnabled
     // Hover pauses the timeout and keeps the close button active
     // 悬停时暂停计时，并保留关闭按钮
@@ -180,6 +193,7 @@ PlasmaCore.ToolTipArea {
         // 点击横幅触发默认操作，后声明的控件优先接收点击
         MouseArea {
             anchors.fill: parent
+            acceptedButtons: Qt.LeftButton
             onClicked: root.activateCurrent()
         }
 
@@ -192,6 +206,7 @@ PlasmaCore.ToolTipArea {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                color: root.textColor
                 source: root.bannerIcon.length > 0 ? root.bannerIcon : "notifications"
             }
 
@@ -203,7 +218,7 @@ PlasmaCore.ToolTipArea {
 
                 Text {
                     Layout.fillWidth: true
-                    color: root.palette.active.accent
+                    color: root.accentColor
                     elide: Text.ElideRight
                     font: Kirigami.Theme.defaultFont
                     maximumLineCount: 1
@@ -212,7 +227,7 @@ PlasmaCore.ToolTipArea {
 
                 Text {
                     Layout.fillWidth: true
-                    color: root.palette.active.toolTipText
+                    color: root.textColor
                     elide: Text.ElideRight
                     font: root.bannerTitleFont
                     maximumLineCount: 1
@@ -222,7 +237,7 @@ PlasmaCore.ToolTipArea {
 
                 Text {
                     Layout.fillWidth: true
-                    color: root.palette.disabled.toolTipText
+                    color: root.disabledTextColor
                     maximumLineCount: 2
                     text: root.bannerBody
                     visible: text.length > 0
@@ -234,7 +249,8 @@ PlasmaCore.ToolTipArea {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-                iconColor: root.palette.active.toolTipText
+                accessibleName: i18n("Close notification")
+                iconColor: root.textColor
                 iconSizeRatio: 0.7
                 source: "window-close"
                 onClicked: root.closeCurrent()
