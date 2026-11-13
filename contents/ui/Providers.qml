@@ -1,9 +1,22 @@
 import QtQuick
+import "Providers" as ProvidersDir
 
-// Feature provider registry
-// 功能提供器注册中心
+// Feature provider registry: the only entry point to the Providers directory
+// 功能提供器注册中心：Providers 目录下组件的唯一入口
 QtObject {
     id: root
+
+    // Palette forwarded from the applet shell
+    // 由小组件外壳转发的调色板
+    property var palette
+
+    // Shared theme adapter, created here so no consumer imports the Providers
+    // directory and collides with same-named visual components
+    // 共享主题适配器；在此创建，使消费者无需导入 Providers 目录，
+    // 避免与同名视觉组件发生命名冲突
+    readonly property var theme: ProvidersDir.Theme {
+        palette: root.palette
+    }
 
     // Feature settings forwarded from the applet shell
     // 由小组件外壳转发的功能配置
@@ -39,15 +52,25 @@ QtObject {
 
             const providerComponent = Qt.createComponent("Providers/Media.qml");
             if (providerComponent.status === Component.Loading) {
-                providerComponent.statusChanged.connect(function() {
+                // Drop the handler once loading ends so retries cannot stack callbacks
+                // 加载结束后断开回调，避免重复加载叠加监听
+                const onStatusChanged = function() {
+                    if (providerComponent.status === Component.Loading) {
+                        return;
+                    }
+                    providerComponent.statusChanged.disconnect(onStatusChanged);
                     mediaSource.installProvider(providerComponent);
-                });
+                };
+                providerComponent.statusChanged.connect(onStatusChanged);
                 return;
             }
             mediaSource.installProvider(providerComponent);
         }
 
         function installProvider(providerComponent) {
+            if (mediaSource.provider !== null) {
+                return;
+            }
             if (providerComponent.status === Component.Error) {
                 mediaSource.state = -1;
                 console.info("[Sparkle Land] MPRIS 不可用，面板只显示时钟：", providerComponent.errorString());
@@ -135,15 +158,25 @@ QtObject {
 
             const providerComponent = Qt.createComponent("Providers/Notification.qml");
             if (providerComponent.status === Component.Loading) {
-                providerComponent.statusChanged.connect(function() {
+                // Drop the handler once loading ends so retries cannot stack callbacks
+                // 加载结束后断开回调，避免重复加载叠加监听
+                const onStatusChanged = function() {
+                    if (providerComponent.status === Component.Loading) {
+                        return;
+                    }
+                    providerComponent.statusChanged.disconnect(onStatusChanged);
                     notificationSource.installProvider(providerComponent);
-                });
+                };
+                providerComponent.statusChanged.connect(onStatusChanged);
                 return;
             }
             notificationSource.installProvider(providerComponent);
         }
 
         function installProvider(providerComponent) {
+            if (notificationSource.provider !== null) {
+                return;
+            }
             if (providerComponent.status === Component.Error) {
                 notificationSource.state = -1;
                 console.info("[Sparkle Land] 通知服务不可用：", providerComponent.errorString());

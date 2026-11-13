@@ -50,7 +50,9 @@ Item {
             cells.push({
                 "date": cellDate,
                 "day": cellDate.getDate(),
-                "inCurrentMonth": cellDate.getMonth() === month
+                "inCurrentMonth": cellDate.getMonth() === month,
+                "isSelected": cellDate.getTime() === root.selectedStart,
+                "isToday": cellDate.getTime() === root.todayStart
             });
         }
         return cells;
@@ -72,14 +74,6 @@ Item {
 
     function isValidDate(date) {
         return date !== undefined && date !== null && !isNaN(date.getTime());
-    }
-
-    function isToday(date) {
-        return dayStart(date).getTime() === root.todayStart;
-    }
-
-    function isSelected(date) {
-        return dayStart(date).getTime() === root.selectedStart;
     }
 
     function showDate(date) {
@@ -155,6 +149,7 @@ Item {
             Buttons.IconButton {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
+                accessibleName: i18n("Previous month")
                 height: Math.round(root.theme.gridUnit * 1.6)
                 source: "go-previous"
                 theme: root.theme
@@ -165,6 +160,7 @@ Item {
             Buttons.IconButton {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
+                accessibleName: i18n("Next month")
                 height: Math.round(root.theme.gridUnit * 1.6)
                 source: "go-next"
                 theme: root.theme
@@ -208,9 +204,6 @@ Item {
                     model: root.days
 
                     delegate: Rectangle {
-                        readonly property bool cellIsToday: root.isToday(modelData.date)
-                        readonly property bool cellIsSelected: root.isSelected(modelData.date)
-
                         Layout.fillWidth: true
                         Layout.preferredHeight: root.cellHeight
                         color: "transparent"
@@ -219,7 +212,7 @@ Item {
                         // 强调色变体标记选中与悬停，同时透出面板背景
                         Rectangle {
                             anchors.fill: parent
-                            color: cellIsSelected
+                            color: modelData.isSelected
                                 ? (index === gridMouse.hoverIndex ? root.theme.accentHoverColor : root.theme.accentColor)
                                 : (index === gridMouse.hoverIndex ? root.theme.accentSubtleColor : "transparent")
                             radius: Kirigami.Units.cornerRadius
@@ -227,9 +220,9 @@ Item {
 
                         Text {
                             anchors.centerIn: parent
-                            color: cellIsSelected
+                            color: modelData.isSelected
                                 ? root.theme.accentTextColor
-                                : (cellIsToday
+                                : (modelData.isToday
                                     ? root.theme.accentColor
                                     : (modelData.inCurrentMonth ? root.theme.textColor : root.theme.disabledTextColor))
                             font: root.theme.defaultFont
@@ -258,8 +251,18 @@ Item {
                 }
 
                 anchors.fill: parent
+                acceptedButtons: Qt.LeftButton
                 hoverEnabled: true
                 onClicked: root.activateIndex(gridMouse.hoverIndex)
+                // Wheel over the grid switches months, matching other KDE calendars
+                // 在网格上滚动滚轮切换月份，与 KDE 其他日历一致
+                onWheel: function(event) {
+                    if (event.angleDelta.y > 0) {
+                        root.previousMonth();
+                    } else if (event.angleDelta.y < 0) {
+                        root.nextMonth();
+                    }
+                }
             }
         }
 
@@ -279,6 +282,10 @@ Item {
             MouseArea {
                 id: todayMouse
 
+                Accessible.name: i18n("Today")
+                Accessible.onPressAction: root.goToToday()
+                Accessible.role: Accessible.Button
+                acceptedButtons: Qt.LeftButton
                 anchors.fill: todayLabel
                 hoverEnabled: true
                 onClicked: root.goToToday()

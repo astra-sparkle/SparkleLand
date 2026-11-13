@@ -60,8 +60,8 @@ QtObject {
         urgencies: root.bannerUrgencies
     }
 
-    // Unbounded view covering the whole history; clearing must not be capped by the display limit
-    // 覆盖全部历史的无限制视图，清空操作不受显示条数限制
+    // Unbounded view covering the whole history; clearing and id lookups must not be capped by the display limit
+    // 覆盖全部历史的无限制视图；清空与按 ID 查找不受显示条数限制
     readonly property NotificationManager.Notifications clearModel: NotificationManager.Notifications {
         expandUnread: false
         groupMode: NotificationManager.Notifications.GroupDisabled
@@ -174,7 +174,9 @@ QtObject {
     // The model's unread count stays at zero in this Plasma build, so rows are counted here
     // 当前 Plasma 版本的模型未读计数恒为 0，因此在此逐行统计
     function countUnreadNotifications() {
-        const model = root.listModel;
+        // Count on the unbounded model so the badge is not capped by maxVisible
+        // 在不限制条数的模型上统计，避免角标被 maxVisible 截断
+        const model = root.clearModel;
         const notificationType = NotificationManager.Notifications;
         let unread = 0;
 
@@ -262,14 +264,42 @@ QtObject {
         }
 
         root.bannerStamps[banner.id] = stamp;
+        // Cap the revision map so a long session cannot grow it without bound
+        // 限制修订时间戳映射，避免长时间运行无限增长
+        if (Object.keys(root.bannerStamps).length > 64) {
+            root.pruneBannerStamps();
+        }
         root.bannerRequested(banner.id);
     }
 
-    // Return banner data for a row, or null if invalid
-    // 返回指定行的横幅数据，无效时返回 null
+    // Drop stamps for ids that no longer exist in the model
+    // 清理模型中已不存在的通知 ID 对应的修订时间戳
+    function pruneBannerStamps() {
+        const model = root.clearModel;
+        const notificationType = NotificationManager.Notifications;
+        const alive = {};
+
+        for (let row = 0; row < model.count; ++row) {
+            alive[model.data(model.index(row, 0), notificationType.IdRole)] = true;
+        }
+
+        const kept = {};
+        for (const id in root.bannerStamps) {
+            if (alive[id]) {
+                kept[id] = root.bannerStamps[id];
+            }
+        }
+        root.bannerStamps = kept;
+    }
+
+    // Return banner data for a row of the popup model, or null if invalid
+    // 返回弹窗模型指定行的横幅数据，无效时返回 null
     function bannerDataForRow(row) {
-        const model = root.popupModel;
-        if (row < 0 || row >= model.count) {
+        return root.bannerDataAt(root.popupModel, row);
+    }
+
+    function bannerDataAt(model, row) {
+        if (model === null || row < 0 || row >= model.count) {
             return null;
         }
 
@@ -288,9 +318,16 @@ QtObject {
     }
 
     function bannerDataForId(notificationId) {
-        const model = root.popupModel;
+        // popupModel is already up to date when a banner is requested; the unbounded
+        // model is only a fallback for entries that have scrolled out of the popup model
+        // 请求横幅时 popupModel 已同步，无限制模型仅用于已移出弹窗模型的旧条目
+        const popupBanner = root.findBannerIn(root.popupModel, notificationId);
+        return popupBanner !== null ? popupBanner : root.findBannerIn(root.clearModel, notificationId);
+    }
+
+    function findBannerIn(model, notificationId) {
         for (let row = 0; row < model.count; ++row) {
-            const banner = root.bannerDataForRow(row);
+            const banner = root.bannerDataAt(model, row);
             if (banner !== null && banner.id === notificationId) {
                 return banner;
             }
@@ -300,7 +337,9 @@ QtObject {
     }
 
     function rowForNotificationId(notificationId) {
-        const model = root.listModel;
+        // Lookups must use the unbounded model; listModel is capped by maxVisible
+        // 查找必须使用无限制模型，listModel 受 maxVisible 限制
+        const model = root.clearModel;
         const notificationType = NotificationManager.Notifications;
         for (let row = 0; row < model.count; ++row) {
             if (model.data(model.index(row, 0), notificationType.IdRole) === notificationId) {
@@ -312,15 +351,27 @@ QtObject {
     }
 
     function closeNotificationById(notificationId) {
+        const model = root.clearModel;
         const row = root.rowForNotificationId(notificationId);
         if (row >= 0) {
-            root.close(row);
+            model.close(model.index(row, 0));
         }
     }
 
     function triggerNotificationById(notificationId) {
+        const model = root.clearModel;
         const row = root.rowForNotificationId(notificationId);
-        return row >= 0 ? root.trigger(row) : false;
+        if (row < 0) {
+            return false;
+        }
+
+        const index = model.index(row, 0);
+        if (!model.data(index, NotificationManager.Notifications.HasDefaultActionRole)) {
+            return false;
+        }
+
+        model.invokeDefaultAction(index);
+        return true;
     }
 
     // Validate dates used by do-not-disturb settings
@@ -431,8 +482,15 @@ QtObject {
         const now = Date.now();
         model.lastRead = new Date(now);
 
+        const notificationType = NotificationManager.Notifications;
         for (let row = 0; row < model.count; ++row) {
-            model.setData(model.index(row, 0), true, NotificationManager.Notifications.ReadRole);
+            const index = model.index(row, 0);
+            // Already-read rows need no write, so repeated expansions stay cheap
+            // 已读行无需重复写入，使反复展开保持轻量
+            if (model.data(index, notificationType.ReadRole) === true) {
+                continue;
+            }
+            model.setData(index, true, notificationType.ReadRole);
         }
 
         root.lastReadMs = now;

@@ -11,9 +11,9 @@ Item {
     property bool showDoNotDisturb: true
     property bool showClearAll: true
 
-    // Counter used to refresh relative-time labels
-    // 用于刷新相对时间文本的计数器
-    property int timeTick
+    // Timestamp refreshed by the tick timer so relative-time labels re-evaluate
+    // 由计时器刷新的时间戳，用于让相对时间文本重新求值
+    property date nowTick: new Date()
 
     // Only active when the applet is open on this page
     // 仅当小组件在当前页展开时生效
@@ -45,14 +45,12 @@ Item {
 
     // Format a timestamp as a relative string
     // 将时间戳格式化为相对时间
-    function relativeTime(value) {
-        root.timeTick;
-
+    function relativeTime(value, now) {
         if (!(value instanceof Date) || isNaN(value.getTime())) {
             return "";
         }
 
-        const seconds = Math.max(0, Math.round((Date.now() - value.getTime()) / 1000));
+        const seconds = Math.max(0, Math.round((now.getTime() - value.getTime()) / 1000));
         if (seconds < 60) {
             return i18n("Just now");
         }
@@ -107,21 +105,25 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Buttons.ToolButton {
+            Buttons.ToggleButton {
                 Layout.preferredHeight: root.buttonSize
                 Layout.preferredWidth: root.buttonSize
-                pressed: root.inhibited
+                accessibleName: i18n("Do not disturb")
+                checked: root.inhibited
                 source: "notifications-disabled"
+                theme: root.theme
                 visible: root.showDoNotDisturb && root.available
                 onClicked: if (root.provider !== null) {
                     root.provider.toggleInhibition();
                 }
             }
 
-            Buttons.ToolButton {
+            Buttons.IconButton {
                 Layout.preferredHeight: root.buttonSize
                 Layout.preferredWidth: root.buttonSize
+                accessibleName: i18n("Clear all notifications")
                 source: "edit-clear-history"
+                theme: root.theme
                 visible: root.showClearAll && notificationList.count > 0
                 onClicked: if (root.provider !== null) {
                     root.provider.clearAll();
@@ -148,7 +150,9 @@ Item {
 
                 anchors.fill: parent
                 clip: true
-                model: root.provider !== null ? root.provider.listModel : null
+                // Detach the model unless this page is actually shown, so hidden delegates are not built
+                // 仅在本页真正显示时挂载模型，避免为隐藏内容创建 delegate
+                model: root.effectiveActive && root.provider !== null ? root.provider.listModel : null
                 spacing: root.gap
 
                 delegate: Item {
@@ -161,13 +165,18 @@ Item {
                     required property string body
                     required property bool closable
                     required property date created
-                    required property date updated
+                    // The Updated role is invalid until a notification is updated
+                    // 未更新过的通知的 Updated 角色无效
+                    property var updated
                     required property int urgency
 
                     readonly property var stamp: isNaN(entry.updated) ? entry.created : entry.updated
 
                     height: entryRow.implicitHeight + root.gap * 2
                     width: ListView.view ? ListView.view.width : 0
+
+                    Accessible.name: entry.summary
+                    Accessible.role: Accessible.ListItem
 
                     ListItemBackground {
                         anchors.fill: parent
@@ -179,6 +188,7 @@ Item {
                     MouseArea {
                         id: entryMouse
 
+                        acceptedButtons: Qt.LeftButton
                         anchors.fill: parent
                         hoverEnabled: true
 
@@ -234,7 +244,7 @@ Item {
                                 Text {
                                     color: root.theme.disabledTextColor
                                     font: root.bodyFont
-                                    text: root.relativeTime(entry.stamp)
+                                    text: root.relativeTime(entry.stamp, root.nowTick)
                                 }
                             }
 
@@ -262,6 +272,8 @@ Item {
                             Layout.alignment: Qt.AlignTop
                             Layout.preferredHeight: root.buttonSize
                             Layout.preferredWidth: root.buttonSize
+                            accessibleName: i18n("Close notification")
+                            iconColor: root.theme.textColor
                             iconOpacity: 0.6
                             iconSizeRatio: 0.7
                             source: "window-close"
@@ -312,7 +324,7 @@ Item {
         triggeredOnStart: true
 
         onTriggered: {
-            root.timeTick++;
+            root.nowTick = new Date();
             if (root.provider !== null) {
                 root.provider.refreshInhibition();
             }
