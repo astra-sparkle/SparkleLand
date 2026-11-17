@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
 "POT-Creation-Date: 2026-11-18 01:12+0800\n"
-"PO-Revision-Date: 2026-11-17 17:39\n"
+"PO-Revision-Date: 2026-11-17 18:48\n"
 "Last-Translator: \n"
 "Language-Team: Chinese Simplified\n"
 "Language: zh_CN\n"
@@ -109,43 +109,43 @@ msgstr "恢复内置默认图标"
 
 #: contents/config/option.qml:172
 msgid "Lyrics"
-msgstr ""
+msgstr "歌词"
 
 #: contents/config/option.qml:178
 msgid "Panel:"
-msgstr ""
+msgstr "面板："
 
 #: contents/config/option.qml:179
 msgid "Show the current lyric line instead of the clock or track title"
-msgstr ""
+msgstr "使用歌词替代时钟或曲名"
 
 #: contents/config/option.qml:185
 msgid "Playback page:"
-msgstr ""
+msgstr "播放页："
 
 #: contents/config/option.qml:186
 msgid "Show the current lyric line in the expanded media view"
-msgstr ""
+msgstr "在播放页面显示歌词"
 
 #: contents/config/option.qml:192
 msgid "Secondary row:"
-msgstr ""
+msgstr "副文本行："
 
 #: contents/config/option.qml:195
 msgid "Disabled"
-msgstr ""
+msgstr "禁用"
 
 #: contents/config/option.qml:196
 msgid "Show translation"
-msgstr ""
+msgstr "显示翻译"
 
 #: contents/config/option.qml:197
 msgid "Show pronunciation"
-msgstr ""
+msgstr "显示发音"
 
 #: contents/config/option.qml:205
 msgid "Lyrics come from the SPlayer-Next backend. While the panel lyrics are shown, the panel keeps a fixed width of 16 full-width characters, the line scrolls according to its timing, and the frame replaces the notification dot by lighting up while unread notifications exist."
-msgstr ""
+msgstr "歌词从SPlayer-Next后端获取。当面板歌词显示时，面板将始终保持16全角字符的长度。歌词文本随时间滚动，通知提示变为边框显示。"
 
 #: contents/config/option.qml:212 contents/ui/Notifications.qml:108
 #: contents/ui/NotificationsPopup.qml:225
