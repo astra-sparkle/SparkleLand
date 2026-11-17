@@ -215,4 +215,10 @@ QtObject {
             console.info("[Sparkle Land] 私有通知实现已生效");
         }
     }
+
+    // Lyrics are filled by the SPlayer backend and need no external import
+    // 歌词由 SPlayer 后端填充，无需外部模块
+    readonly property var lyrics: ProvidersDir.Lyrics {
+        id: lyricsProvider
+    }
 }
