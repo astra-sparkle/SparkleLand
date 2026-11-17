@@ -1,5 +1,5 @@
 import QtQuick
-import "Splayer.js" as Splayer
+import "SPlayer_Next.js" as SPlayerNext
 
 // Lyric state fed by the SPlayer backend: normalized lines and the active line
 // 由 SPlayer 后端填充的歌词状态：规范化后的歌词行与当前行
@@ -15,6 +15,9 @@ QtObject {
     // Track duration in milliseconds
     // 曲目时长，单位毫秒
     property real duration: 0
+    // Lyric offset in milliseconds, positive values show lyrics earlier
+    // 歌词偏移，单位为毫秒，正值使歌词提前
+    property real offset: 0
     property int currentIndex: -1
 
     readonly property bool available: root.lines.length > 0
@@ -37,40 +40,33 @@ QtObject {
         if (span <= 0) {
             return 0;
         }
-        return Math.max(0, Math.min(1, (root.position - root.currentLine.startTime) / span));
+        return Math.max(0, Math.min(1, (root.position + root.offset - root.currentLine.startTime) / span));
     }
 
     // Accept the parsed LyricLine array of SPlayer-Next
     // 接收 SPlayer-Next 的已解析歌词行数组
     function setLyrics(source) {
-        root.lines = Splayer.normalizeLines(source);
+        root.lines = SPlayerNext.normalizeLines(source);
         root.refreshIndex();
     }
 
     function clear() {
         root.lines = [];
+        root.offset = 0;
         root.currentIndex = -1;
     }
 
-    // The player reports the active line itself, including the lyric offset
-    // 播放器直接上报当前行，其中已包含歌词偏移
-    function syncLine(index, milliseconds) {
-        const value = Math.max(0, Number(milliseconds) || 0);
-        if (root.position !== value) {
-            root.position = value;
+    function syncOffset(milliseconds) {
+        const value = Math.round(Number(milliseconds) || 0);
+        if (root.offset === value) {
+            return;
         }
-
-        const reported = Number(index);
-        const next = isFinite(reported) && reported >= -1 && reported < root.lines.length
-            ? Math.round(reported)
-            : -1;
-        if (next !== root.currentIndex) {
-            root.currentIndex = next;
-        }
+        root.offset = value;
+        root.refreshIndex();
     }
 
-    // Position updates arrive with every progress event
-    // 每次进度事件都会更新播放位置
+    // Position updates arrive with the snapshot poll
+    // 位置由快照轮询更新
     function syncPosition(milliseconds) {
         const value = Math.max(0, Number(milliseconds) || 0);
         if (root.position === value) {
@@ -85,7 +81,7 @@ QtObject {
     }
 
     function refreshIndex() {
-        const index = Splayer.indexAt(root.lines, root.position);
+        const index = SPlayerNext.indexAt(root.lines, root.position + root.offset);
         if (index !== root.currentIndex) {
             root.currentIndex = index;
         }

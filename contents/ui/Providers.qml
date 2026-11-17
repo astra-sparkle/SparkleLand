@@ -24,6 +24,10 @@ QtObject {
     property int notificationsMaxVisible: 5
     property bool notificationsIncludeExpired: true
 
+    // SPlayer-Next serves the socket and the HTTP API on one port
+    // SPlayer-Next 在同一端口提供套接字与 HTTP 接口
+    property string splayerUrl: "ws://127.0.0.1:14558/ws"
+
     // Missing MPRIS only disables the media provider
     // 缺失 MPRIS 仅禁用媒体功能
     readonly property var media: QtObject {
@@ -220,5 +224,112 @@ QtObject {
     // 歌词由 SPlayer 后端填充，无需外部模块
     readonly property var lyrics: ProvidersDir.Lyrics {
         id: lyricsProvider
+    }
+
+    // Missing QtWebSockets only disables the SPlayer feature
+    // 缺失 QtWebSockets 仅禁用 SPlayer 功能
+    readonly property var splayer: QtObject {
+        id: splayerSource
+
+        // 0 = unchecked, 1 = available, -1 = unavailable
+        // 0 = 未检测，1 = 可用，-1 = 不可用
+        property int state: 0
+        property var provider: null
+
+        readonly property bool available: splayerSource.provider !== null && splayerSource.provider.connected
+        readonly property bool playing: splayerSource.provider !== null && splayerSource.provider.playing
+        readonly property string songTitle: splayerSource.provider !== null ? splayerSource.provider.songTitle : ""
+        readonly property string artistName: splayerSource.provider !== null ? splayerSource.provider.artistName : ""
+        readonly property string albumName: splayerSource.provider !== null ? splayerSource.provider.albumName : ""
+        readonly property string coverUrl: splayerSource.provider !== null ? splayerSource.provider.coverUrl : ""
+        readonly property real position: splayerSource.provider !== null ? splayerSource.provider.position : 0
+        readonly property real duration: splayerSource.provider !== null ? splayerSource.provider.duration : 0
+
+        Component.onCompleted: splayerSource.loadProvider()
+
+        // Load the implementation at runtime so its module import stays optional
+        // 运行时加载实现，使其模块导入保持可选
+        function loadProvider() {
+            if (splayerSource.state !== 0) {
+                return;
+            }
+
+            const backendComponent = Qt.createComponent("Providers/SPlayer_Next-backend.qml");
+            if (backendComponent.status === Component.Loading) {
+                // Drop the handler once loading ends so retries cannot stack callbacks
+                // 加载结束后断开回调，避免重复加载叠加监听
+                const onStatusChanged = function() {
+                    if (backendComponent.status === Component.Loading) {
+                        return;
+                    }
+                    backendComponent.statusChanged.disconnect(onStatusChanged);
+                    splayerSource.installProvider(backendComponent);
+                };
+                backendComponent.statusChanged.connect(onStatusChanged);
+                return;
+            }
+            splayerSource.installProvider(backendComponent);
+        }
+
+        function installProvider(backendComponent) {
+            if (splayerSource.provider !== null) {
+                return;
+            }
+            if (backendComponent.status === Component.Error) {
+                splayerSource.state = -1;
+                console.info("[Sparkle Land] SPlayer-Next 后端不可用：", backendComponent.errorString());
+                return;
+            }
+            if (backendComponent.status !== Component.Ready) {
+                return;
+            }
+
+            const backendInstance = backendComponent.createObject(splayerSource, {
+                "url": root.splayerUrl
+            });
+            if (!backendInstance) {
+                splayerSource.state = -1;
+                console.warn("[Sparkle Land] SPlayer-Next 组件实例化失败：", backendComponent.errorString());
+                return;
+            }
+
+            // Feed the lyric provider without importing it from the backend
+            // 向歌词提供器下发数据，后端无需导入该组件
+            backendInstance.lyrics = root.lyrics;
+
+            splayerSource.provider = backendInstance;
+            splayerSource.state = 1;
+            console.info("[Sparkle Land] SPlayer-Next 后端已就绪");
+        }
+
+        function toggle() {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.toggle();
+            }
+        }
+
+        function play() {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.play();
+            }
+        }
+
+        function pause() {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.pause();
+            }
+        }
+
+        function next() {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.next();
+            }
+        }
+
+        function previous() {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.previous();
+            }
+        }
     }
 }
