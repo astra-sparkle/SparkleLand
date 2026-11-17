@@ -19,6 +19,14 @@ Item {
     property bool hasMedia: false
     property bool mediaControlsEnabled: true
 
+    // Lyric provider and playback-page lyric switches
+    // 歌词提供器与播放页歌词开关
+    property var lyrics
+    property bool showPlaybackLyrics: false
+    // 0 = no secondary row, 1 = translation, 2 = romanisation
+    // 0 = 无副行，1 = 译文，2 = 发音
+    property int lyricsSecondaryMode: 0
+
     property var notificationsProvider
     property bool hasNotifications: false
     property bool notificationsShowDoNotDisturb: true
@@ -27,6 +35,12 @@ Item {
     property bool appletExpanded: false
 
     readonly property string currentTrackTitle: root.mediaProvider !== null ? root.mediaProvider.trackTitle : ""
+    // Lyrics replace the track title whenever the current track has any
+    // 当前曲目存在歌词时，歌词取代曲名
+    readonly property bool lyricsVisible: root.showPlaybackLyrics
+        && root.lyrics !== null
+        && root.lyrics !== undefined
+        && root.lyrics.available
     readonly property real plasmaDefaultWidth: Kirigami.Units.iconSizes.sizeForLabels * 35
     readonly property real coverSize: Math.round(0.5 * Math.min(root.width, root.height))
     readonly property bool playing: root.mediaProvider !== null && root.mediaProvider.playing
@@ -224,14 +238,38 @@ Item {
 
             readonly property real gap: Math.round(root.height * 0.02)
 
+            // The lyric rows need vertical room, so the cover shrinks and moves up
+            // 歌词需要纵向空间，因此封面缩小并上移
+            readonly property real artSize: root.lyricsVisible ? Math.round(root.coverSize * 0.6) : root.coverSize
+            readonly property real artTopMargin: Math.round(root.height * (root.lyricsVisible ? 0.04 : 0.1))
+            readonly property int lyricRows: root.lyricsSecondaryMode === 0 ? 3 : 4
+            readonly property real lyricTop: coverBox.y + coverBox.height + mediaController.gap
+            readonly property real lyricBottom: controlsRow.y - mediaController.gap
+            // A lyric row holds up to the limit reported by the lyric provider; a longer
+            // line is split by it, so the font only has to fit that many labels
+            // 每行歌词最多容纳歌词提供器给出的全角字符数，更长的歌词由提供器切分，
+            // 因此字号只需保证这些字符能横向排下
+            readonly property int lyricMaxLabels: root.lyrics !== null && root.lyrics !== undefined
+                && root.lyrics.lineUnitLimit > 0 ? root.lyrics.lineUnitLimit : 18
+            readonly property real lyricWidth: Math.round(mediaController.width * 0.96)
+            readonly property real lyricFontPixelSize: Math.max(9, Math.min(
+                Math.round(root.height * 0.075),
+                Math.floor(mediaController.lyricWidth / mediaController.lyricMaxLabels)))
+            // The extra quarter label keeps exactly 18 labels on one line even when the
+            // font advances a hair more than its pixel size
+            // 额外的四分之一个字宽，保证字体步进略大于像素尺寸时 18 个全角字符仍不换行
+            readonly property real lyricTextWidth: Math.round(Math.min(
+                mediaController.lyricWidth,
+                mediaController.lyricFontPixelSize * (mediaController.lyricMaxLabels + 0.25)))
+
             Item {
                 id: coverBox
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
-                anchors.topMargin: Math.round(root.height * 0.1)
-                height: root.coverSize
-                width: root.coverSize
+                anchors.topMargin: mediaController.artTopMargin
+                height: mediaController.artSize
+                width: mediaController.artSize
 
                 readonly property int cornerRadius: Math.round(root.height * 0.06)
 
@@ -257,7 +295,40 @@ Item {
                 maximumLineCount: 2
                 text: root.currentTrackTitle
                 verticalAlignment: Text.AlignVCenter
+                visible: !root.lyricsVisible
                 wrapMode: Text.WordWrap
+            }
+
+            // Scrolling lyric replaces the track title while the track has lyrics
+            // 曲目存在歌词时，滚动歌词控件取代曲名
+            Lyrics.ScrollingLines {
+                id: lyricScroller
+
+                readonly property real availableHeight: mediaController.lyricBottom - mediaController.lyricTop
+
+                currentIndex: root.lyrics !== null && root.lyrics !== undefined ? root.lyrics.currentIndex : -1
+                lineFont: Qt.font({
+                    "bold": true,
+                    "family": root.textFont.family,
+                    "pixelSize": Math.round(mediaController.lyricFontPixelSize)
+                })
+                inactiveLineFont: Qt.font({
+                    "family": root.textFont.family,
+                    "pixelSize": Math.max(8, Math.round(mediaController.lyricFontPixelSize * 0.78))
+                })
+                lines: root.lyrics !== null && root.lyrics !== undefined ? root.lyrics.lines : []
+                secondaryFont: Qt.font({
+                    "family": root.textFont.family,
+                    "pixelSize": Math.max(8, Math.round(mediaController.lyricFontPixelSize * 0.75))
+                })
+                secondaryMode: root.lyricsSecondaryMode
+                splitter: root.lyrics !== null && root.lyrics !== undefined ? root.lyrics.splitLine : null
+                textWidth: mediaController.lyricTextWidth
+                theme: root.theme
+                visible: root.lyricsVisible
+                width: mediaController.lyricWidth
+                x: Math.round((mediaController.width - width) / 2)
+                y: Math.round(mediaController.lyricTop + (availableHeight - height) / 2)
             }
 
             RowLayout {

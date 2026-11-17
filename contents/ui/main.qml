@@ -40,6 +40,17 @@ PlasmoidItem {
         const icon = root.configString(plasmoid.configuration.mediaPlaybackIcon);
         return icon.length > 0 ? icon : "music-note-16th";
     }
+    // Lyric styles: the panel line overrides the compact media text, the playback
+    // page shows the current line in the expanded media view
+    // 歌词样式：面板歌词覆盖紧凑媒体的文本设定，播放页歌词在展开的媒体视图中显示当前行
+    readonly property bool lyricsPanelEnabled: plasmoid.configuration.lyricsPanelEnabled === true
+    readonly property bool lyricsPlaybackEnabled: plasmoid.configuration.lyricsPlaybackEnabled === true
+    // Secondary lyric row: 0 = disabled, 1 = translation, 2 = romanisation
+    // 歌词副行：0 = 禁用，1 = 译文，2 = 发音
+    readonly property int lyricsSecondaryMode: {
+        const mode = root.configNumber(plasmoid.configuration.lyricsSecondaryMode, 0);
+        return (mode >= 0 && mode <= 2) ? Math.round(mode) : 0;
+    }
     // Notifications are enabled by default
     // 通知默认开启
     readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
@@ -196,6 +207,21 @@ PlasmoidItem {
     readonly property string trackArtUrl: providers.media.artUrl
     readonly property bool isPlaying: providers.media.playing
 
+    // Lyric state shared by the panel line and the playback page
+    // 面板歌词与播放页共用的歌词状态
+    readonly property var lyricsProvider: providers.lyrics
+    readonly property string lyricText: {
+        if (!root.lyricsProvider.available) {
+            return "";
+        }
+        // Preview the upcoming line until the first one starts
+        // 首行开始之前预览即将到来的歌词
+        return root.lyricsProvider.currentText.length > 0
+            ? root.lyricsProvider.currentText
+            : root.lyricsProvider.nextText;
+    }
+    readonly property real lyricLineProgress: root.lyricsProvider.lineProgress
+
     readonly property bool hasNotifications: providers.notifications.hasNotifications
     readonly property int unreadNotificationCount: providers.notifications.unreadCount
 
@@ -216,7 +242,10 @@ PlasmoidItem {
     // Style 3 swaps the playback icon for the album cover at the same spot
     // 样式 3 在同一位置用专辑封面替代播放图标
     readonly property bool compactShowsMediaCover: root.hasMedia && root.mediaCompactStyle === 3
-    readonly property bool panelShowsMedia: root.compactShowsMediaTitle && !root.expanded
+    // Panel lyrics take precedence over every compact media text while lyrics are available
+    // 歌词可用时，面板歌词优先于紧凑媒体的所有文本
+    readonly property bool compactShowsLyrics: root.lyricsPanelEnabled && root.lyricText.length > 0
+    readonly property bool panelShowsMedia: root.compactShowsMediaTitle && !root.expanded && !root.compactShowsLyrics
 
     Plasmoid.title: root.appTitle
     Plasmoid.icon: root.isPlaying ? "media-playback-start" : root.appIconName
@@ -261,9 +290,24 @@ PlasmoidItem {
         // 向上取整时钟测得的宽度，避免像素取整把最宽的标签省略
         readonly property int clockWidth: Math.ceil(clockItem.implicitWidth)
 
-        readonly property int contentWidth: root.compactShowsMediaTitle
-            ? Math.max(clockItem.implicitWidth, mediaItem.implicitWidth)
-            : compactItem.clockWidth + compactItem.sideSpace
+        // Panel lyric width: 16 full-width labels plus padding and border, fixed while shown
+        // 面板歌词宽度：16 个全角字符加上内边距与边框，显示时宽度固定
+        readonly property int lyricPadding: Math.max(2, Math.round(compactItem.height * 0.08))
+        readonly property int lyricBorderWidth: 1
+        readonly property int lyricWidth: lyricMetrics.advanceWidth + compactItem.lyricPadding * 2 + compactItem.lyricBorderWidth * 2
+
+        TextMetrics {
+            id: lyricMetrics
+
+            font: compactItem.mediaTitleFont
+            text: "字字字字字字字字字字字字字字字字"
+        }
+
+        readonly property int contentWidth: root.compactShowsLyrics
+            ? compactItem.lyricWidth
+            : root.compactShowsMediaTitle
+                ? Math.max(clockItem.implicitWidth, mediaItem.implicitWidth)
+                : compactItem.clockWidth + compactItem.sideSpace
 
         readonly property font primaryFont: root.autoCompactFontSize
             ? root.fontWithPixelSize(root.panelFont, root.panelPixelSize(height, root.showDate))
@@ -299,21 +343,41 @@ PlasmoidItem {
 
         // Reserve space for the badge so it does not cover the time or track title
         // 为角标预留空间，避免遮挡时间或曲名
-        readonly property int badgeSpace: root.mediaCompactStyle === 2 || root.mediaCompactStyle === 3 ? sideSpace : (notificationBadge.visible ? notificationBadge.width + 4 : 0)
+        readonly property int badgeSpace: {
+            // The clock+icon and clock+cover styles keep a symmetric inset instead
+            // 时钟+图标与时钟+封面样式改用对称内边距
+            if (!root.compactShowsLyrics && (root.mediaCompactStyle === 2 || root.mediaCompactStyle === 3)) {
+                return compactItem.sideSpace;
+            }
+            return notificationBadge.visible ? notificationBadge.width + 4 : 0;
+        }
+
+        // Keep the title centered while reserving the badge and its gap on both sides
+        // 曲名左右等量预留圆点及间距，使曲名保持居中
+        readonly property int titleBadgeInset: notificationBadge.visible ? notificationBadge.width + 7 : 0
 
         // Media uses average or maximum width; clock width follows content within configured limits
         // 媒体模式取平均或最大宽度；时钟模式按内容宽度限制在配置范围内
-        readonly property int preferredWidth: (root.compactShowsMediaTitle
-            ? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
-            : Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))) + badgeSpace
+        readonly property int preferredWidth: root.compactShowsLyrics
+            ? compactItem.lyricWidth
+            : (root.compactShowsMediaTitle
+                ? (contentWidth > root.panelAverageWidth ? root.panelMaximumWidth : root.panelAverageWidth)
+                    + compactItem.titleBadgeInset * 2
+                : Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, contentWidth))
+                    + compactItem.badgeSpace)
 
         // Claim the width the labels actually need, so the panel takes space from stretchable neighbours first
         // 申明文字实际需要的宽度，让面板先从可伸缩的邻居那里回收空间
-        readonly property int layoutMinimumWidth: root.compactShowsMediaTitle
-            ? root.panelMinimumWidth
-            : Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, compactItem.preferredWidth))
+        readonly property int layoutMinimumWidth: root.compactShowsLyrics
+            ? compactItem.lyricWidth
+            : root.compactShowsMediaTitle
+                ? root.panelMinimumWidth
+                : Math.max(root.panelMinimumWidth, Math.min(root.panelMaximumWidth, compactItem.preferredWidth))
 
         Layout.fillHeight: true
+        // The lyric frame keeps its width even when the panel would stretch the applet
+        // 歌词框宽度固定，即使面板会拉伸小组件
+        Layout.maximumWidth: root.compactShowsLyrics ? compactItem.lyricWidth : Infinity
         Layout.minimumHeight: 32
         Layout.minimumWidth: compactItem.layoutMinimumWidth
         Layout.preferredHeight: 32
@@ -331,11 +395,52 @@ PlasmoidItem {
             visible: root.mediaBackgroundVisible
         }
 
+        // In lyric mode the frame replaces the notification dot: the border lights up
+        // while unread notifications exist
+        // 歌词模式下边框取代通知圆点：存在未读通知时边框点亮
+        Rectangle {
+            id: lyricFrame
+
+            readonly property bool indicating: root.notificationsEnabled && root.unreadNotificationCount > 0
+
+            anchors.fill: parent
+            border.color: lyricFrame.indicating
+                ? (root.mediaBackgroundVisible ? root.theme.accentTextColor : root.theme.accentColor)
+                : "transparent"
+            border.width: compactItem.lyricBorderWidth
+            color: "transparent"
+            radius: Kirigami.Units.cornerRadius
+            visible: root.compactShowsLyrics
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: Kirigami.Units.shortDuration
+                }
+            }
+        }
+
+        Lyrics.ScrollingLine {
+            id: panelLyric
+
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.leftMargin: compactItem.lyricPadding + compactItem.lyricBorderWidth
+            anchors.right: parent.right
+            anchors.rightMargin: compactItem.lyricPadding + compactItem.lyricBorderWidth
+            anchors.top: parent.top
+            color: root.mediaBackgroundVisible ? root.theme.accentTextColor : root.theme.textColor
+            progress: root.lyricLineProgress
+            text: root.lyricText
+            textFont: compactItem.mediaTitleFont
+            visible: root.compactShowsLyrics
+        }
+
         Media {
             id: mediaItem
 
             anchors.fill: parent
-            anchors.rightMargin: compactItem.badgeSpace
+            anchors.leftMargin: root.compactShowsMediaTitle ? compactItem.titleBadgeInset : 0
+            anchors.rightMargin: root.compactShowsMediaTitle ? compactItem.titleBadgeInset : compactItem.badgeSpace
             enabled: visible
             playing: root.isPlaying
             theme: root.theme
@@ -357,7 +462,7 @@ PlasmoidItem {
             placeholderColor: root.theme.coverPlaceholderColor
             radius: Math.max(2, Math.round(compactItem.coverSize * 0.15))
             source: root.compactShowsMediaCover ? root.trackArtUrl : ""
-            visible: root.compactShowsMediaCover
+            visible: root.compactShowsMediaCover && !root.compactShowsLyrics
             width: compactItem.coverSize
         }
 
@@ -374,7 +479,7 @@ PlasmoidItem {
             color: root.mediaBackgroundVisible ? root.theme.textColor : root.theme.accentColor
             height: iconSize
             source: root.mediaPlaybackIcon
-            visible: root.compactShowsMediaIcon
+            visible: root.compactShowsMediaIcon && !root.compactShowsLyrics
             width: iconSize
         }
 
@@ -394,7 +499,7 @@ PlasmoidItem {
             theme: root.theme
             timeFont: compactItem.primaryFont
             timeFormat: root.timeFormat
-            visible: !root.panelShowsMedia
+            visible: !root.panelShowsMedia && !root.compactShowsLyrics
         }
 
         Indicators.Badge {
@@ -414,7 +519,9 @@ PlasmoidItem {
             labelFont: root.fontWithPixelSize(root.panelFont, Math.max(8, Math.round(notificationBadge.height * 0.6)))
             showCount: root.notificationsShowUnreadCount
             theme: root.theme
-            visible: root.notificationsEnabled && root.unreadNotificationCount > 0
+            // The lyric frame indicates unread notifications instead
+            // 歌词模式改由歌词边框提示未读通知
+            visible: root.notificationsEnabled && root.unreadNotificationCount > 0 && !root.compactShowsLyrics
         }
 
         // Plasma positions this banner beside the applet; declare it before MouseArea to preserve clicks
@@ -442,12 +549,15 @@ PlasmoidItem {
         appletExpanded: root.expanded
         hasMedia: root.hasMedia
         hasNotifications: root.hasNotifications
+        lyrics: root.lyricsProvider
         mediaControlsEnabled: providers.media.available
         mediaProvider: providers.media.provider
         notificationsProvider: providers.notifications.provider
         notificationsShowClearAll: root.notificationsShowClearAll
         notificationsShowDoNotDisturb: root.notificationsShowDoNotDisturb
         requestedDate: root.requestedDate
+        showPlaybackLyrics: root.lyricsPlaybackEnabled
+        lyricsSecondaryMode: root.lyricsSecondaryMode
         textFont: root.panelFont
         theme: root.theme
         timeFormat: root.timeFormat

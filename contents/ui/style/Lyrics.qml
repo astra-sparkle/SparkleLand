@@ -1,0 +1,404 @@
+import QtQuick
+import org.kde.kirigami as Kirigami
+
+// Lyric styles shared by the compact panel line and the expanded media view
+// 紧凑面板歌词行与展开媒体视图共用的歌词样式
+Item {
+    // Single-line lyric: the new line slides up while the previous one leaves,
+    // and the line scrolls sideways once it is wider than the available space;
+    // the travel follows the active line's published time span
+    // 单行歌词：新行向上滑入、旧行向上滑出；宽度超出可用空间时水平滚动，
+    // 滚动进度遵循当前行的发布时长
+    component ScrollingLine: Item {
+        id: line
+
+        property font textFont
+        property string text: ""
+        // Progress inside the active line: 0 at its start, 1 at its end
+        // 当前行内的进度：行首为 0，行尾为 1
+        property real progress: 0
+        property color color: "transparent"
+
+        // Text currently on screen, kept so the previous line can slide away
+        // 当前显示的文本，供旧行滑出使用
+        property string shownText: ""
+        // A line is sliding in or out; smooth the horizontal offset only between ticks
+        // 正在切换行；仅在两次位置刷新之间平滑水平偏移
+        property bool sliding: false
+
+        readonly property real clampedProgress: Math.max(0, Math.min(1, line.progress))
+
+        clip: true
+
+        // Resolve the horizontal offset for a label: long lines scroll from the left
+        // edge, short lines stay centered
+        // 计算标签的水平偏移：长句从左侧滚动，短句保持居中
+        function labelX(item, value) {
+            const overflow = Math.max(0, item.implicitWidth - line.width);
+            return overflow > 0
+                ? -Math.round(overflow * value)
+                : Math.round((line.width - item.implicitWidth) / 2);
+        }
+
+        Text {
+            id: outgoingLabel
+
+            color: line.color
+            font: line.textFont
+            height: line.height
+            verticalAlignment: Text.AlignVCenter
+            visible: false
+            y: 0
+        }
+
+        Text {
+            id: currentLabel
+
+            color: line.color
+            font: line.textFont
+            height: line.height
+            text: line.text
+            verticalAlignment: Text.AlignVCenter
+            x: line.labelX(currentLabel, line.clampedProgress)
+
+            // Smooth the position ticks that drive the scroll
+            // 平滑驱动滚动的位置刷新间隔
+            Behavior on x {
+                enabled: !line.sliding
+
+                NumberAnimation {
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.Linear
+                }
+            }
+        }
+
+        ParallelAnimation {
+            id: slide
+
+            NumberAnimation {
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.OutCubic
+                from: 0
+                property: "y"
+                target: outgoingLabel
+                to: -line.height
+            }
+
+            NumberAnimation {
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.OutCubic
+                from: line.height
+                property: "y"
+                target: currentLabel
+                to: 0
+            }
+
+            onFinished: {
+                outgoingLabel.visible = false;
+                currentLabel.y = 0;
+                line.sliding = false;
+            }
+        }
+
+        onTextChanged: {
+            const previous = line.shownText;
+            if (line.text === previous) {
+                return;
+            }
+            line.shownText = line.text;
+
+            // First line, cleared lyrics or a hidden widget switch without animating
+            // 首行、歌词清空或组件隐藏时直接切换
+            if (previous.length === 0 || line.text.length === 0 || !line.visible) {
+                slide.stop();
+                outgoingLabel.visible = false;
+                currentLabel.y = 0;
+                line.sliding = false;
+                return;
+            }
+
+            // The outgoing line froze at its end, so resolve it with full progress
+            // 旧行在结束时定格，因此按完整进度计算其偏移
+            outgoingLabel.text = previous;
+            outgoingLabel.x = line.labelX(outgoingLabel, 1);
+            outgoingLabel.y = 0;
+            outgoingLabel.visible = true;
+            line.sliding = true;
+            slide.restart();
+        }
+    }
+
+    // One lyric row: the kept part over its overflow, both elided to the row width
+    // 单个歌词行：保留部分在上，顺延部分在下，均按行宽省略
+    component RowText: Column {
+        id: rowBlock
+
+        property string headText: ""
+        property string tailText: ""
+        property color textColor: "transparent"
+        property font textFont
+        property real textWidth: 0
+
+        spacing: 0
+        width: Math.round(rowBlock.textWidth)
+
+        Text {
+            color: rowBlock.textColor
+            elide: Text.ElideRight
+            font: rowBlock.textFont
+            horizontalAlignment: Text.AlignHCenter
+            lineHeight: 0.8
+            lineHeightMode: Text.ProportionalHeight
+            text: rowBlock.headText
+            width: rowBlock.width
+            wrapMode: Text.NoWrap
+        }
+
+        Text {
+            color: rowBlock.textColor
+            elide: Text.ElideRight
+            font: rowBlock.textFont
+            horizontalAlignment: Text.AlignHCenter
+            lineHeight: 0.8
+            lineHeightMode: Text.ProportionalHeight
+            text: rowBlock.tailText
+            visible: rowBlock.tailText.length > 0
+            width: rowBlock.width
+            wrapMode: Text.NoWrap
+        }
+    }
+
+    // Multi-row scrolling lyric used by the playback page: the active line sits on
+    // the middle row, with the previous and next lines above and below; the optional
+    // secondary row (translation or romanisation) is inserted right under the active
+    // line. Rows stack on their own height, so neighbouring lines sit side by side
+    // 播放页使用的多行滚动歌词：当前行居中，上下分别为上一行与下一行，
+    // 可选的副行（译文或发音）紧贴当前行下方。各行按自身高度紧挨排列
+    component ScrollingLines: Item {
+        id: view
+
+        // Normalized lyric lines and the active index, -1 before the first line starts
+        // 规范化后的歌词行与当前索引，首行开始前为 -1
+        property var lines: []
+        property int currentIndex: -1
+        // 0 = no secondary row, 1 = translation, 2 = romanisation
+        // 0 = 无副行，1 = 译文，2 = 发音
+        property int secondaryMode: 0
+        property var theme
+        property font lineFont
+        // Smaller font for the lines above and below the active one
+        // 上下两行使用更小字号，以突出当前行
+        property font inactiveLineFont: view.lineFont
+        property font secondaryFont
+        // Width of the text block inside the view; a longer line is split by the provider
+        // 视图内文本块的宽度；超出的歌词由提供器切分
+        property real textWidth: view.width
+        // Splits a lyric line into the part kept on its row and the overflow; supplied
+        // by the lyric provider so the cutting rule lives outside the view
+        // 把歌词行拆成留在本行的部分与溢出部分；由歌词提供器提供，使截断规则独立于视图
+        property var splitter: null
+
+        readonly property bool hasSecondary: view.secondaryMode !== 0
+        readonly property int rowCount: view.hasSecondary ? 4 : 3
+        readonly property int lineCount: Array.isArray(view.lines) ? view.lines.length : 0
+        // Index of the line on the middle row, rounded so the active styling stays
+        // stable while the strip is scrolling
+        // 居中行对应的歌词索引，取整使滚动过程中当前行样式保持稳定
+        readonly property int anchorLine: Math.max(0, Math.round(view.currentIndex))
+        readonly property int windowStart: Math.max(0, view.anchorLine - 1)
+        readonly property int windowCount: {
+            if (view.lineCount === 0) {
+                return 0;
+            }
+            const last = Math.min(view.lineCount - 1, view.anchorLine + 2);
+            return Math.max(0, last - view.windowStart + 1);
+        }
+        // Height of one rendered text line for a given font, matching what Text lays out
+        // 给定字体下单行文字的高度，与 Text 实际排版一致
+        function textLineHeight(fontValue) {
+            if (fontValue === null || fontValue === undefined || fontValue.pixelSize <= 0) {
+                return 20;
+            }
+            return Math.round(fontValue.pixelSize * 1.5);
+        }
+
+        // Two text lines per row keep the strip height stable while the content changes
+        // 每行按两行文字预留高度，内容变化时控件高度保持稳定
+        implicitHeight: view.rowCount * 2 * view.textLineHeight(view.lineFont)
+        clip: true
+
+        // Split a lyric line through the provider; null keeps the text as one row
+        // 通过提供器切分歌词行；为 null 时整行保留
+        function splitParts(value) {
+            if (typeof view.splitter !== "function") {
+                return null;
+            }
+
+            const parts = view.splitter(value);
+            if (parts === null || parts === undefined) {
+                return null;
+            }
+            return {
+                "head": typeof parts.head === "string" ? parts.head : "",
+                "tail": typeof parts.tail === "string" ? parts.tail : ""
+            };
+        }
+
+        function lineTextAt(index) {
+            if (index < 0 || index >= view.lineCount) {
+                return "";
+            }
+            const line = view.lines[index];
+            return line !== null && line !== undefined && typeof line.text === "string" ? line.text : "";
+        }
+
+        function secondaryText(line) {
+            if (line === null || line === undefined) {
+                return "";
+            }
+            if (view.secondaryMode === 1) {
+                return typeof line.translation === "string" ? line.translation : "";
+            }
+            if (view.secondaryMode === 2) {
+                return typeof line.roman === "string" ? line.roman : "";
+            }
+            return "";
+        }
+
+        // The line below the active one drops its split-off part so it never grows
+        // towards the content that follows
+        // 位于当前行下方的行丢弃溢出部分，避免向下挤占后续内容
+        function tailAt(index) {
+            const parts = view.splitParts(view.lineTextAt(index));
+            if (parts === null || index > view.anchorLine) {
+                return "";
+            }
+            return parts.tail;
+        }
+
+        function headAt(index) {
+            const parts = view.splitParts(view.lineTextAt(index));
+            return parts !== null ? parts.head : view.lineTextAt(index);
+        }
+
+        // Height of a line row, measured from the font and the lines it actually renders,
+        // so neighbouring rows sit side by side without outer spacing
+        // 歌词行的高度由其字体与实际显示的行数决定，相邻行因此紧挨排列而没有额外间距
+        function lineHeight(index) {
+            const fontValue = index === view.anchorLine ? view.lineFont : view.inactiveLineFont;
+            const lines = view.tailAt(index).length > 0 ? 2 : 1;
+            return lines * view.textLineHeight(fontValue);
+        }
+
+        function secondaryLine() {
+            return view.lineCount > view.anchorLine ? view.lines[view.anchorLine] : null;
+        }
+
+        function secondaryParts() {
+            return view.splitParts(view.secondaryText(view.secondaryLine()));
+        }
+
+        function secondaryHeight() {
+            if (!view.hasSecondary) {
+                return 0;
+            }
+            const parts = view.secondaryParts();
+            const lines = parts !== null && parts.tail.length > 0 ? 2 : 1;
+            return lines * view.textLineHeight(view.secondaryFont);
+        }
+
+        // Top of a line row: the active row stays centered, everything else stacks
+        // around it without gaps
+        // 歌词行的顶部位置：当前行居中，其余行紧贴其上下排列
+        function rowTop(index) {
+            let top = (view.height - view.lineHeight(view.anchorLine)) / 2;
+            if (index < view.anchorLine) {
+                for (let step = index; step < view.anchorLine; ++step) {
+                    top -= view.lineHeight(step);
+                }
+                return top;
+            }
+            for (let step = view.anchorLine; step < index; ++step) {
+                top += view.lineHeight(step);
+                if (view.hasSecondary && step === view.anchorLine) {
+                    top += view.secondaryHeight();
+                }
+            }
+            return top;
+        }
+
+        function secondaryTop() {
+            return view.rowTop(view.anchorLine) + view.lineHeight(view.anchorLine);
+        }
+
+        Repeater {
+            model: view.windowCount
+
+            delegate: Item {
+                id: lineLabel
+
+                required property int index
+
+                readonly property int lineIndex: view.windowStart + index
+                readonly property bool active: lineIndex === view.anchorLine
+
+                // Fade with the distance to the active row so the scroll has no colour pop
+                // 按与当前行的距离淡出，避免滚动过程中颜色突变
+                height: view.lineHeight(lineIndex)
+                opacity: Math.max(0.35, 1 - Math.abs(lineIndex - view.anchorLine) * 0.5)
+                width: view.width
+                y: view.rowTop(lineIndex)
+
+                Behavior on y {
+                    NumberAnimation {
+                        duration: Kirigami.Units.longDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                RowText {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    // Only the current line keeps the full size
+                    // 仅当前行保持完整字号
+                    headText: view.headAt(lineLabel.lineIndex)
+                    tailText: view.tailAt(lineLabel.lineIndex)
+                    textColor: view.theme !== null && view.theme !== undefined ? view.theme.textColor : "transparent"
+                    textFont: lineLabel.active ? view.lineFont : view.inactiveLineFont
+                    textWidth: view.textWidth
+                }
+            }
+        }
+
+        // Secondary row sits directly under the active line and fades in as it settles
+        // 副行紧贴当前行下方，并在滚动停稳时淡入
+        RowText {
+            id: secondaryRow
+
+            readonly property var parts: view.secondaryParts()
+            readonly property string rowText: view.secondaryText(view.secondaryLine())
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            headText: parts !== null ? parts.head : rowText
+            tailText: parts !== null ? parts.tail : ""
+            textColor: view.theme !== null && view.theme !== undefined ? view.theme.disabledTextColor : "transparent"
+            textFont: view.secondaryFont
+            textWidth: view.textWidth
+            visible: view.hasSecondary && rowText.length > 0
+            y: view.secondaryTop()
+        }
+
+        NumberAnimation {
+            id: secondaryFade
+
+            duration: Kirigami.Units.longDuration
+            from: 0
+            property: "opacity"
+            target: secondaryRow
+            to: 1
+        }
+
+        onAnchorLineChanged: secondaryFade.restart()
+    }
+}

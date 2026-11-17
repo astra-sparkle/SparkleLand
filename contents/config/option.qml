@@ -22,6 +22,9 @@ KCM.SimpleKCM {
 
     property alias cfg_mediaUseThemeBackground: mediaBackgroundCheck.checked
     property alias cfg_mediaCompactStyle: mediaCompactStyleCombo.currentIndex
+    property alias cfg_lyricsPanelEnabled: lyricsPanelCheck.checked
+    property alias cfg_lyricsPlaybackEnabled: lyricsPlaybackCheck.checked
+    property alias cfg_lyricsSecondaryMode: lyricsSecondaryCombo.currentIndex
     // Empty means the packaged default icon is used
     // 留空表示使用内置默认图标
     property string cfg_mediaPlaybackIcon
@@ -162,6 +165,46 @@ KCM.SimpleKCM {
                 QQC2.ToolTip.text: text
                 QQC2.ToolTip.visible: hovered
             }
+        }
+
+        QQC2.Label {
+            Kirigami.FormData.isSection: true
+            text: i18n("Lyrics")
+        }
+
+        QQC2.CheckBox {
+            id: lyricsPanelCheck
+
+            Kirigami.FormData.label: i18n("Panel:")
+            text: i18n("Show the current lyric line instead of the clock or track title")
+        }
+
+        QQC2.CheckBox {
+            id: lyricsPlaybackCheck
+
+            Kirigami.FormData.label: i18n("Playback page:")
+            text: i18n("Show the current lyric line in the expanded media view")
+        }
+
+        QQC2.ComboBox {
+            id: lyricsSecondaryCombo
+
+            Kirigami.FormData.label: i18n("Secondary row:")
+            enabled: lyricsPlaybackCheck.checked
+            model: [
+                i18n("Disabled"),
+                i18n("Show translation"),
+                i18n("Show pronunciation")
+            ]
+        }
+
+        QQC2.Label {
+            Layout.fillWidth: true
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
+            text: i18n("Lyrics come from the SPlayer-Next backend. While the panel lyrics are shown, the panel keeps a fixed width of 16 full-width characters, the line scrolls according to its timing, and the frame replaces the notification dot by lighting up while unread notifications exist.")
+            visible: lyricsPanelCheck.checked || lyricsPlaybackCheck.checked
+            wrapMode: Text.WordWrap
         }
 
         QQC2.Label {

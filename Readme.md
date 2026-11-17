@@ -10,6 +10,7 @@ Sparkle Land 是一个面向 KDE Plasma 的桌面小组件（Plasma Applet），
 
 ## 功能
 - 正在播放
+- 歌词（需依照播放器后端适配，目前适配SPlayer-Next）
 - 时钟
 - 通知（不稳定）
 - 月历

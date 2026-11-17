@@ -42,6 +42,19 @@
             <!-- 留空时使用内置默认图标 -->
             <default></default>
         </entry>
+        <entry name="lyricsPanelEnabled" type="Bool">
+            <default>false</default>
+        </entry>
+        <entry name="lyricsPlaybackEnabled" type="Bool">
+            <default>false</default>
+        </entry>
+        <entry name="lyricsSecondaryMode" type="Int">
+            <!-- 0 = disabled, 1 = translation, 2 = romanisation -->
+            <!-- 0 = 禁用，1 = 译文，2 = 发音 -->
+            <default>0</default>
+            <min>0</min>
+            <max>2</max>
+        </entry>
         <entry name="notificationsEnabled" type="Bool">
             <default>true</default>
         </entry>

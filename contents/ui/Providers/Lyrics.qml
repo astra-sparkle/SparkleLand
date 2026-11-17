@@ -1,4 +1,5 @@
 import QtQuick
+import "LyricText.js" as LyricText
 import "SPlayer_Next.js" as SPlayerNext
 
 // Lyric state fed by the SPlayer backend: normalized lines and the active line
@@ -20,6 +21,9 @@ QtObject {
     property real offset: 0
     property int currentIndex: -1
 
+    // Full-width characters a single lyric row can hold, shared with the view
+    // 单个歌词行可容纳的全角字符数，与视图共用
+    readonly property int lineUnitLimit: LyricText.FULL_WIDTH_LIMIT
     readonly property bool available: root.lines.length > 0
     readonly property var currentLine: root.currentIndex >= 0 && root.currentIndex < root.lines.length
         ? root.lines[root.currentIndex]
@@ -41,6 +45,12 @@ QtObject {
             return 0;
         }
         return Math.max(0, Math.min(1, (root.position + root.offset - root.currentLine.startTime) / span));
+    }
+
+    // Split a lyric line into the part kept on its row and the overflow
+    // 把一行歌词拆成留在本行的部分与溢出部分
+    function splitLine(text) {
+        return LyricText.splitLine(text);
     }
 
     // Store an already normalized line array, the backend owns parsing and caching
