@@ -43,10 +43,10 @@ QtObject {
         return Math.max(0, Math.min(1, (root.position + root.offset - root.currentLine.startTime) / span));
     }
 
-    // Accept the parsed LyricLine array of SPlayer-Next
-    // 接收 SPlayer-Next 的已解析歌词行数组
-    function setLyrics(source) {
-        root.lines = SPlayerNext.normalizeLines(source);
+    // Store an already normalized line array, the backend owns parsing and caching
+    // 写入已规范化的歌词行数组，解析与缓存由后端负责
+    function setLines(source) {
+        root.lines = Array.isArray(source) ? source : [];
         root.refreshIndex();
     }
 

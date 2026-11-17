@@ -66,8 +66,13 @@ function trackState(track) {
     }
 
     const album = track.album !== null && typeof track.album === "object" ? track.album : {};
+    const trackId = typeof track.id === "string" ? track.id : "";
+    const source = typeof track.source === "string" ? track.source : "";
     return {
-        "id": typeof track.id === "string" ? track.id : "",
+        "id": trackId,
+        // Cache key keeps the same id from different sources apart
+        // 缓存键将不同来源的同名 ID 区分开
+        "key": source.length > 0 ? source + ":" + trackId : trackId,
         "title": typeof track.title === "string" ? track.title : "",
         "artist": artists.join(" / "),
         "album": typeof album.name === "string" ? album.name : "",
@@ -173,4 +178,50 @@ function indexAt(lines, positionMs) {
         }
     }
     return found;
+}
+
+// Bounded LRU cache of normalized lyric lines, keyed by track
+// 按曲目缓存已规范化歌词行的有界 LRU
+function createLineCache(limit) {
+    const capacity = Math.max(1, Math.round(Number(limit) || 1));
+    const entries = {};
+    let keys = [];
+
+    function promote(key) {
+        const index = keys.indexOf(key);
+        if (index >= 0) {
+            keys.splice(index, 1);
+        }
+        keys.unshift(key);
+    }
+
+    return {
+        "get": function(key) {
+            if (typeof key !== "string" || key.length === 0
+                    || !Object.prototype.hasOwnProperty.call(entries, key)) {
+                return null;
+            }
+            promote(key);
+            return entries[key];
+        },
+        "put": function(key, lines) {
+            if (typeof key !== "string" || key.length === 0 || !Array.isArray(lines)) {
+                return;
+            }
+            entries[key] = lines;
+            promote(key);
+            while (keys.length > capacity) {
+                delete entries[keys.pop()];
+            }
+        },
+        "clear": function() {
+            keys = [];
+            for (const key in entries) {
+                delete entries[key];
+            }
+        },
+        "size": function() {
+            return keys.length;
+        }
+    };
 }

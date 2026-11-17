@@ -44,6 +44,9 @@ QtObject {
         // 专辑封面同时供紧凑封面与展开面板使用
         readonly property string artUrl: mediaSource.provider !== null ? mediaSource.provider.artUrl : ""
         readonly property bool playing: mediaSource.provider !== null && mediaSource.provider.playing
+        // Raw MPRIS player, reused by the lyric backend for position events
+        // 原始 MPRIS 播放器，供歌词后端复用位置事件
+        readonly property var player: mediaSource.provider !== null ? mediaSource.provider.currentPlayer : null
 
         Component.onCompleted: mediaSource.loadProvider()
 
@@ -296,6 +299,11 @@ QtObject {
             // Feed the lyric provider without importing it from the backend
             // 向歌词提供器下发数据，后端无需导入该组件
             backendInstance.lyrics = root.lyrics;
+            // Reuse the MPRIS player already loaded by the media provider
+            // 复用媒体提供器已加载的 MPRIS 播放器
+            backendInstance.positionPlayer = Qt.binding(function() {
+                return root.media.player;
+            });
 
             splayerSource.provider = backendInstance;
             splayerSource.state = 1;

@@ -10,15 +10,23 @@ QtObject {
     // Lyrics sink injected by the provider registry
     // 由提供器注册中心注入的歌词接收方
     property var lyrics: null
+    // MPRIS player of the same app, injected by the provider registry
+    // 同一应用的 MPRIS 播放器，由提供器注册中心注入
+    property var positionPlayer: null
 
     // SPlayer-Next shares one port between the socket and the HTTP API
     // SPlayer-Next 的套接字与 HTTP 接口共用同一端口
     property string url: "ws://127.0.0.1:14558/ws"
     property bool autoConnect: true
     property int reconnectInterval: 5000
-    // High-frequency position events are not broadcast, polling keeps progress current
-    // 高频进度事件不会广播，轮询保持播放位置更新
-    property int pollInterval: 1000
+    // Position advances locally between server snapshots, lyric ticks never touch the API
+    // 位置在两次服务端快照之间本地推进，歌词刷新不访问接口
+    property int positionInterval: 250
+    // The socket pushes status only on transport changes, so one light snapshot per
+    // interval guarantees that seeks are calibrated within 2 s in every state
+    // 套接字仅在传输状态变化时推送 status，因此每个间隔一次轻量快照
+    // 可保证任何状态下跳转都在 2 秒内完成校准
+    property int resyncInterval: 2000
 
     // Connection state
     // 连接状态
@@ -34,15 +42,29 @@ QtObject {
     property bool playing: false
     property string playState: ""
     property string trackId: ""
+    property string trackKey: ""
     property string songTitle: ""
     property string artistName: ""
     property string albumName: ""
     property string coverUrl: ""
     property real position: 0
     property real duration: 0
-    // Track whose lyrics were last requested, avoids duplicate fetches
-    // 最近一次请求歌词的曲目，避免重复请求
-    property string lyricsTrackId: ""
+    // Anchor pair used to extrapolate the position while playing
+    // 播放期间用于外推位置的锚点对
+    property real anchorPosition: 0
+    property double anchorWallMs: 0
+    // Playback rate reported by the status frames, used to scale extrapolation
+    // 状态帧上报的播放速率，用于缩放外推
+    property real playbackRate: 1
+    // Snapshots that differ less than this keep the smoother local estimate
+    // 差异小于该值的快照保留更平滑的本地估算
+    property real anchorTolerance: 250
+    // Track whose lyrics are already applied
+    // 歌词已就绪的曲目
+    property string lyricsTrackKey: ""
+    // Parsed lyrics are reused across replays and panel rebuilds
+    // 已解析歌词在重播与面板重建时复用
+    property var lineCache: SPlayerNext.createLineCache(16)
 
     signal connectionChanged()
     signal songChanged()
@@ -57,6 +79,12 @@ QtObject {
         const base = root.url.replace(/^ws/, "http").replace(/\/ws$/, "");
         return base + "/api";
     }
+
+    // MPRIS titles use the same track title as the socket events
+    // MPRIS 标题与套接字事件的曲目标题一致
+    readonly property bool mprisMatched: root.positionPlayer !== null
+        && root.songTitle.length > 0
+        && root.positionPlayer.track === root.songTitle
 
     readonly property WebSocket socket: WebSocket {
         url: root.url
@@ -77,13 +105,33 @@ QtObject {
         onTriggered: root.connectSocket()
     }
 
-    readonly property Timer pollTimer: Timer {
-        interval: root.pollInterval
+    readonly property Timer positionTimer: Timer {
+        interval: root.positionInterval
+        repeat: true
+        running: root.playing
+
+        onTriggered: root.advancePosition()
+    }
+
+    readonly property Timer resyncTimer: Timer {
+        interval: root.resyncInterval
         repeat: true
         running: root.connected
 
         onTriggered: root.requestSnapshot()
     }
+
+    // MPRIS position updates arrive on seeks and transport changes for free
+    // MPRIS 位置更新在跳转与播放状态变化时自动到达，无需额外开销
+    readonly property Connections positionWatcher: Connections {
+        target: root.positionPlayer
+
+        function onPositionChanged() {
+            root.applyPlayerPosition();
+        }
+    }
+
+    onPositionPlayerChanged: root.refreshPlayerPosition()
 
     Component.onCompleted: {
         if (root.autoConnect) {
@@ -163,7 +211,12 @@ QtObject {
     }
 
     function seek(positionMs) {
-        root.sendCommand("seek", { "positionMs": Math.max(0, Number(positionMs) || 0) });
+        const value = Math.max(0, Number(positionMs) || 0);
+        if (root.sendCommand("seek", { "positionMs": value })) {
+            // Trust the requested position immediately instead of waiting for the resync
+            // 立即采用请求的位置，无需等待校准
+            root.syncAnchor(value, true);
+        }
     }
 
     function setVolume(volume) {
@@ -248,6 +301,7 @@ QtObject {
     }
 
     function applyStatus(data) {
+        const previousState = root.playState;
         if (typeof data.state === "string" && data.state !== root.playState) {
             root.playState = data.state;
         }
@@ -261,8 +315,16 @@ QtObject {
         if (isFinite(statusDuration) && statusDuration > 0) {
             root.setDuration(statusDuration);
         }
+        // Status frames carry the rate, snapshots repeat it every interval
+        // 状态帧包含播放速率，快照每隔一个间隔重复提供
+        const rate = Number(data.speed);
+        if (isFinite(rate) && rate > 0) {
+            root.playbackRate = rate;
+        }
         if (typeof data.position === "number" && isFinite(data.position)) {
-            root.setPosition(data.position);
+            // Transport changes must re-anchor so the pause time is not extrapolated
+            // 传输状态变化必须重设锚点，避免把暂停时长计入外推
+            root.syncAnchor(data.position, root.playState !== previousState);
         }
     }
 
@@ -279,20 +341,28 @@ QtObject {
         if (nextTrack === null) {
             if (root.trackId.length > 0) {
                 root.trackId = "";
+                root.trackKey = "";
                 root.songTitle = "";
                 root.artistName = "";
                 root.albumName = "";
                 root.coverUrl = "";
                 root.setDuration(0);
-                root.setPosition(0);
+                root.syncAnchor(0, true);
                 root.clearLyrics();
                 root.songChanged();
             }
             return;
         }
 
-        const trackChanged = nextTrack.id !== root.trackId || nextTrack.title !== root.songTitle;
+        const trackChanged = nextTrack.key !== root.trackKey || nextTrack.title !== root.songTitle;
+        // Re-emitting on every snapshot would make consumers refresh needlessly
+        // 每次快照都发信号会让消费者做无谓刷新
+        const metadataChanged = trackChanged
+            || nextTrack.artist !== root.artistName
+            || nextTrack.album !== root.albumName
+            || nextTrack.cover !== root.coverUrl;
         root.trackId = nextTrack.id;
+        root.trackKey = nextTrack.key;
         root.songTitle = nextTrack.title;
         root.artistName = nextTrack.artist;
         root.albumName = nextTrack.album;
@@ -301,16 +371,39 @@ QtObject {
             root.setDuration(nextTrack.duration);
         }
         if (trackChanged) {
-            root.setPosition(0);
+            root.syncAnchor(0, true);
             root.clearLyrics();
-            root.requestLyrics();
+            // Replays reuse the parsed lines instead of a second request
+            // 重播时复用已解析歌词行，不再请求
+            const cachedLines = root.lineCache.get(nextTrack.key);
+            if (cachedLines !== null) {
+                root.lyricsTrackKey = nextTrack.key;
+                root.showLines(cachedLines);
+            } else {
+                root.requestLyrics();
+            }
         }
-        root.songChanged();
+        if (metadataChanged) {
+            root.songChanged();
+        }
     }
 
-    function applyLyricLines(lines) {
-        if (root.lyrics !== null && typeof root.lyrics.setLyrics === "function") {
-            root.lyrics.setLyrics(lines);
+    function applyLyricLines(source) {
+        const lines = SPlayerNext.normalizeLines(source);
+        // An empty event must not wipe lines the player already delivered
+        // 空事件不得清掉播放器已送达的歌词
+        if (lines.length === 0) {
+            return;
+        }
+        if (root.trackKey.length > 0) {
+            root.lineCache.put(root.trackKey, lines);
+        }
+        root.showLines(lines);
+    }
+
+    function showLines(lines) {
+        if (root.lyrics !== null && typeof root.lyrics.setLines === "function") {
+            root.lyrics.setLines(lines);
         }
         root.lyricChanged();
     }
@@ -354,10 +447,10 @@ QtObject {
     // Lyrics are not part of the snapshot and are fetched once per track
     // 歌词不在快照内，每首曲目单独获取一次
     function requestLyrics() {
-        if (root.trackId.length === 0 || root.trackId === root.lyricsTrackId) {
+        if (root.trackKey.length === 0 || root.trackKey === root.lyricsTrackKey) {
             return;
         }
-        root.lyricsTrackId = root.trackId;
+        root.lyricsTrackKey = root.trackKey;
         root.requestJson("/lyrics", root.applyLyricPayload);
     }
 
@@ -366,6 +459,11 @@ QtObject {
             return;
         }
         root.applyTrack(snapshot.track);
+        // The player may finish loading lyrics after the first request, retry while they are missing
+        // 播放器可能在首次请求后才加载完歌词，缺失时继续重试
+        if (snapshot.lyricAvailable === true && root.lyricsTrackKey.length === 0) {
+            root.requestLyrics();
+        }
         root.applyLyricOffset(snapshot.lyricOffsetMs);
         root.applyStatus(snapshot);
     }
@@ -374,16 +472,51 @@ QtObject {
         if (payload === null || typeof payload !== "object") {
             return;
         }
+        // A reply for another track is stale and must be dropped
+        // 其他曲目的响应属于过期数据，必须丢弃
+        if (typeof payload.trackId === "string" && payload.trackId.length > 0
+                && payload.trackId !== root.trackId) {
+            return;
+        }
+        // The player may answer before it finished loading lyrics; allow a retry
+        // 播放器可能在歌词未加载完成时返回空内容，允许后续重试
+        if (!Array.isArray(payload.lyric) || payload.lyric.length === 0) {
+            root.lyricsTrackKey = "";
+            return;
+        }
         root.applyLyricOffset(payload.lyricOffsetMs);
         root.applyLyricLines(payload.lyric);
     }
 
     function clearLyrics() {
-        root.lyricsTrackId = "";
+        root.lyricsTrackKey = "";
         if (root.lyrics !== null && typeof root.lyrics.clear === "function") {
             root.lyrics.clear();
         }
         root.lyricChanged();
+    }
+
+    // Anchor the estimate to a server position and its local arrival time
+    // 将估算锚定到服务端位置及其本地到达时间
+    function syncAnchor(milliseconds, force) {
+        const value = Math.max(0, Number(milliseconds) || 0);
+        if (!force && root.playing && Math.abs(value - root.position) < root.anchorTolerance) {
+            return;
+        }
+        root.anchorPosition = root.duration > 0 ? Math.min(value, root.duration) : value;
+        root.anchorWallMs = Date.now();
+        root.setPosition(root.anchorPosition);
+    }
+
+    // Extrapolate from the anchor; the position timer never touches the API
+    // 由锚点外推；位置定时器不访问接口
+    function advancePosition() {
+        if (!root.playing) {
+            return;
+        }
+        const elapsed = (Date.now() - root.anchorWallMs) * root.playbackRate;
+        const estimate = root.anchorPosition + elapsed;
+        root.setPosition(root.duration > 0 ? Math.min(estimate, root.duration) : estimate);
     }
 
     function setPosition(milliseconds) {
@@ -411,6 +544,29 @@ QtObject {
         if (root.lyrics !== null && typeof root.lyrics.syncPosition === "function") {
             root.lyrics.syncPosition(root.position);
         }
+    }
+
+    // Ask the player for a fresh position once, its reply arrives as a signal
+    // 向播放器请求一次最新位置，结果以信号形式返回
+    function refreshPlayerPosition() {
+        const player = root.positionPlayer;
+        if (player !== null && typeof player.updatePosition === "function") {
+            player.updatePosition();
+        }
+    }
+
+    // MPRIS reports microseconds, the lyric timeline works in milliseconds
+    // MPRIS 使用微秒，歌词时间轴使用毫秒
+    function applyPlayerPosition() {
+        if (!root.mprisMatched) {
+            return;
+        }
+
+        const microseconds = Number(root.positionPlayer.position);
+        if (!isFinite(microseconds) || microseconds < 0) {
+            return;
+        }
+        root.syncAnchor(microseconds / 1000);
     }
 
     // Report an HTTP read failure once per outage
