@@ -1,0 +1,61 @@
+# 单元测试与语法检查
+# Unit tests and syntax checks
+#
+# 两段脚本都在 .github/scripts/tests/：
+# JS 辅助函数用 QuickJS 运行，月历辅助逻辑用真实 Qt 运行时运行
+# Both scripts live in .github/scripts/tests/: the JS helpers run in QuickJS and the
+# calendar helpers run in the real Qt runtime
+name: 测试
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: JavaScript 单元测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v5
+
+      - name: 安装 QuickJS
+        run: python3 -m pip install --quiet --disable-pip-version-check quickjs
+
+      - name: 运行测试
+        run: python3 .github/scripts/tests/run-tests.py
+
+  qml:
+    name: QML 语法与月历辅助逻辑
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v5
+
+      - name: 安装 Qt 工具
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          cache: true
+          archives: 'qtbase icu qtdeclarative'
+
+      # 缺失的 KDE QML 模块只会产生 warning，语法错误才返回非零
+      # Missing KDE QML modules only warn, syntax errors return non-zero
+      - name: 校验 QML 语法
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(find contents -name '*.qml' -print0 | sort -z)
+          qmllint "${files[@]}"
+
+      # 月历辅助逻辑是 QML 对象，用真实的 Qt 运行时验证行为
+      # The calendar helpers are a QML object, so the real Qt runtime checks their behaviour
+      - name: 校验月历辅助逻辑
+        run: QT_QPA_PLATFORM=offscreen qml .github/scripts/tests/calendar-shim-check.qml

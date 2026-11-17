@@ -547,6 +547,7 @@ PlasmoidItem {
 
     fullRepresentation: Panel {
         appletExpanded: root.expanded
+        calendarShim: providers.calendar
         hasMedia: root.hasMedia
         hasNotifications: root.hasNotifications
         lyrics: root.lyricsProvider

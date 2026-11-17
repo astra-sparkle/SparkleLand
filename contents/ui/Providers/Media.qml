@@ -28,6 +28,19 @@ QtObject {
         return (url === undefined || url === null) ? "" : String(url);
     }
 
+    // MPRIS identity of the current player; the SPlayer-Next socket is only contacted
+    // while this app reports playback
+    // 当前播放器的 MPRIS 标识；仅当该应用报告播放时才连接 SPlayer-Next 套接字
+    readonly property string identity: {
+        const player = root.currentPlayer;
+        const value = player ? player.identity : undefined;
+        return typeof value === "string" ? value : "";
+    }
+
+    // SPlayer-Next is the only backend this applet can read lyrics from
+    // SPlayer-Next 是本小组件唯一能读取歌词的后端
+    readonly property bool isSplayerNext: root.identity.toLowerCase().indexOf("splayer") >= 0
+
     function next() {
         const player = root.currentPlayer;
         if (player) {

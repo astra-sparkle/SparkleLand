@@ -18,6 +18,10 @@ QtObject {
         palette: root.palette
     }
 
+    // Calendar helpers shared by every month view, created here for the same reason
+    // 所有月历视图共用的辅助逻辑，同样在此创建
+    readonly property var calendar: ProvidersDir.CalendarShim {}
+
     // Feature settings forwarded from the applet shell
     // 由小组件外壳转发的功能配置
     property bool notificationsEnabled: true
@@ -47,6 +51,15 @@ QtObject {
         // Raw MPRIS player, reused by the lyric backend for position events
         // 原始 MPRIS 播放器，供歌词后端复用位置事件
         readonly property var player: mediaSource.provider !== null ? mediaSource.provider.currentPlayer : null
+        // MPRIS identity current target, used to gate the SPlayer-Next socket
+        // 当前 MPRIS 目标的标识，用于控制 SPlayer-Next 套接字的连接
+        readonly property string identity: mediaSource.provider !== null ? mediaSource.provider.identity : ""
+        // True while the SPlayer-Next app owns the MPRIS target
+        // SPlayer-Next 应用占用 MPRIS 目标时为 true
+        readonly property bool splayerTarget: mediaSource.provider !== null && mediaSource.provider.isSplayerNext
+        // True only while SPlayer-Next is the target and reports playback
+        // 仅当 SPlayer-Next 为目标且报告正在播放时为 true
+        readonly property bool splayerPlaying: mediaSource.splayerTarget && mediaSource.playing
 
         Component.onCompleted: mediaSource.loadProvider()
 
@@ -238,6 +251,9 @@ QtObject {
         // 0 = 未检测，1 = 可用，-1 = 不可用
         property int state: 0
         property var provider: null
+        // Component creation is asynchronous, so mark it to avoid stacking loads
+        // 组件创建是异步的，标记加载中以避免重复加载
+        property bool loading: false
 
         readonly property bool available: splayerSource.provider !== null && splayerSource.provider.connected
         readonly property bool playing: splayerSource.provider !== null && splayerSource.provider.playing
@@ -247,16 +263,52 @@ QtObject {
         readonly property string coverUrl: splayerSource.provider !== null ? splayerSource.provider.coverUrl : ""
         readonly property real position: splayerSource.provider !== null ? splayerSource.provider.position : 0
         readonly property real duration: splayerSource.provider !== null ? splayerSource.provider.duration : 0
+        readonly property string lastError: splayerSource.provider !== null ? splayerSource.provider.lastError : ""
+        readonly property int clientCount: splayerSource.provider !== null ? splayerSource.provider.clientCount : 0
 
-        Component.onCompleted: splayerSource.loadProvider()
+        // MPRIS gates the socket: it is used only while SPlayer-Next reports playback,
+        // and each playback session gets a single connection attempt
+        // MPRIS 决定套接字是否可用：仅在 SPlayer-Next 报告播放时使用，
+        // 且每次播放会话只尝试连接一次
+        readonly property bool mprisTarget: root.media.splayerTarget
+        readonly property bool mprisPlaying: root.media.splayerPlaying
+
+        Component.onCompleted: splayerSource.syncConnection()
+
+        onMprisTargetChanged: splayerSource.syncConnection()
+        onMprisPlayingChanged: splayerSource.syncConnection()
+
+        function syncConnection() {
+            if (!splayerSource.mprisTarget) {
+                // Losing the target ends the session so the next playback may try again
+                // 目标消失即结束本次会话，使下一次播放可以重新尝试
+                if (splayerSource.provider !== null) {
+                    splayerSource.provider.releaseSession();
+                }
+                return;
+            }
+            if (!splayerSource.mprisPlaying) {
+                return;
+            }
+
+            // Load lazily: without playback there is nothing to read from the socket
+            // 按需加载：没有播放时套接字也没有内容可读
+            if (splayerSource.provider === null) {
+                splayerSource.loadProvider();
+                return;
+            }
+
+            splayerSource.provider.requestConnection(true);
+        }
 
         // Load the implementation at runtime so its module import stays optional
         // 运行时加载实现，使其模块导入保持可选
         function loadProvider() {
-            if (splayerSource.state !== 0) {
+            if (splayerSource.state !== 0 || splayerSource.loading) {
                 return;
             }
 
+            splayerSource.loading = true;
             const backendComponent = Qt.createComponent("Providers/SPlayer_Next-backend.qml");
             if (backendComponent.status === Component.Loading) {
                 // Drop the handler once loading ends so retries cannot stack callbacks
@@ -275,6 +327,7 @@ QtObject {
         }
 
         function installProvider(backendComponent) {
+            splayerSource.loading = false;
             if (splayerSource.provider !== null) {
                 return;
             }
@@ -308,8 +361,18 @@ QtObject {
             splayerSource.provider = backendInstance;
             splayerSource.state = 1;
             console.info("[Sparkle Land] SPlayer-Next 后端已就绪");
+
+            // The component was still loading when playback started, so connect now
+            // 播放开始时组件仍在加载，因此在此补上连接
+            if (splayerSource.mprisPlaying) {
+                backendInstance.requestConnection(true);
+            }
         }
 
+        // Provider API: kept complete so the registry stays the only entry point,
+        // including commands the panel does not call yet
+        // 提供器接口：保持完整，使注册中心仍是唯一入口，
+        // 包括面板尚未调用的命令
         function toggle() {
             if (splayerSource.provider !== null) {
                 splayerSource.provider.toggle();
@@ -328,6 +391,12 @@ QtObject {
             }
         }
 
+        function stop() {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.stop();
+            }
+        }
+
         function next() {
             if (splayerSource.provider !== null) {
                 splayerSource.provider.next();
@@ -337,6 +406,18 @@ QtObject {
         function previous() {
             if (splayerSource.provider !== null) {
                 splayerSource.provider.previous();
+            }
+        }
+
+        function seek(positionMs) {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.seek(positionMs);
+            }
+        }
+
+        function setVolume(volume) {
+            if (splayerSource.provider !== null) {
+                splayerSource.provider.setVolume(volume);
             }
         }
     }

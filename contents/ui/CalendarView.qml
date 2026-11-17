@@ -8,14 +8,16 @@ Item {
     id: root
 
     property var theme
+    // Calendar helpers injected by the applet shell, shared with any other month view
+    // 由小组件外壳注入的月历辅助逻辑，与其他月历视图共用
+    property var calendarShim
+
+    readonly property bool ready: root.calendarShim !== null && root.calendarShim !== undefined
 
     property date displayedMonth: new Date()
     property date selectedDate: new Date()
     property date requestedDate
     property date today: new Date()
-
-    readonly property real todayStart: dayStart(root.today).getTime()
-    readonly property real selectedStart: dayStart(root.selectedDate).getTime()
 
     // Week starts according to the current locale
     // 一周起始日遵循当前地区设置
@@ -29,34 +31,15 @@ Item {
         Qt.locale().standaloneMonthName(root.displayedMonth.getMonth(), Locale.LongFormat),
         root.displayedMonth.getFullYear())
 
-    readonly property var weekDayNames: {
-        const names = [];
-        for (let i = 0; i < 7; ++i) {
-            names.push(Qt.locale().dayName((root.firstDayOfWeek + i) % 7, Locale.ShortFormat));
-        }
-        return names;
-    }
+    readonly property var weekDayNames: root.ready
+        ? root.calendarShim.weekDayNames(root.firstDayOfWeek)
+        : []
 
     // Keep six weeks visible to stabilize the calendar height
     // 始终显示六周，保持日历高度稳定
-    readonly property var days: {
-        const year = root.displayedMonth.getFullYear();
-        const month = root.displayedMonth.getMonth();
-        const leading = (new Date(year, month, 1).getDay() - root.firstDayOfWeek + 7) % 7;
-
-        const cells = [];
-        for (let i = 0; i < 42; ++i) {
-            const cellDate = new Date(year, month, 1 - leading + i);
-            cells.push({
-                "date": cellDate,
-                "day": cellDate.getDate(),
-                "inCurrentMonth": cellDate.getMonth() === month,
-                "isSelected": cellDate.getTime() === root.selectedStart,
-                "isToday": cellDate.getTime() === root.todayStart
-            });
-        }
-        return cells;
-    }
+    readonly property var days: root.ready
+        ? root.calendarShim.monthCells(root.displayedMonth, root.selectedDate, root.today, root.firstDayOfWeek)
+        : []
 
     readonly property font headerFont: Qt.font({
         "bold": true,
@@ -64,26 +47,25 @@ Item {
         "pointSize": root.theme.defaultFont.pointSize
     })
 
-    Component.onCompleted: applyRequestedDate()
+    Component.onCompleted: {
+        if (!root.ready) {
+            console.warn("[Sparkle Land] 月历辅助逻辑未注入，网格保持为空");
+        }
+        root.applyRequestedDate();
+    }
+
+    onCalendarShimChanged: root.applyRequestedDate()
 
     onRequestedDateChanged: applyRequestedDate()
 
-    function dayStart(date) {
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    }
-
-    function isValidDate(date) {
-        return date !== undefined && date !== null && !isNaN(date.getTime());
-    }
-
     function showDate(date) {
-        if (!isValidDate(date)) {
+        if (!root.ready || !root.calendarShim.isValidDate(date)) {
             return;
         }
 
-        const start = dayStart(date);
+        const start = root.calendarShim.dayStart(date);
         root.selectedDate = start;
-        root.displayedMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+        root.displayedMonth = root.calendarShim.monthStart(start);
     }
 
     function goToToday() {
@@ -91,21 +73,21 @@ Item {
     }
 
     function previousMonth() {
-        root.displayedMonth = new Date(root.displayedMonth.getFullYear(), root.displayedMonth.getMonth() - 1, 1);
+        root.displayedMonth = root.calendarShim.shiftMonth(root.displayedMonth, -1);
     }
 
     function nextMonth() {
-        root.displayedMonth = new Date(root.displayedMonth.getFullYear(), root.displayedMonth.getMonth() + 1, 1);
+        root.displayedMonth = root.calendarShim.shiftMonth(root.displayedMonth, 1);
     }
 
     function applyRequestedDate() {
-        if (isValidDate(root.requestedDate)) {
+        if (root.ready && root.calendarShim.isValidDate(root.requestedDate)) {
             showDate(root.requestedDate);
         }
     }
 
     function selectDate(date) {
-        if (!isValidDate(date)) {
+        if (!root.ready || !root.calendarShim.isValidDate(date)) {
             return;
         }
 
@@ -119,9 +101,18 @@ Item {
 
         const cell = root.days[index];
         if (!cell.inCurrentMonth) {
-            root.displayedMonth = new Date(cell.date.getFullYear(), cell.date.getMonth(), 1);
+            root.displayedMonth = root.calendarShim.monthStart(cell.date);
         }
         root.selectDate(cell.date);
+    }
+
+    // Move the selection by whole days, letting the displayed month follow the date
+    // 按整天移动选择，显示的月份随日期切换
+    function moveSelection(dayOffset) {
+        const next = root.ready ? root.calendarShim.addDays(root.selectedDate, dayOffset) : null;
+        if (next !== null) {
+            root.showDate(next);
+        }
     }
 
     implicitHeight: mainColumn.implicitHeight
@@ -191,8 +182,33 @@ Item {
         }
 
         Item {
+            id: gridArea
+
             Layout.fillWidth: true
             Layout.preferredHeight: root.cellHeight * 6
+
+            // One focus stop for the month grid: arrow keys move the selection by day and
+            // week, while the accessible name reports the month and the selected date
+            // 月历网格作为一个焦点站点：方向键按日与按周移动选择，
+            // 无障碍名称报告当前月份与选中日期
+            Accessible.description: Qt.formatDate(root.selectedDate, Locale.LongFormat)
+            Accessible.name: root.monthTitle
+            Accessible.role: Accessible.Table
+            activeFocusOnTab: true
+
+            Keys.onDownPressed: root.moveSelection(7)
+            Keys.onLeftPressed: root.moveSelection(-1)
+            Keys.onRightPressed: root.moveSelection(1)
+            Keys.onUpPressed: root.moveSelection(-7)
+            Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_PageUp) {
+                    root.previousMonth();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_PageDown) {
+                    root.nextMonth();
+                    event.accepted = true;
+                }
+            }
 
             GridLayout {
                 anchors.fill: parent
@@ -208,10 +224,20 @@ Item {
                         Layout.preferredHeight: root.cellHeight
                         color: "transparent"
 
+                        // Read each cell as a full date so screen readers can identify it
+                        // 每个格子以完整日期对外表述，便于读屏识别
+                        Accessible.name: Qt.formatDate(modelData.date, Locale.LongFormat)
+                        Accessible.role: Accessible.Cell
+                        Accessible.selected: modelData.isSelected
+
                         // Accent variants mark selection and hover while preserving the panel background
                         // 强调色变体标记选中与悬停，同时透出面板背景
                         Rectangle {
                             anchors.fill: parent
+                            border.color: gridArea.activeFocus && modelData.isSelected
+                                ? root.theme.accentTextColor
+                                : "transparent"
+                            border.width: gridArea.activeFocus && modelData.isSelected ? 1 : 0
                             color: modelData.isSelected
                                 ? (index === gridMouse.hoverIndex ? root.theme.accentHoverColor : root.theme.accentColor)
                                 : (index === gridMouse.hoverIndex ? root.theme.accentSubtleColor : "transparent")
@@ -254,6 +280,7 @@ Item {
                 acceptedButtons: Qt.LeftButton
                 hoverEnabled: true
                 onClicked: root.activateIndex(gridMouse.hoverIndex)
+                onPressed: gridArea.forceActiveFocus()
                 // Wheel over the grid switches months, matching other KDE calendars
                 // 在网格上滚动滚轮切换月份，与 KDE 其他日历一致
                 onWheel: function(event) {
@@ -274,7 +301,7 @@ Item {
                 id: todayLabel
 
                 anchors.centerIn: parent
-                color: todayMouse.containsMouse ? root.theme.accentColor : root.theme.textColor
+                color: todayMouse.containsMouse || todayMouse.activeFocus ? root.theme.accentColor : root.theme.textColor
                 font: root.theme.defaultFont
                 text: i18n("Today")
             }
@@ -286,9 +313,12 @@ Item {
                 Accessible.onPressAction: root.goToToday()
                 Accessible.role: Accessible.Button
                 acceptedButtons: Qt.LeftButton
+                activeFocusOnTab: true
                 anchors.fill: todayLabel
                 hoverEnabled: true
                 onClicked: root.goToToday()
+                Keys.onReturnPressed: root.goToToday()
+                Keys.onSpacePressed: root.goToToday()
             }
         }
     }

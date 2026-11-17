@@ -25,6 +25,10 @@ Item {
 
     readonly property bool available: root.provider !== null && root.provider.available
     readonly property bool inhibited: root.provider !== null && root.provider.inhibited
+    // Inhibition that this widget cannot switch off: fullscreen, mirroring or another app
+    // 本小组件无法关闭的抑制：全屏、镜像或其他应用
+    readonly property bool externallyInhibited: root.inhibited
+        && root.provider !== null && root.provider.externallyInhibited && !root.provider.manualInhibited
     // Critical urgency enum value used for warning-color styling
     // 用于警告色样式的紧急级别枚举值
     readonly property int criticalUrgency: root.provider !== null ? root.provider.criticalUrgency : -1
@@ -110,6 +114,10 @@ Item {
                 Layout.preferredWidth: root.buttonSize
                 accessibleName: i18n("Do not disturb")
                 checked: root.inhibited
+                // Only the widget's own inhibition can be toggled from here
+                // 此处只能切换本小组件自己的抑制状态
+                enabled: root.available && !root.externallyInhibited
+                opacity: enabled ? 1 : 0.5
                 source: "notifications-disabled"
                 theme: root.theme
                 visible: root.showDoNotDisturb && root.available

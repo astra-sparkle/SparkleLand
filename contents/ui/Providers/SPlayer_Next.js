@@ -180,6 +180,43 @@ function indexAt(lines, positionMs) {
     return found;
 }
 
+// Decide whether a lyric fetch may start for the current track. A track is requested
+// again only after a failure, and never more often than the configured attempt limit.
+// 判断当前曲目是否可以发起歌词请求。仅在失败后重试，且不超过配置的尝试次数。
+function shouldRequestLyrics(state) {
+    if (state === null || typeof state !== "object") {
+        return false;
+    }
+
+    const trackKey = typeof state.trackKey === "string" ? state.trackKey : "";
+    if (trackKey.length === 0) {
+        return false;
+    }
+    // Lyrics already applied, or a request for this track is still in flight
+    // 歌词已就绪，或该曲目的请求仍在进行
+    if (state.appliedKey === trackKey || state.requestKey === trackKey) {
+        return false;
+    }
+
+    const retries = Math.max(0, Math.round(Number(state.retries) || 0));
+    const limit = Math.max(1, Math.round(Number(state.limit) || 1));
+    return retries < limit;
+}
+
+// Decide whether the socket may be opened. SPlayer-Next is only contacted once per
+// playback session, so a failed attempt stays failed until MPRIS loses the player.
+// 判断是否允许建立套接字连接。每次播放会话只尝试一次，
+// 失败后保持失败状态，直到 MPRIS 丢失该播放器。
+function shouldAttemptConnection(state) {
+    if (state === null || typeof state !== "object") {
+        return false;
+    }
+    if (state.targetPlaying !== true || state.attempted === true) {
+        return false;
+    }
+    return state.connected !== true && state.connecting !== true;
+}
+
 // Bounded LRU cache of normalized lyric lines, keyed by track
 // 按曲目缓存已规范化歌词行的有界 LRU
 function createLineCache(limit) {

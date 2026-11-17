@@ -15,6 +15,10 @@ Item {
     property string timeFormat
     property date requestedDate
 
+    // Calendar helpers shared with other month views
+    // 与其他月历视图共用的辅助逻辑
+    property var calendarShim
+
     property var mediaProvider
     property bool hasMedia: false
     property bool mediaControlsEnabled: true
@@ -162,6 +166,7 @@ Item {
                     height: pageViewport.height
                     width: pageViewport.width
 
+                    calendarShim: root.calendarShim
                     enabled: !leftPane.paged || leftPane.currentPage === 1
                     requestedDate: root.requestedDate
                     theme: root.theme

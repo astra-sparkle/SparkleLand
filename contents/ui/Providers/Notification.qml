@@ -60,6 +60,25 @@ QtObject {
         urgencies: root.bannerUrgencies
     }
 
+    // Unread counting only needs live entries, so history never takes part in the scan.
+    // The model's own unread role stays at zero in this Plasma build, which is why the
+    // rows are still counted by hand.
+    // 统计未读只需要活跃条目，历史记录不参与扫描。当前 Plasma 版本的模型未读角色恒为 0，
+    // 因此仍需逐行统计。
+    readonly property NotificationManager.Notifications activeModel: NotificationManager.Notifications {
+        expandUnread: false
+        groupMode: NotificationManager.Notifications.GroupDisabled
+        // 0 means no limit; the set is bounded by the live notifications, not the history
+        // 0 表示不限制条数；集合由活跃通知决定，而非历史记录
+        limit: 0
+        showAddedDuringInhibition: true
+        showDismissed: false
+        showExpired: false
+        showJobs: false
+        sortMode: NotificationManager.Notifications.SortByDate
+        sortOrder: Qt.DescendingOrder
+    }
+
     // Unbounded view covering the whole history; clearing and id lookups must not be capped by the display limit
     // 覆盖全部历史的无限制视图；清空与按 ID 查找不受显示条数限制
     readonly property NotificationManager.Notifications clearModel: NotificationManager.Notifications {
@@ -80,6 +99,13 @@ QtObject {
     // 计数值由显式刷新更新
     property int count: 0
     property int unreadCount: 0
+    // One queued counter pass at a time, so a burst of model signals scans once
+    // 同一时刻只排队一次计数，成批的模型信号只触发一次扫描
+    property bool countsPending: false
+    // Do-not-disturb split: ours can be toggled, the rest belongs to Plasma and apps
+    // 勿扰状态拆分：本组件自己的可切换，其余属于 Plasma 与应用
+    property bool manualInhibited: false
+    property bool externallyInhibited: false
     // Timestamp of the last time the user looked at the list, defines what counts as unread
     // 上次查看列表的时间戳，用于界定未读范围
     property double lastReadMs: 0
@@ -160,23 +186,32 @@ QtObject {
     }
 
     function refreshCounts() {
+        // Model signals arrive in bursts; one queued pass is enough
+        // 模型信号会成批到达，排队一次计算即可
+        if (root.countsPending) {
+            return;
+        }
+        root.countsPending = true;
         Qt.callLater(root.applyCounts);
     }
 
     // Recompute counters after the model has settled, never while a model signal is still firing
     // 在模型稳定后再计算计数，避免在信号发射过程中读取模型状态
     function applyCounts() {
+        root.countsPending = false;
         const active = root.available;
         root.count = active ? root.listModel.count : 0;
         root.unreadCount = active ? root.countUnreadNotifications() : 0;
     }
 
-    // The model's unread count stays at zero in this Plasma build, so rows are counted here
-    // 当前 Plasma 版本的模型未读计数恒为 0，因此在此逐行统计
+    // The model's unread count stays at zero in this Plasma build, so rows are counted here.
+    // Only live notifications can be unread, so the scan is bounded by them instead of by
+    // the whole history, which keeps the badge refresh cheap however long the history is.
+    // 当前 Plasma 版本的模型未读计数恒为 0，因此在此逐行统计。
+    // 只有活跃通知可能未读，因此扫描范围由活跃通知决定而不是整段历史，
+    // 这样无论历史多长，角标刷新都很轻量。
     function countUnreadNotifications() {
-        // Count on the unbounded model so the badge is not capped by maxVisible
-        // 在不限制条数的模型上统计，避免角标被 maxVisible 截断
-        const model = root.clearModel;
+        const model = root.activeModel;
         const notificationType = NotificationManager.Notifications;
         let unread = 0;
 
@@ -386,37 +421,29 @@ QtObject {
         root.refreshAvailability();
 
         const settings = root.settings;
-        let value = false;
+        const until = settings.notificationsInhibitedUntil;
+        root.manualInhibited = root.available
+            && root.isValidDate(until)
+            && Date.now() < until.getTime();
 
-        if (root.available) {
-            const until = settings.notificationsInhibitedUntil;
-            if (root.isValidDate(until) && Date.now() < until.getTime()) {
-                value = true;
-            }
-            if (settings.notificationsInhibitedByApplication) {
-                value = true;
-            }
-            if (settings.inhibitNotificationsWhenFullscreen && settings.fullscreenFocused) {
-                value = true;
-            }
-            if (settings.inhibitNotificationsWhenScreensMirrored && settings.screensMirrored) {
-                value = true;
-            }
-        }
+        // Plasma and applications own these flags; the toggle must never write them back
+        // 这些标志由 Plasma 与应用维护，开关不得反向写入
+        root.externallyInhibited = root.available && (
+            settings.notificationsInhibitedByApplication === true
+            || (settings.inhibitNotificationsWhenFullscreen && settings.fullscreenFocused)
+            || (settings.inhibitNotificationsWhenScreensMirrored && settings.screensMirrored));
 
-        root.inhibited = value;
+        root.inhibited = root.manualInhibited || root.externallyInhibited;
         root.refreshBannerUrgencies();
         root.refreshCounts();
     }
 
-    // Toggle do-not-disturb using Plasma's notification settings
-    // 使用 Plasma 通知设置切换勿扰状态
+    // Toggle only the inhibition this widget owns, leaving fullscreen, screen mirroring
+    // and other applications' inhibitions untouched
+    // 只切换本小组件自己的抑制状态，不触碰全屏、镜像与其他应用的抑制
     function toggleInhibition() {
-        if (root.inhibited) {
+        if (root.manualInhibited) {
             root.settings.notificationsInhibitedUntil = undefined;
-            root.settings.revokeApplicationInhibitions();
-            root.settings.fullscreenFocused = false;
-            root.settings.screensMirrored = false;
         } else {
             const until = new Date();
             until.setFullYear(until.getFullYear() + 1);
