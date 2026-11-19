@@ -138,7 +138,7 @@ KCM.SimpleKCM {
             id: mediaBackgroundCheck
 
             Kirigami.FormData.label: i18n("Background:")
-            text: i18n("Use the theme highlight color as background while playing")
+            text: i18n("Use the theme's highlight color as the background while playing")
         }
 
         // Only the clock+icon style renders the playback icon
@@ -202,7 +202,7 @@ KCM.SimpleKCM {
             Layout.fillWidth: true
             font: Kirigami.Theme.smallFont
             opacity: 0.7
-            text: i18n("Lyrics come from the SPlayer-Next backend. While the panel lyrics are shown, the panel keeps a fixed width of 16 full-width characters, the line scrolls according to its timing, and the frame replaces the notification dot by lighting up while unread notifications exist.")
+            text: i18n("Lyrics are fetched from the player backends.")
             visible: lyricsPanelCheck.checked || lyricsPlaybackCheck.checked
             wrapMode: Text.WordWrap
         }
@@ -244,7 +244,7 @@ KCM.SimpleKCM {
             enabled: notificationsShowPopupsCheck.checked
             font: Kirigami.Theme.smallFont
             opacity: 0.7
-            text: i18n("Remove the Plasma Notifications widget from the panel, otherwise every notification is shown twice.")
+            text: i18n("When banners are enabled, remove the Plasma Notifications widget from the panel to avoid displaying each notification twice.")
             visible: notificationsShowPopupsCheck.checked
             wrapMode: Text.WordWrap
         }
