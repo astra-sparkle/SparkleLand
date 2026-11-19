@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
-"POT-Creation-Date: 2026-11-18 01:12+0800\n"
-"PO-Revision-Date: 2026-11-17 17:39\n"
+"POT-Creation-Date: 2026-11-19 08:39+0800\n"
+"PO-Revision-Date: 2026-11-19 00:52\n"
 "Last-Translator: \n"
 "Language-Team: Polish\n"
 "Language: pl_PL\n"
@@ -92,7 +92,7 @@ msgid "Background:"
 msgstr ""
 
 #: contents/config/option.qml:141
-msgid "Use the theme highlight color as background while playing"
+msgid "Use the theme's highlight color as the background while playing"
 msgstr ""
 
 #: contents/config/option.qml:147
@@ -144,7 +144,7 @@ msgid "Show pronunciation"
 msgstr ""
 
 #: contents/config/option.qml:205
-msgid "Lyrics come from the SPlayer-Next backend. While the panel lyrics are shown, the panel keeps a fixed width of 16 full-width characters, the line scrolls according to its timing, and the frame replaces the notification dot by lighting up while unread notifications exist."
+msgid "Lyrics are fetched from the player backends."
 msgstr ""
 
 #: contents/config/option.qml:212 contents/ui/Notifications.qml:108
@@ -181,7 +181,7 @@ msgstr[2] ""
 msgstr[3] ""
 
 #: contents/config/option.qml:247
-msgid "Remove the Plasma Notifications widget from the panel, otherwise every notification is shown twice."
+msgid "When banners are enabled, remove the Plasma Notifications widget from the panel to avoid displaying each notification twice."
 msgstr ""
 
 #: contents/config/option.qml:255
