@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
 "POT-Creation-Date: 2026-11-19 08:39+0800\n"
-"PO-Revision-Date: 2026-11-19 00:52\n"
+"PO-Revision-Date: 2026-11-19 01:55\n"
 "Last-Translator: \n"
 "Language-Team: Chinese Simplified\n"
 "Language: zh_CN\n"
@@ -93,7 +93,7 @@ msgstr "背景："
 
 #: contents/config/option.qml:141
 msgid "Use the theme's highlight color as the background while playing"
-msgstr ""
+msgstr "播放时显示强调色背景"
 
 #: contents/config/option.qml:147
 msgid "Playback icon:"
@@ -145,7 +145,7 @@ msgstr "显示发音"
 
 #: contents/config/option.qml:205
 msgid "Lyrics are fetched from the player backends."
-msgstr ""
+msgstr "歌词从播放器后端获取。"
 
 #: contents/config/option.qml:212 contents/ui/Notifications.qml:108
 #: contents/ui/NotificationsPopup.qml:225
@@ -179,7 +179,7 @@ msgstr[0] "%1 秒"
 
 #: contents/config/option.qml:247
 msgid "When banners are enabled, remove the Plasma Notifications widget from the panel to avoid displaying each notification twice."
-msgstr ""
+msgstr "当横幅启用时，请移除Plasma通知组件以避免横幅重复显示。"
 
 #: contents/config/option.qml:255
 msgid "Maximum shown:"
