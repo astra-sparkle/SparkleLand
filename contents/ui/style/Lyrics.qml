@@ -240,10 +240,25 @@ Item {
             return index - (view.hasActiveLine ? view.anchorLine : -1);
         }
 
-        // Height of the empty middle row, matching a two-line active lyric so the strip
-        // does not jump when the first line starts
-        // 空白中间行的高度，与两行的当前歌词一致，避免首句开始时歌词条跳动
-        readonly property real blankAnchorHeight: 2 * view.textLineHeight(view.lineFont)
+        // Height of the empty middle row: it stands in for the first line, so it takes
+        // the height that line will have once it becomes active and the strip does not
+        // jump when the first line starts
+        // 空白中间行的高度：它代替首行，因此采用首行成为当前行后的高度，
+        // 避免首句开始时歌词条跳动
+        readonly property real blankAnchorHeight: view.upcomingLineHeight()
+
+        // Height the first line will occupy on the middle row, resolved from the same
+        // split the active row uses
+        // 首行占据中间行后的高度，按与当前行相同的切分规则计算
+        function upcomingLineHeight() {
+            if (view.lineCount === 0) {
+                return view.textLineHeight(view.lineFont);
+            }
+            const parts = view.splitParts(view.lineTextAt(0));
+            const lines = parts !== null && parts.tail.length > 0 ? 2 : 1;
+            return lines * view.textLineHeight(view.lineFont);
+        }
+
         // Height of one rendered text line for a given font, matching what Text lays out
         // 给定字体下单行文字的高度，与 Text 实际排版一致
         function textLineHeight(fontValue) {
