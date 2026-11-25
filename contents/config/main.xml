@@ -60,6 +60,13 @@
             <!-- 播放器后端未报告歌词时使用的在线回退 -->
             <default>true</default>
         </entry>
+        <entry name="lyricsOffset" type="Int">
+            <!-- Extra offset added to the player offset; positive values show lyrics earlier and hide the UI render latency -->
+            <!-- 在播放器偏移之上叠加的额外偏移，正值使歌词提前，用于抵消界面渲染延迟 -->
+            <default>100</default>
+            <min>-3000</min>
+            <max>3000</max>
+        </entry>
         <entry name="notificationsEnabled" type="Bool">
             <default>true</default>
         </entry>

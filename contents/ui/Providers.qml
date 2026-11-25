@@ -31,6 +31,9 @@ QtObject {
     // 在线歌词回退，在播放器后端未提供歌词时使用
     property bool lyricsEnabled: true
     property bool amllLyricsEnabled: true
+    // Extra offset added on top of the offset reported by the player
+    // 在播放器上报的偏移之上叠加的额外偏移
+    property int lyricsOffset: 0
 
     // SPlayer-Next serves the socket and the HTTP API on one port
     // SPlayer-Next 在同一端口提供套接字与 HTTP 接口
@@ -249,6 +252,8 @@ QtObject {
     // 歌词由播放器后端填充；播放器未提供时由在线回退填充，无需外部模块
     readonly property var lyrics: ProvidersDir.Lyrics {
         id: lyricsProvider
+
+        extraOffset: root.lyricsOffset
     }
 
     // Missing QtWebSockets only disables the SPlayer feature

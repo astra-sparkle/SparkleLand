@@ -19,10 +19,19 @@ QtObject {
     // Track duration in milliseconds
     // 曲目时长，单位毫秒
     property real duration: 0
-    // Lyric offset in milliseconds, positive values show lyrics earlier
-    // 歌词偏移，单位为毫秒，正值使歌词提前
-    property real offset: 0
+    // Offset reported by the player in milliseconds, positive values show lyrics earlier
+    // 播放器上报的歌词偏移，单位为毫秒，正值使歌词提前
+    property real playerOffset: 0
+    // Extra offset from the settings, stacked on the player offset to compensate for
+    // the UI render latency; positive values also show lyrics earlier
+    // 设置项中的额外偏移，叠加在播放器偏移之上以抵消界面渲染延迟；正值同样使歌词提前
+    property real extraOffset: 0
+    // Effective offset shared by the index lookup and the karaoke progress
+    // 实际生效的偏移，供行索引查找与卡拉 OK 进度共用
+    readonly property real offset: root.playerOffset + root.extraOffset
     property int currentIndex: -1
+
+    onOffsetChanged: root.refreshIndex()
 
     // Full-width characters a single lyric row can hold, shared with the view
     // 单个歌词行可容纳的全角字符数，与视图共用
@@ -76,18 +85,17 @@ QtObject {
         }
 
         root.lines = [];
-        root.offset = 0;
+        root.playerOffset = 0;
         root.currentIndex = -1;
         root.owner = "";
     }
 
     function syncOffset(milliseconds) {
         const value = Math.round(Number(milliseconds) || 0);
-        if (root.offset === value) {
+        if (root.playerOffset === value) {
             return;
         }
-        root.offset = value;
-        root.refreshIndex();
+        root.playerOffset = value;
     }
 
     // Position updates arrive with the snapshot poll

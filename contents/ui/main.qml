@@ -54,6 +54,12 @@ PlasmoidItem {
     // Online lyric fallback used while the player backend reports no lyrics
     // 播放器后端未报告歌词时使用的在线歌词回退
     readonly property bool lyricsAmllEnabled: plasmoid.configuration.lyricsAmllEnabled !== false
+    // Extra lyric offset, positive values show lyrics earlier to hide the render latency
+    // 额外的歌词偏移，正值使歌词提前，用于抵消渲染延迟
+    readonly property int lyricsOffset: {
+        const value = Math.round(root.configNumber(plasmoid.configuration.lyricsOffset, 100));
+        return Math.max(-3000, Math.min(3000, value));
+    }
     // Notifications are enabled by default
     // 通知默认开启
     readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
@@ -203,6 +209,7 @@ PlasmoidItem {
         notificationsMaxVisible: root.notificationsMaxVisible
         lyricsEnabled: root.lyricsPanelEnabled || root.lyricsPlaybackEnabled
         amllLyricsEnabled: root.lyricsAmllEnabled
+        lyricsOffset: root.lyricsOffset
         palette: root.palette
     }
 
