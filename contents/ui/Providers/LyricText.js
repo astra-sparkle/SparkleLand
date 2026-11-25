@@ -2,10 +2,14 @@
 // carried over to the next row
 // 歌词文本切分：把一行歌词拆成当前行显示的部分与顺延到下一行的部分
 
-// A row holds 30 half-width characters, that is 15 full-width characters
-// 一行容纳 30 个半角字符，即 15 个全角字符
-const HALF_WIDTH_LIMIT = 30;
-const FULL_WIDTH_LIMIT = HALF_WIDTH_LIMIT / 2;
+// A row holds 31 half-width units: 15 full-width labels doubled, then bumped from
+// even to odd so a wide separator can still end the row
+// 一行容纳 31 个半角单位：原先 15 个全角字符的两倍，再由偶数补一变为奇数，
+// 使全角分隔符也能留在行尾
+const HALF_WIDTH_LIMIT = 31;
+// Full-width labels the layout reserves for one row, rounded up from the budget
+// 布局为一行预留的全角字符数，由半角预算向上取整
+const FULL_WIDTH_LIMIT = Math.ceil(HALF_WIDTH_LIMIT / 2);
 
 // East Asian wide and full-width ranges, measured in half-width units
 // 东亚宽字符与全角字符区间，以半角字符为单位度量
@@ -73,8 +77,62 @@ function limitIndex(characters, units) {
     return index;
 }
 
-function isComma(character) {
-    return character === "," || character === "，";
+// Split entries: the comma and the period are listed separately, and both carry a
+// heavier weight than a plain word space. Punctuation also keeps its mark on the row,
+// while a space is left for the next row
+// 切分条目：逗号与句号各自列出，权重都高于普通空格；标点保留在本行，空格则留给下一行
+const SPLIT_ENTRIES = [
+    {
+        "characters": [ "。", "." ],
+        "weight": 3,
+        "include": true
+    },
+    {
+        "characters": [ "，", "," ],
+        "weight": 2,
+        "include": true
+    },
+    {
+        "characters": [ " " ],
+        "weight": 1,
+        "include": false
+    }
+];
+
+function splitEntry(character) {
+    for (let index = 0; index < SPLIT_ENTRIES.length; ++index) {
+        if (SPLIT_ENTRIES[index].characters.indexOf(character) >= 0) {
+            return SPLIT_ENTRIES[index];
+        }
+    }
+    return null;
+}
+
+// Best break that fits the row: the heaviest entry wins, and equal weights keep the
+// candidate closest to the row limit
+// 能放进本行的最佳切分：权重最高的条目优先，同权重时取最靠近行宽上限的位置
+function bestSplitCut(characters, units) {
+    let bestCut = -1;
+    let bestWeight = 0;
+    let width = 0;
+    for (let index = 0; index < characters.length; ++index) {
+        const entry = splitEntry(characters[index]);
+        if (entry !== null && width > 0) {
+            // Punctuation may use the one extra unit the layout reserves for it
+            // 标点可以使用布局额外预留的一个单位
+            const capacity = HALF_WIDTH_LIMIT + (entry.include ? 1 : 0);
+            const markUnits = entry.include ? units[index] : 0;
+            const cut = index + (entry.include ? 1 : 0);
+            if (cut < characters.length && width + markUnits <= capacity
+                && (entry.weight > bestWeight
+                    || (entry.weight === bestWeight && cut > bestCut))) {
+                bestCut = cut;
+                bestWeight = entry.weight;
+            }
+        }
+        width += units[index];
+    }
+    return bestCut;
 }
 
 // Split a lyric line into the part kept on its row and the overflow
@@ -105,39 +163,14 @@ function splitLine(value) {
 
     const limit = limitIndex(characters, units);
 
-    // Prefer a space so the first row ends on a word boundary; the last space that
-    // still fits wins
-    // 优先在空格处断行，使首行结束于词边界；取仍能放下的最后一个空格
-    let spaceCut = -1;
-    let consumed = 0;
-    for (let index = 0; index < characters.length; ++index) {
-        if (characters[index] === " " && consumed > 0 && consumed <= HALF_WIDTH_LIMIT) {
-            spaceCut = index;
-        }
-        consumed += units[index];
-    }
-    if (spaceCut > 0) {
-        return cutAt(characters, spaceCut);
+    const splitCut = bestSplitCut(characters, units);
+    if (splitCut > 0) {
+        return cutAt(characters, splitCut);
     }
 
-    // A comma between one half and two thirds of the line marks a natural pause, so
-    // the row ends right after it
-    // 句长一半到三分之二之间存在逗号时，逗号是自然的停顿，首行止于该逗号之后
-    const pauseStart = Math.floor(characters.length / 2);
-    const pauseEnd = Math.round(characters.length * 2 / 3);
-    let commaCut = -1;
-    for (let index = pauseStart; index < pauseEnd && index < characters.length; ++index) {
-        if (isComma(characters[index])) {
-            commaCut = index + 1;
-        }
-    }
-    if (commaCut > 0) {
-        return cutAt(characters, Math.min(commaCut, limit));
-    }
-
-    // Without a usable space or comma, cut near two thirds of the sentence and fall
-    // back to the row limit when that position is too far right
-    // 没有可用的空格或逗号时，在整句约三分之二处切分；该位置过靠右时按行宽截断
+    // Without a usable space or punctuation, cut near two thirds of the sentence and
+    // fall back to the row limit when that position is too far right
+    // 没有可用的空格或标点时，在整句约三分之二处切分；该位置过靠右时按行宽截断
     let target = Math.max(1, Math.round(characters.length * 2 / 3));
     if (target > limit) {
         target = limit;

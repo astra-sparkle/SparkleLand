@@ -306,8 +306,10 @@ PlasmoidItem {
         // 向上取整时钟测得的宽度，避免像素取整把最宽的标签省略
         readonly property int clockWidth: Math.ceil(clockItem.implicitWidth)
 
-        // Panel lyric width: 16 full-width labels plus padding and border, fixed while shown
-        // 面板歌词宽度：16 个全角字符加上内边距与边框，显示时宽度固定
+        // Panel lyric width: 16 full-width labels cover the 31-unit row budget and a
+        // wide separator, plus padding and border, fixed while shown
+        // 面板歌词宽度：16 个全角字符足以容纳 31 个半角单位加上一个全角分隔符，
+        // 另加内边距与边框，显示时宽度固定
         readonly property int lyricPadding: Math.max(2, Math.round(compactItem.height * 0.08))
         readonly property int lyricBorderWidth: 1
         readonly property int lyricWidth: lyricMetrics.advanceWidth + compactItem.lyricPadding * 2 + compactItem.lyricBorderWidth * 2

@@ -33,8 +33,8 @@ QtObject {
 
     onOffsetChanged: root.refreshIndex()
 
-    // Full-width characters a single lyric row can hold, shared with the view
-    // 单个歌词行可容纳的全角字符数，与视图共用
+    // Full-width labels the layout reserves for a single lyric row, shared with the view
+    // 布局为单个歌词行预留的全角字符数，与视图共用
     readonly property int lineUnitLimit: LyricText.FULL_WIDTH_LIMIT
     readonly property bool available: root.lines.length > 0
     // Nothing has been sung yet: the position is still before the first line

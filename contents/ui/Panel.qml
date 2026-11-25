@@ -250,19 +250,19 @@ Item {
             readonly property int lyricRows: root.lyricsSecondaryMode === 0 ? 3 : 4
             readonly property real lyricTop: coverBox.y + coverBox.height + mediaController.gap
             readonly property real lyricBottom: controlsRow.y - mediaController.gap
-            // A lyric row holds up to the limit reported by the lyric provider; a longer
-            // line is split by it, so the font only has to fit that many labels
-            // 每行歌词最多容纳歌词提供器给出的全角字符数，更长的歌词由提供器切分，
+            // A lyric row reserves the full-width labels reported by the lyric provider;
+            // a longer line is split by it, so the font only has to fit that many labels
+            // 每行歌词按歌词提供器预留的全角字符数排布，更长的歌词由提供器切分，
             // 因此字号只需保证这些字符能横向排下
             readonly property int lyricMaxLabels: root.lyrics !== null && root.lyrics !== undefined
-                && root.lyrics.lineUnitLimit > 0 ? root.lyrics.lineUnitLimit : 18
+                && root.lyrics.lineUnitLimit > 0 ? root.lyrics.lineUnitLimit : 16
             readonly property real lyricWidth: Math.round(mediaController.width * 0.96)
             readonly property real lyricFontPixelSize: Math.max(9, Math.min(
                 Math.round(root.height * 0.075),
                 Math.floor(mediaController.lyricWidth / mediaController.lyricMaxLabels)))
-            // The extra quarter label keeps exactly 18 labels on one line even when the
+            // The extra quarter label keeps every label on one line even when the
             // font advances a hair more than its pixel size
-            // 额外的四分之一个字宽，保证字体步进略大于像素尺寸时 18 个全角字符仍不换行
+            // 额外的四分之一个字宽，保证字体步进略大于像素尺寸时全部全角字符仍不换行
             readonly property real lyricTextWidth: Math.round(Math.min(
                 mediaController.lyricWidth,
                 mediaController.lyricFontPixelSize * (mediaController.lyricMaxLabels + 0.25)))

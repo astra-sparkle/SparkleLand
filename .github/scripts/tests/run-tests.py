@@ -47,9 +47,6 @@ class QmlModule:
     def evaluate(self, expression):
         return self.context.eval(expression)
 
-    def read(self):
-        return self.path.read_text(encoding="utf-8")
-
 
 SPLAYER = QmlModule("contents/ui/Providers/SPlayer_Next.js")
 LYRICS = QmlModule("contents/ui/Providers/LyricText.js")
@@ -221,20 +218,15 @@ def test_connection_skips_players_that_are_not_splayer():
 
 
 # ---------------------------------------------------------------------------
-# Lyric text splitting: a row holds 30 half-width units
-# 歌词文本切分：一行容纳 30 个半角单位
+# Lyric text splitting: a row holds 31 half-width units, and a break mark may use
+# one extra unit that the layout reserves for it
+# 歌词文本切分：一行容纳 31 个半角单位，断句标点可使用布局为它额外预留的一个单位
 # ---------------------------------------------------------------------------
-
-
-def test_full_width_limit_matches_half_width_budget():
-    assert LYRICS.evaluate("HALF_WIDTH_LIMIT") == 30
-    assert LYRICS.evaluate("FULL_WIDTH_LIMIT") == 15
 
 
 def test_short_line_is_kept_whole():
     parts = LYRICS.call("splitLine", "短句")
-    assert parts["head"] == "短句"
-    assert parts["tail"] == ""
+    assert parts == {"head": "短句", "tail": ""}
 
 
 def test_full_width_line_splits_within_the_row():
@@ -242,15 +234,63 @@ def test_full_width_line_splits_within_the_row():
     parts = LYRICS.call("splitLine", text)
     assert parts["head"] != ""
     assert parts["tail"] != ""
-    assert LYRICS.call("textUnits", parts["head"]) <= 30
+    assert LYRICS.call("textUnits", parts["head"]) <= 31
     assert parts["head"] + parts["tail"] == text
 
 
 def test_half_width_text_uses_the_full_budget():
-    text = "abcdefghij klmnopqrst uvwxyz"
+    # 31 half-width units fill the row exactly
+    # 31 个半角单位正好填满一行
+    text = "a" * 31 + " bbbb"
     parts = LYRICS.call("splitLine", text)
-    for part in (parts["head"], parts["tail"]):
-        assert LYRICS.call("textUnits", part) <= 30
+    assert parts == {"head": "a" * 31, "tail": "bbbb"}
+
+
+def test_odd_budget_keeps_one_extra_half_width_unit():
+    # 15 full-width labels plus one half-width unit still fit
+    # 15 个全角字符再加一个半角单位仍能放进一行
+    text = "一二三四五六七八九十一二三四五a"
+    parts = LYRICS.call("splitLine", text)
+    assert parts == {"head": text, "tail": ""}
+
+
+def test_early_punctuation_ends_the_row():
+    # The comma fits inside the extra unit, so the row ends right after it
+    # 逗号落在额外预留的一个单位内，因此本行止于该逗号之后
+    text = "一二三四五六七八九十甲乙丙丁戊，己庚辛壬癸子丑寅卯辰"
+    parts = LYRICS.call("splitLine", text)
+    assert parts["head"].endswith("，")
+    assert LYRICS.call("textUnits", parts["head"]) == 32
+    assert parts["head"] + parts["tail"] == text
+
+
+def test_punctuation_after_the_row_is_ignored():
+    # The comma comes after the budget, so the row falls back to the default cut
+    # 逗号已超出可容纳宽度，因此按默认位置切分
+    text = "一二三四五六七八九十一二三四五六七八九十一二，短"
+    parts = LYRICS.call("splitLine", text)
+    assert "，" not in parts["head"]
+    assert LYRICS.call("textUnits", parts["head"]) <= 31
+    assert parts["head"] + parts["tail"] == text
+
+
+def test_period_outweighs_comma():
+    # Both marks fit, but the sentence end is the stronger break
+    # 两个标点都放得下，但句号是更强的断句
+    text = "一二三。四五，六七八九十一二三四五六七八九十一二三四五"
+    parts = LYRICS.call("splitLine", text)
+    assert parts["head"] == "一二三。"
+    assert "，" not in parts["head"]
+    assert parts["head"] + parts["tail"] == text
+
+
+def test_punctuation_outweighs_space():
+    # The space comes first, but the comma carries a heavier weight
+    # 空格先出现，但逗号的权重更高
+    text = "abc defghijklmnopqrstuvwxyz,尾巴尾巴"
+    parts = LYRICS.call("splitLine", text)
+    assert parts["head"].endswith(",")
+    assert parts["head"] + parts["tail"] == text
 
 
 def test_empty_line_is_safe():
