@@ -18,4 +18,4 @@ Sparkle Land 是一个面向 KDE Plasma 的桌面小组件（Plasma Applet），
 - 通知功能不稳定：暂不考虑优化。由于KDE官方通知功能绑定自身组件，为了不破坏桌面环境，故不考虑强行接管。但未来会考虑提供通知管理器接口。
 
 ## 外部引用
-- [AMLL-TTML Database API](https://github.com/amll-dev/amll-ttml-db) 默认的歌词获取回落选项。
+- [AMLL-TTML Database API](https://github.com/amll-dev/amll-ttml-db) 默认的歌词获取回落选项。请支持AMLL-TTML歌词生态！
