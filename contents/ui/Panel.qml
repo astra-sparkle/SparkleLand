@@ -286,6 +286,9 @@ Item {
                 }
             }
 
+            // The title stands in for the lyrics, so it uses the lyric size of this page
+            // instead of the much smaller standard panel font
+            // 曲名代替歌词显示，因此采用本页的歌词字号，而不是明显更小的标准面板字体
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: coverBox.bottom
@@ -295,7 +298,12 @@ Item {
 
                 color: root.theme.textColor
                 elide: Text.ElideRight
-                font: root.textFont
+                font: Qt.font({
+                    "bold": root.textFont.bold,
+                    "family": root.textFont.family,
+                    "italic": root.textFont.italic,
+                    "pixelSize": Math.max(12, Math.round(mediaController.lyricFontPixelSize))
+                })
                 horizontalAlignment: Text.AlignHCenter
                 maximumLineCount: 2
                 text: root.currentTrackTitle
