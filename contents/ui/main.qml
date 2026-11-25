@@ -51,6 +51,9 @@ PlasmoidItem {
         const mode = root.configNumber(plasmoid.configuration.lyricsSecondaryMode, 0);
         return (mode >= 0 && mode <= 2) ? Math.round(mode) : 0;
     }
+    // Online lyric fallback used while the player backend reports no lyrics
+    // 播放器后端未报告歌词时使用的在线歌词回退
+    readonly property bool lyricsAmllEnabled: plasmoid.configuration.lyricsAmllEnabled !== false
     // Notifications are enabled by default
     // 通知默认开启
     readonly property bool notificationsEnabled: plasmoid.configuration.notificationsEnabled !== false
@@ -198,6 +201,8 @@ PlasmoidItem {
         notificationsEnabled: root.notificationsEnabled
         notificationsIncludeExpired: root.notificationsIncludeExpired
         notificationsMaxVisible: root.notificationsMaxVisible
+        lyricsEnabled: root.lyricsPanelEnabled || root.lyricsPlaybackEnabled
+        amllLyricsEnabled: root.lyricsAmllEnabled
         palette: root.palette
     }
 
@@ -211,11 +216,11 @@ PlasmoidItem {
     // 面板歌词与播放页共用的歌词状态
     readonly property var lyricsProvider: providers.lyrics
     readonly property string lyricText: {
-        if (!root.lyricsProvider.available) {
+        if (!root.lyricsProvider.available || root.lyricsProvider.beforeFirstLine) {
             return "";
         }
-        // Preview the upcoming line until the first one starts
-        // 首行开始之前预览即将到来的歌词
+        // Preview the upcoming line while the current one has no text of its own
+        // 当前行本身没有文字时预览即将到来的歌词
         return root.lyricsProvider.currentText.length > 0
             ? root.lyricsProvider.currentText
             : root.lyricsProvider.nextText;
@@ -242,9 +247,13 @@ PlasmoidItem {
     // Style 3 swaps the playback icon for the album cover at the same spot
     // 样式 3 在同一位置用专辑封面替代播放图标
     readonly property bool compactShowsMediaCover: root.hasMedia && root.mediaCompactStyle === 3
-    // Panel lyrics take precedence over every compact media text while lyrics are available
-    // 歌词可用时，面板歌词优先于紧凑媒体的所有文本
-    readonly property bool compactShowsLyrics: root.lyricsPanelEnabled && root.lyricText.length > 0
+    // The lyric row takes the compact panel whenever the track has lyrics, including
+    // before the first line starts, so the panel does not resize when lyrics begin
+    // 曲目有歌词时歌词行就一直占据紧凑面板，首行开始前也不例外，避免歌词开始时面板跳动
+    readonly property bool compactShowsLyrics: root.lyricsPanelEnabled && root.lyricsProvider.available
+    // Before the first line the lyric row shows the track title instead
+    // 首行开始前，歌词行改为显示曲名
+    readonly property bool compactShowsLyricTitle: root.compactShowsLyrics && root.lyricText.length === 0
     readonly property bool panelShowsMedia: root.compactShowsMediaTitle && !root.expanded && !root.compactShowsLyrics
 
     Plasmoid.title: root.appTitle
@@ -432,22 +441,33 @@ PlasmoidItem {
             progress: root.lyricLineProgress
             text: root.lyricText
             textFont: compactItem.mediaTitleFont
-            visible: root.compactShowsLyrics
+            visible: root.compactShowsLyrics && !root.compactShowsLyricTitle
         }
 
         Media {
             id: mediaItem
 
+            // Inside the lyric frame the title replaces the upcoming lyric line and uses
+            // the same padding, with no badge to avoid because the frame indicates it
+            // 在歌词框内，曲名替代尚未开始的歌词，沿用相同内边距；
+            // 未读提示已由歌词边框承担，因此无需为角标留白
+            readonly property bool inLyricFrame: root.compactShowsLyricTitle
+
             anchors.fill: parent
-            anchors.leftMargin: root.compactShowsMediaTitle ? compactItem.titleBadgeInset : 0
-            anchors.rightMargin: root.compactShowsMediaTitle ? compactItem.titleBadgeInset : compactItem.badgeSpace
+            anchors.leftMargin: mediaItem.inLyricFrame
+                ? compactItem.lyricPadding + compactItem.lyricBorderWidth
+                : (root.compactShowsMediaTitle ? compactItem.titleBadgeInset : 0)
+            anchors.rightMargin: mediaItem.inLyricFrame
+                ? compactItem.lyricPadding + compactItem.lyricBorderWidth
+                : (root.compactShowsMediaTitle ? compactItem.titleBadgeInset : compactItem.badgeSpace)
             enabled: visible
+            horizontalPadding: mediaItem.inLyricFrame ? 0 : 12
             playing: root.isPlaying
             theme: root.theme
             title: root.trackTitle
             titleFont: compactItem.mediaTitleFont
             useThemeBackground: root.mediaUseThemeBackground
-            visible: root.panelShowsMedia
+            visible: root.panelShowsMedia || root.compactShowsLyricTitle
         }
 
         // Album cover left of the clock in the cover style, rendered by the shared cover component

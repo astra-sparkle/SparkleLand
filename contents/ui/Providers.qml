@@ -27,6 +27,10 @@ QtObject {
     property bool notificationsEnabled: true
     property int notificationsMaxVisible: 5
     property bool notificationsIncludeExpired: true
+    // Online lyric fallback, used while no player backend supplies lyrics
+    // 在线歌词回退，在播放器后端未提供歌词时使用
+    property bool lyricsEnabled: true
+    property bool amllLyricsEnabled: true
 
     // SPlayer-Next serves the socket and the HTTP API on one port
     // SPlayer-Next 在同一端口提供套接字与 HTTP 接口
@@ -47,6 +51,10 @@ QtObject {
         // Album artwork exposed for both the compact cover and the expanded panel
         // 专辑封面同时供紧凑封面与展开面板使用
         readonly property string artUrl: mediaSource.provider !== null ? mediaSource.provider.artUrl : ""
+        // Track metadata forwarded to the online lyric backend
+        // 转发给在线歌词后端的曲目信息
+        readonly property string artistName: mediaSource.provider !== null ? mediaSource.provider.artistName : ""
+        readonly property string albumName: mediaSource.provider !== null ? mediaSource.provider.albumName : ""
         readonly property bool playing: mediaSource.provider !== null && mediaSource.provider.playing
         // Raw MPRIS player, reused by the lyric backend for position events
         // 原始 MPRIS 播放器，供歌词后端复用位置事件
@@ -236,8 +244,9 @@ QtObject {
         }
     }
 
-    // Lyrics are filled by the SPlayer backend and need no external import
-    // 歌词由 SPlayer 后端填充，无需外部模块
+    // Lyrics are filled by the player backend, or by the online fallback when the
+    // player exposes none; no external module is needed
+    // 歌词由播放器后端填充；播放器未提供时由在线回退填充，无需外部模块
     readonly property var lyrics: ProvidersDir.Lyrics {
         id: lyricsProvider
     }
@@ -419,6 +428,122 @@ QtObject {
             if (splayerSource.provider !== null) {
                 splayerSource.provider.setVolume(volume);
             }
+        }
+    }
+
+    // Online lyric backend: the standard fallback whenever no player backend supplies
+    // lyrics. It reads MPRIS metadata and is gated so the player backend always wins.
+    // 在线歌词后端：播放器后端未提供歌词时的标准回退。
+    // 它读取 MPRIS 元数据，并受门控约束，始终让位于播放器后端。
+    readonly property var amll: QtObject {
+        id: amllSource
+
+        // 0 = unchecked, 1 = available, -1 = unavailable
+        // 0 = 未检测，1 = 可用，-1 = 不可用
+        property int state: 0
+        property var provider: null
+        // Component creation is asynchronous, so mark it to avoid stacking loads
+        // 组件创建是异步的，标记加载中以避免重复加载
+        property bool loading: false
+
+        // SPlayer-Next lyrics take precedence; while its socket is connected but the
+        // current track has no lyrics of its own, the online database fills the gap
+        // SPlayer-Next 的歌词优先；套接字连接但当前曲目没有自带歌词时，由在线数据库补齐
+        readonly property bool playerBackendActive: splayerSource.provider !== null
+            && splayerSource.provider.connected
+            && splayerSource.provider.lyricsTrackKey.length > 0
+        readonly property bool hasTrack: root.media.available && root.media.trackTitle.length > 0
+        readonly property bool wanted: root.lyricsEnabled && root.amllLyricsEnabled
+            && amllSource.hasTrack && !amllSource.playerBackendActive
+
+        readonly property bool active: amllSource.provider !== null && amllSource.provider.active
+        readonly property bool throttled: amllSource.provider !== null && amllSource.provider.throttled
+        readonly property string lastError: amllSource.provider !== null ? amllSource.provider.lastError : ""
+
+        Component.onCompleted: amllSource.sync()
+        onWantedChanged: amllSource.sync()
+
+        function sync() {
+            if (!amllSource.wanted) {
+                if (amllSource.provider !== null) {
+                    amllSource.provider.active = false;
+                }
+                return;
+            }
+            if (amllSource.provider === null) {
+                amllSource.loadProvider();
+                return;
+            }
+            amllSource.provider.active = true;
+        }
+
+        // Load the implementation at runtime so its presence stays optional
+        // 运行时加载实现，使其保持可选
+        function loadProvider() {
+            if (amllSource.state !== 0 || amllSource.loading) {
+                return;
+            }
+
+            amllSource.loading = true;
+            const backendComponent = Qt.createComponent("Providers/AMLL-backend.qml");
+            if (backendComponent.status === Component.Loading) {
+                // Drop the handler once loading ends so retries cannot stack callbacks
+                // 加载结束后断开回调，避免重复加载叠加监听
+                const onStatusChanged = function() {
+                    if (backendComponent.status === Component.Loading) {
+                        return;
+                    }
+                    backendComponent.statusChanged.disconnect(onStatusChanged);
+                    amllSource.installProvider(backendComponent);
+                };
+                backendComponent.statusChanged.connect(onStatusChanged);
+                return;
+            }
+            amllSource.installProvider(backendComponent);
+        }
+
+        function installProvider(backendComponent) {
+            amllSource.loading = false;
+            if (amllSource.provider !== null) {
+                return;
+            }
+            if (backendComponent.status === Component.Error) {
+                amllSource.state = -1;
+                console.info("[Sparkle Land] AMLL 后端不可用：", backendComponent.errorString());
+                return;
+            }
+            if (backendComponent.status !== Component.Ready) {
+                return;
+            }
+
+            const backendInstance = backendComponent.createObject(amllSource, {
+                "lyrics": root.lyrics,
+                "positionPlayer": Qt.binding(function() {
+                    return root.media.player;
+                }),
+                "trackTitle": Qt.binding(function() {
+                    return root.media.trackTitle;
+                }),
+                "artistName": Qt.binding(function() {
+                    return root.media.artistName;
+                }),
+                "albumName": Qt.binding(function() {
+                    return root.media.albumName;
+                }),
+                "playing": Qt.binding(function() {
+                    return root.media.playing;
+                }),
+                "active": amllSource.wanted
+            });
+            if (!backendInstance) {
+                amllSource.state = -1;
+                console.warn("[Sparkle Land] AMLL 组件实例化失败：", backendComponent.errorString());
+                return;
+            }
+
+            amllSource.provider = backendInstance;
+            amllSource.state = 1;
+            console.info("[Sparkle Land] AMLL 在线歌词后端已就绪");
         }
     }
 }

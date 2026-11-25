@@ -84,9 +84,10 @@ QtObject {
     // Failed lyric requests for the current track, capped by lyricsRetryLimit
     // 当前曲目的歌词请求失败次数，上限为 lyricsRetryLimit
     property int lyricsRetries: 0
-    // Parsed lyrics are reused across replays and panel rebuilds
-    // 已解析歌词在重播与面板重建时复用
-    property var lineCache: SPlayerNext.createLineCache(16)
+    // Parsed lyrics are reused across replays and panel rebuilds, kept for 30 tracks
+    // 已解析歌词在重播与面板重建时复用，最多保留 30 首
+    property int cacheLimit: 30
+    property var lineCache: SPlayerNext.createLineCache(root.cacheLimit)
 
     signal connectionChanged()
     signal songChanged()
@@ -490,7 +491,7 @@ QtObject {
 
     function showLines(lines) {
         if (root.lyrics !== null && typeof root.lyrics.setLines === "function") {
-            root.lyrics.setLines(lines);
+            root.lyrics.setLines(lines, "splayer");
         }
         root.lyricChanged();
     }
@@ -674,7 +675,7 @@ QtObject {
         root.lyricsRetryTimer.stop();
         root.abortRequest("/lyrics");
         if (root.lyrics !== null && typeof root.lyrics.clear === "function") {
-            root.lyrics.clear();
+            root.lyrics.clear("splayer");
         }
         root.lyricChanged();
     }

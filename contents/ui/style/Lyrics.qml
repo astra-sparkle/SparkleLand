@@ -172,9 +172,12 @@ Item {
     // Multi-row scrolling lyric used by the playback page: the active line sits on
     // the middle row, with the previous and next lines above and below; the optional
     // secondary row (translation or romanisation) is inserted right under the active
-    // line. Rows stack on their own height, so neighbouring lines sit side by side
+    // line. Before the first line starts the middle row stays blank and the first line
+    // is shown as the next one. Rows stack on their own height, so neighbouring lines
+    // sit side by side
     // 播放页使用的多行滚动歌词：当前行居中，上下分别为上一行与下一行，
-    // 可选的副行（译文或发音）紧贴当前行下方。各行按自身高度紧挨排列
+    // 可选的副行（译文或发音）紧贴当前行下方。首句开始前中间行留空，
+    // 首句作为下一句显示。各行按自身高度紧挨排列
     component ScrollingLines: Item {
         id: view
 
@@ -202,18 +205,45 @@ Item {
         readonly property bool hasSecondary: view.secondaryMode !== 0
         readonly property int rowCount: view.hasSecondary ? 4 : 3
         readonly property int lineCount: Array.isArray(view.lines) ? view.lines.length : 0
+        // Before the first line starts the middle row stays empty, and the upcoming line
+        // is shown on the next row instead of being treated as the active line
+        // 首行开始前中间行保持空白，即将到来的行显示在下一行，而不是被当作当前行
+        readonly property bool hasActiveLine: view.currentIndex >= 0 && view.lineCount > 0
         // Index of the line on the middle row, rounded so the active styling stays
         // stable while the strip is scrolling
         // 居中行对应的歌词索引，取整使滚动过程中当前行样式保持稳定
         readonly property int anchorLine: Math.max(0, Math.round(view.currentIndex))
-        readonly property int windowStart: Math.max(0, view.anchorLine - 1)
+        readonly property int windowStart: view.hasActiveLine ? Math.max(0, view.anchorLine - 1) : 0
         readonly property int windowCount: {
             if (view.lineCount === 0) {
                 return 0;
             }
+            // Only the upcoming line is shown below the empty middle row
+            // 空白中间行下方只显示即将到来的首句
+            if (!view.hasActiveLine) {
+                return Math.min(view.lineCount, 1);
+            }
             const last = Math.min(view.lineCount - 1, view.anchorLine + 2);
             return Math.max(0, last - view.windowStart + 1);
         }
+
+        // True for the line occupying the middle row
+        // 占据中间行的歌词行
+        function isActiveIndex(index) {
+            return view.hasActiveLine && index === view.anchorLine;
+        }
+
+        // Visual slot of a line relative to the middle row; before the first line the
+        // middle row is empty, so the upcoming line sits one slot below it
+        // 行相对中间行的显示槽位；首行开始前中间行留空，即将到来的行位于其下一槽
+        function slotOf(index) {
+            return index - (view.hasActiveLine ? view.anchorLine : -1);
+        }
+
+        // Height of the empty middle row, matching a two-line active lyric so the strip
+        // does not jump when the first line starts
+        // 空白中间行的高度，与两行的当前歌词一致，避免首句开始时歌词条跳动
+        readonly property real blankAnchorHeight: 2 * view.textLineHeight(view.lineFont)
         // Height of one rendered text line for a given font, matching what Text lays out
         // 给定字体下单行文字的高度，与 Text 实际排版一致
         function textLineHeight(fontValue) {
@@ -266,12 +296,14 @@ Item {
             return "";
         }
 
-        // The line below the active one drops its split-off part so it never grows
-        // towards the content that follows
-        // 位于当前行下方的行丢弃溢出部分，避免向下挤占后续内容
+        // Lines below the active one drop their split-off part so they never grow
+        // towards the content that follows; before the first line the upcoming line is
+        // below the empty middle row and drops it too
+        // 位于当前行下方的行丢弃溢出部分，避免向下挤占后续内容；
+        // 首行开始前，即将到来的行位于空白中间行下方，同样丢弃溢出部分
         function tailAt(index) {
             const parts = view.splitParts(view.lineTextAt(index));
-            if (parts === null || index > view.anchorLine) {
+            if (parts === null || view.slotOf(index) > 0) {
                 return "";
             }
             return parts.tail;
@@ -286,13 +318,17 @@ Item {
         // so neighbouring rows sit side by side without outer spacing
         // 歌词行的高度由其字体与实际显示的行数决定，相邻行因此紧挨排列而没有额外间距
         function lineHeight(index) {
-            const fontValue = index === view.anchorLine ? view.lineFont : view.inactiveLineFont;
+            const fontValue = view.isActiveIndex(index) ? view.lineFont : view.inactiveLineFont;
             const lines = view.tailAt(index).length > 0 ? 2 : 1;
             return lines * view.textLineHeight(fontValue);
         }
 
+        function anchorHeight() {
+            return view.hasActiveLine ? view.lineHeight(view.anchorLine) : view.blankAnchorHeight;
+        }
+
         function secondaryLine() {
-            return view.lineCount > view.anchorLine ? view.lines[view.anchorLine] : null;
+            return view.hasActiveLine ? view.lines[view.anchorLine] : null;
         }
 
         function secondaryParts() {
@@ -309,10 +345,15 @@ Item {
         }
 
         // Top of a line row: the active row stays centered, everything else stacks
-        // around it without gaps
-        // 歌词行的顶部位置：当前行居中，其余行紧贴其上下排列
+        // around it without gaps. Before the first line the middle row is empty, so the
+        // upcoming line starts right below it
+        // 歌词行的顶部位置：当前行居中，其余行紧贴其上下排列。
+        // 首行开始前中间行留空，即将到来的行紧贴其下方开始
         function rowTop(index) {
-            let top = (view.height - view.lineHeight(view.anchorLine)) / 2;
+            let top = (view.height - view.anchorHeight()) / 2;
+            if (!view.hasActiveLine) {
+                top += view.anchorHeight();
+            }
             if (index < view.anchorLine) {
                 for (let step = index; step < view.anchorLine; ++step) {
                     top -= view.lineHeight(step);
@@ -321,7 +362,7 @@ Item {
             }
             for (let step = view.anchorLine; step < index; ++step) {
                 top += view.lineHeight(step);
-                if (view.hasSecondary && step === view.anchorLine) {
+                if (view.hasSecondary && view.isActiveIndex(step)) {
                     top += view.secondaryHeight();
                 }
             }
@@ -341,12 +382,16 @@ Item {
                 required property int index
 
                 readonly property int lineIndex: view.windowStart + index
-                readonly property bool active: lineIndex === view.anchorLine
+                // Slot of this row around the middle row, so an upcoming line stays
+                // below the empty middle row until it starts
+                // 该行相对中间行的槽位；首句开始前，即将到来的行停留在空白中间行下方
+                readonly property int slot: view.slotOf(lineIndex)
+                readonly property bool active: lineLabel.slot === 0
 
                 // Fade with the distance to the active row so the scroll has no colour pop
                 // 按与当前行的距离淡出，避免滚动过程中颜色突变
                 height: view.lineHeight(lineIndex)
-                opacity: Math.max(0.35, 1 - Math.abs(lineIndex - view.anchorLine) * 0.5)
+                opacity: Math.max(0.35, 1 - Math.abs(lineLabel.slot) * 0.5)
                 width: view.width
                 y: view.rowTop(lineIndex)
 

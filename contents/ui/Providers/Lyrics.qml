@@ -2,14 +2,17 @@ import QtQuick
 import "LyricText.js" as LyricText
 import "SPlayer_Next.js" as SPlayerNext
 
-// Lyric state fed by the SPlayer backend: normalized lines and the active line
-// 由 SPlayer 后端填充的歌词状态：规范化后的歌词行与当前行
+// Lyric state fed by the active backend: normalized lines and the active line
+// 由当前生效后端填充的歌词状态：规范化后的歌词行与当前行
 QtObject {
     id: root
 
     // Normalized lines: { startTime, endTime, text, translation, roman, background, duet }
     // 规范化后的歌词行：{ startTime, endTime, text, translation, roman, background, duet }
     property var lines: []
+    // Backend that produced the current lines, so the other backend cannot wipe them
+    // 生成当前歌词行的后端；另一后端不得清空这些行
+    property string owner: ""
     // Playback position in milliseconds
     // 播放位置，单位毫秒
     property real position: 0
@@ -25,6 +28,9 @@ QtObject {
     // 单个歌词行可容纳的全角字符数，与视图共用
     readonly property int lineUnitLimit: LyricText.FULL_WIDTH_LIMIT
     readonly property bool available: root.lines.length > 0
+    // Nothing has been sung yet: the position is still before the first line
+    // 尚未唱到任何歌词：位置仍在首行之前
+    readonly property bool beforeFirstLine: root.available && root.currentIndex < 0
     readonly property var currentLine: root.currentIndex >= 0 && root.currentIndex < root.lines.length
         ? root.lines[root.currentIndex]
         : null
@@ -55,15 +61,24 @@ QtObject {
 
     // Store an already normalized line array, the backend owns parsing and caching
     // 写入已规范化的歌词行数组，解析与缓存由后端负责
-    function setLines(source) {
+    function setLines(source, sourceName) {
+        root.owner = typeof sourceName === "string" ? sourceName : "";
         root.lines = Array.isArray(source) ? source : [];
         root.refreshIndex();
     }
 
-    function clear() {
+    // A named call only clears the lines that backend produced itself
+    // 指定名称时只清除该后端自己写入的歌词
+    function clear(sourceName) {
+        const name = typeof sourceName === "string" ? sourceName : "";
+        if (name.length > 0 && root.owner.length > 0 && name !== root.owner) {
+            return;
+        }
+
         root.lines = [];
         root.offset = 0;
         root.currentIndex = -1;
+        root.owner = "";
     }
 
     function syncOffset(milliseconds) {

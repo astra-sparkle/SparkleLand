@@ -55,6 +55,11 @@
             <min>0</min>
             <max>2</max>
         </entry>
+        <entry name="lyricsAmllEnabled" type="Bool">
+            <!-- Online fallback used while the player backend reports no lyrics -->
+            <!-- 播放器后端未报告歌词时使用的在线回退 -->
+            <default>true</default>
+        </entry>
         <entry name="notificationsEnabled" type="Bool">
             <default>true</default>
         </entry>

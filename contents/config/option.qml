@@ -25,6 +25,7 @@ KCM.SimpleKCM {
     property alias cfg_lyricsPanelEnabled: lyricsPanelCheck.checked
     property alias cfg_lyricsPlaybackEnabled: lyricsPlaybackCheck.checked
     property alias cfg_lyricsSecondaryMode: lyricsSecondaryCombo.currentIndex
+    property alias cfg_lyricsAmllEnabled: lyricsAmllCheck.checked
     // Empty means the packaged default icon is used
     // 留空表示使用内置默认图标
     property string cfg_mediaPlaybackIcon
@@ -198,11 +199,19 @@ KCM.SimpleKCM {
             ]
         }
 
+        QQC2.CheckBox {
+            id: lyricsAmllCheck
+
+            Kirigami.FormData.label: i18n("Online fallback:")
+            enabled: lyricsPanelCheck.checked || lyricsPlaybackCheck.checked
+            text: i18n("Fetch lyrics from the AMLL database when the player provides none")
+        }
+
         QQC2.Label {
             Layout.fillWidth: true
             font: Kirigami.Theme.smallFont
             opacity: 0.7
-            text: i18n("Lyrics are fetched from the player backends.")
+            text: i18n("Default Fallback Lyrics from AMLL TTML Database —— Support them plz!")
             visible: lyricsPanelCheck.checked || lyricsPlaybackCheck.checked
             wrapMode: Text.WordWrap
         }
