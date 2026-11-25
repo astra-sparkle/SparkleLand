@@ -208,6 +208,15 @@ KCM.SimpleKCM {
             text: i18n("Fetch lyrics from the AMLL database when the player provides none")
         }
 
+        QQC2.Label {
+            Layout.fillWidth: true
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
+            text: i18n("Default Fallback Lyrics from AMLL TTML Database —— Support them plz!")
+            visible: lyricsPanelCheck.checked || lyricsPlaybackCheck.checked
+            wrapMode: Text.WordWrap
+        }
+
         QQC2.SpinBox {
             id: lyricsOffsetSpin
 
@@ -224,15 +233,6 @@ KCM.SimpleKCM {
                 }
                 return value > 0 ? i18n("%1 ms earlier", value) : i18n("%1 ms later", -value);
             }
-        }
-
-        QQC2.Label {
-            Layout.fillWidth: true
-            font: Kirigami.Theme.smallFont
-            opacity: 0.7
-            text: i18n("Default Fallback Lyrics from AMLL TTML Database —— Support them plz!")
-            visible: lyricsPanelCheck.checked || lyricsPlaybackCheck.checked
-            wrapMode: Text.WordWrap
         }
 
         QQC2.Label {
