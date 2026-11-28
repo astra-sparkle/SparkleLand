@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: sparkleland\n"
 "Report-Msgid-Bugs-To: https://github.com/astra-sparkle/SparkleLand/issues\n"
 "POT-Creation-Date: 2026-11-25 20:09+0800\n"
-"PO-Revision-Date: 2026-11-25 14:13\n"
+"PO-Revision-Date: 2026-11-28 10:50\n"
 "Last-Translator: \n"
 "Language-Team: Chinese Simplified\n"
 "Language: zh_CN\n"
@@ -145,15 +145,15 @@ msgstr "显示发音"
 
 #: contents/config/option.qml:205
 msgid "Online fallback:"
-msgstr ""
+msgstr "在线回落："
 
 #: contents/config/option.qml:207
 msgid "Fetch lyrics from the AMLL database when the player provides none"
-msgstr ""
+msgstr "当播放器不提供歌词时从AMLL数据库获取"
 
 #: contents/config/option.qml:214
 msgid "Lyrics come from the player backend; the AMLL database is the fallback. Online requests are limited to 50 per second, or 30 after a 429 reply."
-msgstr ""
+msgstr "歌词来自播放器后端，AMLL数据库作为回落选项。在线获取将在收到429信号后由50次每秒限制到30次每秒。"
 
 #: contents/config/option.qml:221 contents/ui/Notifications.qml:108
 #: contents/ui/NotificationsPopup.qml:225
